@@ -42,7 +42,7 @@ describe("Eskiz SMS adapteri", () => {
     expect(reqs.map((r) => r.path)).toEqual(["/api/auth/login", "/api/message/sms/send"]);
     expect(reqs[0].form).toEqual({ email: "test@example.uz", password: "secret" });
     expect(reqs[1].auth).toBe("Bearer tok1");
-    expect(reqs[1].form).toEqual({ mobile_phone: "998991234567", message: "OfisIjara: tasdiqlash kodi 123456. Kodni hech kimga bermang.", from: "4546" });
+    expect(reqs[1].form).toEqual({ mobile_phone: "998991234567", message: "OfisTop: tasdiqlash kodi 123456. Kodni hech kimga bermang.", from: "4546" });
   });
   it("token qayta ishlatiladi (har SMS'da login qilinmaydi)", async () => {
     const p = getSmsProvider(); await p.send("+998991234567", "a"); await p.send("+998991234567", "b");

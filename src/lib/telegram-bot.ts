@@ -10,7 +10,7 @@ interface TgUser { id: number }
 interface TgMessage { chat?: { id: number; type: string }; from?: TgUser; text?: string; contact?: { phone_number: string; user_id?: number } }
 
 const M = {
-  help: "OfisIjara: kirish uchun saytdagi «Telegram orqali kirish» tugmasini bosing.\nДля входа нажмите кнопку «Войти через Telegram» на сайте.",
+  help: "OfisTop: kirish uchun saytdagi «Telegram orqali kirish» tugmasini bosing.\nДля входа нажмите кнопку «Войти через Telegram» на сайте.",
   stale: "Havola eskirgan yoki noto'g'ri. Saytda qaytadan «Telegram orqali kirish» ni bosing.\nСсылка устарела. Нажмите «Войти через Telegram» на сайте ещё раз.",
   used: "Bu havola allaqachon ishlatilgan. Saytda yangisini oling.\nЭта ссылка уже использована. Получите новую на сайте.",
   askContact: "Telefon raqamingizni tasdiqlash uchun pastdagi tugmani bosing.\nНажмите кнопку ниже, чтобы подтвердить номер телефона.",
@@ -19,7 +19,7 @@ const M = {
   notUz: "Faqat O'zbekiston (+998) raqamlari qabul qilinadi.\nПринимаются только номера Узбекистана (+998).",
   saved: "Raqam saqlandi. Saytda «Telegram orqali kirish» ni bosing.\nНомер сохранён. Нажмите «Войти через Telegram» на сайте.",
   wait: "Juda ko'p urinish. Bir necha daqiqadan keyin qayta urinib ko'ring.\nСлишком много попыток. Повторите через несколько минут.",
-  code: (c: string) => `OfisIjara kirish kodi: ${c}\nKod 5 daqiqa amal qiladi. Hech kimga bermang.\n\nКод для входа: ${c} (действует 5 минут). Никому не сообщайте.`,
+  code: (c: string) => `OfisTop kirish kodi: ${c}\nKod 5 daqiqa amal qiladi. Hech kimga bermang.\n\nКод для входа: ${c} (действует 5 минут). Никому не сообщайте.`,
 };
 const RM = { remove_keyboard: true };
 

@@ -15,8 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const { locale, t } = await getT();
   return {
     metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
-    openGraph: { siteName: "OfisIjara", locale: locale === "ru" ? "ru_RU" : "uz_UZ", type: "website" },
-    title: { default: t("site.title"), template: "%s | OfisIjara" },
+    openGraph: { siteName: "OfisTop", locale: locale === "ru" ? "ru_RU" : "uz_UZ", type: "website" },
+    title: { default: t("site.title"), template: "%s | OfisTop" },
     description: t("site.desc"),
   };
 }
@@ -34,7 +34,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {isDevOtp() && <div role="status" className="bg-amber-100 px-4 py-2 text-center text-sm text-amber-950">{locale === "ru" ? "ТЕСТОВЫЙ РЕЖИМ · SMS не отправляются. Код входа отображается на экране." : "TEST REJIMI · SMS yuborilmaydi. Kirish kodi ekranda ko‘rsatiladi."}</div>}
         <header className="border-b border-slate-200 bg-white sticky top-0 z-20">
           <nav className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3 md:gap-4 text-sm" aria-label={t("nav.aria")}>
-            <Link href="/" className="font-bold text-lg text-brand">Ofis<span className="text-accent">Ijara</span></Link>
+            <Link href="/" className="font-bold text-lg text-brand">Ofis<span className="text-accent">Top</span></Link>
             <Link href="/joylar" className="hidden md:inline hover:underline">{t("nav.search")}</Link>
             <Link href="/markazlar" className="hidden md:inline hover:underline">{t("nav.centers")}</Link>
             <span className="flex-1" />

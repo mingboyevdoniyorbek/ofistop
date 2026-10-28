@@ -16,7 +16,7 @@ export function smsConfigured() {
 
 /** OTP matni. Eskiz'da SHU matn shabloni moderatsiyadan o'tgan bo'lishi shart ({code} o'rniga raqam qo'yiladi). */
 export function otpText(code: string) {
-  const tpl = process.env.SMS_OTP_TEMPLATE || "OfisIjara: tasdiqlash kodi {code}. Kodni hech kimga bermang.";
+  const tpl = process.env.SMS_OTP_TEMPLATE || "OfisTop: tasdiqlash kodi {code}. Kodni hech kimga bermang.";
   return tpl.replace("{code}", code);
 }
 

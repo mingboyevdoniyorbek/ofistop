@@ -1,11 +1,11 @@
 // Interfeys matnlari (o'zbek, lotin). Yangi kalit qo'shilsa ru.ts da ham bo'lishi shart (tip tekshiruvi buni majburlaydi).
 export const uz = {
-  "site.title": "OfisIjara — ofis va tijorat joylari ijarasi",
+  "site.title": "OfisTop — ofis va tijorat joylari ijarasi",
   "site.desc": "O'zbekistonda ofis, do'kon, ombor va boshqa tijorat joylarini ijaraga qidiring yoki e'lon bering.",
   "nav.aria": "Asosiy", "nav.search": "Joy qidirish", "nav.centers": "Biznes markazlar", "nav.admin": "Admin",
   "nav.notifications": "Bildirishnomalar", "nav.favorites": "Sevimlilar", "nav.cabinet": "Kabinet", "nav.login": "Kirish", "nav.logout": "Chiqish", "nav.newListing": "E'lon berish",
   "lang.aria": "Til",
-  "footer.tagline": "OfisIjara — joy topish va tomonlarni bog'lash platformasi. Ijara shartnomasi va to'lovlar platforma orqali amalga oshirilmaydi.",
+  "footer.tagline": "OfisTop — joy topish va tomonlarni bog'lash platformasi. Ijara shartnomasi va to'lovlar platforma orqali amalga oshirilmaydi.",
   "footer.rules": "E'lon qoidalari", "footer.privacy": "Maxfiylik", "footer.terms": "Foydalanish shartlari",
   "err.generic": "Xatolik. Qayta urinib ko'ring.",
   "fav.add": "Sevimlilarga qo'shish", "fav.remove": "Sevimlilardan olib tashlash", "fav.saved": "♥ Saqlangan", "fav.save": "♡ Saqlash", "fav.failed": "Saqlab bo'lmadi",
@@ -282,7 +282,7 @@ export const uz = {
   "priv.h4": "So'rovlar",
   "priv.requests": "Ma'lumotlaringizni o'chirish yoki o'zgartirish bo'yicha murojaat usuli ishga tushirish vaqtida e'lon qilinadi (aloqa manzili hali belgilanmagan).",
   "terms.title": "Foydalanish shartlari",
-  "terms.1": "OfisIjara — tijorat joylarini topish va tomonlarni bog'lash platformasi. Platforma ijara shartnomasini tuzmaydi, ijara to'lovlarini qabul qilmaydi va tomonlar o'rtasidagi kelishuvda ishtirok etmaydi.",
+  "terms.1": "OfisTop — tijorat joylarini topish va tomonlarni bog'lash platformasi. Platforma ijara shartnomasini tuzmaydi, ijara to'lovlarini qabul qilmaydi va tomonlar o'rtasidagi kelishuvda ishtirok etmaydi.",
   "terms.2": "E'londagi ma'lumotlar uchun e'lon beruvchi javobgar. Ijaraga olishdan oldin joyni ko'rib, hujjatlarni va egalik huquqini mustaqil tekshiring.",
   "terms.3": "Moderatorlar qoidalarga zid e'lonni rad etishi yoki yashirishi, takroriy buzuvchi akkauntni bloklashi mumkin.",
   "terms.4": "«Telefon tasdiqlangan» faqat raqam egasi kod olganini bildiradi. Bu obyektning yoki e'lon beruvchining tekshirilganini anglatmaydi.",
