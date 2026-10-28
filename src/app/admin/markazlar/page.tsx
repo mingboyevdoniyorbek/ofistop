@@ -1,0 +1,42 @@
+import { asc, eq } from "drizzle-orm";
+import { db, schema as s } from "@/db/client";
+import { requireStaffPage } from "@/lib/staff";
+import { getT } from "@/lib/i18n";
+import CenterEditor from "@/components/CenterEditor";
+import { mediaUrl } from "@/lib/storage";
+import AdminForm from "@/components/AdminForm";
+import AdminAction from "@/components/AdminAction";
+
+export default async function Centers() {
+  await requireStaffPage(true);
+  const { locale, t } = await getT(); const nm = (x: { nameUz: string; nameRu: string }) => (locale === "ru" ? x.nameRu : x.nameUz);
+  const d = db();
+  const regions = await d.select().from(s.regions).orderBy(asc(s.regions.nameUz));
+  const districts = await d.select().from(s.districts).orderBy(asc(s.districts.nameUz));
+  const centers = await d.select({ c: s.businessCenters, region: locale === "ru" ? s.regions.nameRu : s.regions.nameUz }).from(s.businessCenters).leftJoin(s.regions, eq(s.regions.id, s.businessCenters.regionId)).orderBy(asc(s.businessCenters.name));
+  const members = await d.select({ centerId: s.businessCenterMemberships.centerId, userId: s.businessCenterMemberships.userId, phone: s.users.phone, name: s.profiles.displayName })
+    .from(s.businessCenterMemberships).innerJoin(s.users, eq(s.users.id, s.businessCenterMemberships.userId)).leftJoin(s.profiles, eq(s.profiles.userId, s.users.id));
+  const amenities = await db().select().from(s.amenities);
+  const images = await db().select().from(s.businessCenterImages).orderBy(s.businessCenterImages.position);
+  return (
+    <div className="space-y-6">
+      <h1 className="text-xl font-bold">{t("adm.nav.centers")}</h1>
+      <section className="rounded border border-slate-200 p-4"><h2 className="mb-3 font-semibold">{t("adm.c.new")}</h2>
+        <AdminForm url="/api/admin/centers" submit={t("adm.c.create")} fields={[
+          { name: "name", label: t("adm.c.name"), required: true }, { name: "address", label: t("adm.c.address"), required: true },
+          { name: "regionId", label: t("adm.c.region"), type: "select", required: true, options: regions.map((r) => ({ value: r.id, label: nm(r) })) },
+          { name: "districtId", label: t("adm.c.district"), type: "select", options: districts.map((x) => ({ value: x.id, label: `${nm(x)} (${nm(regions.find((r) => r.id === x.regionId)!)})` })) },
+          { name: "contactPhone", label: t("adm.c.phone"), placeholder: "+998 ..." }, { name: "telegramUsername", label: t("adm.c.telegram") },
+          { name: "description", label: t("adm.c.desc"), type: "textarea" }]} /></section>
+      <ul className="space-y-3">{centers.map(({ c, region }) => { const ms = members.filter((m) => m.centerId === c.id); return (
+        <li key={c.id} className="rounded border border-slate-200 p-3 text-sm">
+          <p className="font-medium">{c.name} {c.isDemo && <span className="rounded bg-amber-100 px-1.5 text-xs text-amber-800">DEMO</span>}</p>
+          <p className="text-slate-600">{region} · {c.address}</p>
+          <CenterEditor center={c} regions={regions.map(r=>({id:r.id,name:nm(r)}))} districts={districts.map(r=>({id:r.id,regionId:r.regionId,name:nm(r)}))} amenities={amenities.map(a=>({code:a.code,name:locale === "ru"?a.nameRu:a.nameUz}))} images={images.filter(i=>i.centerId===c.id).map(i=>({id:i.id,url:mediaUrl(i.storageKey)}))}/>
+          <p className="mt-2 text-slate-500">{t("adm.c.reps")}</p>
+          <ul className="mb-2">{ms.length === 0 && <li className="text-slate-400">{t("adm.c.none")}</li>}{ms.map((m) => <li key={m.userId} className="flex items-center gap-2 py-0.5">{m.name} · {m.phone}<AdminAction url={`/api/admin/centers/${c.id}/members`} body={{ action: "remove", userId: m.userId }} label={t("adm.c.remove")} tone="danger" confirm={t("adm.c.confirmRemove")} /></li>)}</ul>
+          <AdminForm url={`/api/admin/centers/${c.id}/members`} extra={{ action: "add" }} submit={t("adm.c.attach")} fields={[{ name: "phone", label: t("adm.c.repPhone"), required: true }]} />
+        </li>); })}</ul>
+    </div>
+  );
+}

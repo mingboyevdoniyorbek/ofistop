@@ -1,0 +1,88 @@
+import { chromium, expect } from "@playwright/test";
+import assert from "node:assert/strict";
+import { existsSync, mkdirSync } from "node:fs";
+import sharp from "sharp";
+import { randomBytes } from "node:crypto";
+
+const base = process.env.TEST_URL || "http://localhost:3000";
+const chrome = [process.env.CHROME_PATH, "C:/Program Files/Google/Chrome/Application/chrome.exe", "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"].find(path => path && existsSync(path));
+const browser = await chromium.launch({ headless: true, ...(chrome ? { executablePath: chrome } : {}) });
+mkdirSync("test-results", { recursive: true });
+try {
+ const errors=[];
+ const admin=await browser.newContext({baseURL:base});
+ const page=await admin.newPage(); page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/admin');
+ await page.getByLabel('Login',{exact:true}).fill('ofis');
+ await page.getByLabel('Parol',{exact:true}).fill(process.env.TEST_ADMIN_PASSWORD || 'ijara');
+ await page.getByRole('button',{name:'Kirish',exact:true}).click();
+ await page.waitForURL('**/admin/elonlar?holat=pending');
+ for(const path of ['/admin/elonlar','/admin/foydalanuvchilar','/admin/markazlar','/admin/hududlar','/admin/shikoyatlar','/admin/audit','/admin/sozlamalar']) {
+  assert.equal((await page.goto(path)).status(),200,path); assert.equal(new URL(page.url()).pathname,path);
+ }
+ console.log('PASS: password admin login and all seven protected admin pages');
+
+ const owner=await browser.newContext({baseURL:base});
+ const ownerPage=await owner.newPage();ownerPage.on('pageerror',e=>errors.push(e.message));
+ await ownerPage.goto('/');
+ await expect(ownerPage.locator('a[href="/admin"]')).toHaveCount(0);
+ await ownerPage.getByRole('button',{name:"E'lon berish",exact:true}).first().click();
+ await ownerPage.waitForURL(/\/kabinet\/elon\/[0-9a-f-]+$/);
+ const id=new URL(ownerPage.url()).pathname.split('/').pop();
+ assert.equal((await owner.request.post('/api/admin/settings',{data:{listing_ttl_days:30}})).status(),401);
+ const title=`Promo sinov ${Date.now()}`;
+ const fields={title,description:'Bepul reklama rejimida tekshirilgan keng va yorug ofis',address:'Toshkent, sinov manzili 10',areaM2:'50',priceAmount:'500',currency:'USD',contactPhone:'+998000000001'};
+ const saved=await owner.request.patch(`/api/listings/${id}`,{data:{fields}});assert.equal(saved.status(),200,await saved.text());
+ const png=await sharp(randomBytes(1200*800*3),{raw:{width:1200,height:800,channels:3}}).png().toBuffer();
+ const upload=await owner.request.post(`/api/listings/${id}/images`,{multipart:{files:{name:'promo-test.png',mimeType:'image/png',buffer:png}}});assert.equal(upload.status(),200,await upload.text());
+ const uploaded=(await upload.json()).images[0];
+ const stored=await owner.request.get(uploaded.url);const thumb=await owner.request.get(uploaded.thumbUrl);
+ assert.ok((await stored.body()).length+(await thumb.body()).length < png.length/2);
+ await ownerPage.reload();
+ await ownerPage.getByRole('button',{name:/6\. Yuborish/}).click();
+ await ownerPage.getByRole('button',{name:'Moderatsiyaga yuborish',exact:true}).click();
+ await ownerPage.waitForURL('**/kabinet?holat=pending');
+ await expect(ownerPage.getByText(title,{exact:true})).toBeVisible();
+
+ const visitor=await browser.newContext({baseURL:base});const visitorPage=await visitor.newPage();
+ await visitorPage.goto(`/joylar?q=${encodeURIComponent(title)}`);
+ await expect(visitorPage.locator(`a[href^="/joylar/${id}-"]`)).toHaveCount(0);
+ assert.equal((await visitor.request.get(`/joylar/${id}-pending`)).status(),404);
+ assert.equal((await visitor.request.post('/api/contact',{data:{listingId:id,kind:'phone_reveal'}})).status(),404);
+ assert.equal((await owner.request.post(`/api/admin/listings/${id}`,{data:{action:'approve'}})).status(),401);
+ await page.goto('/admin/elonlar?holat=pending');
+ const pendingRow=page.locator('li').filter({hasText:title});await expect(pendingRow).toHaveCount(1);
+ await pendingRow.getByRole('button',{name:'Tasdiqlash',exact:true}).click();await expect(pendingRow).toHaveCount(0);
+ await visitorPage.reload();
+ const listingLink=visitorPage.locator(`a[href^="/joylar/${id}-"]`).first();await expect(listingLink).toBeVisible();
+ const href=await listingLink.getAttribute('href');await listingLink.click();
+ const edit=await owner.request.patch(`/api/listings/${id}`,{data:{fields:{priceAmount:'550'}}});assert.equal(edit.status(),200);assert.equal((await edit.json()).remoderation,true);
+ assert.equal((await visitor.request.get(href)).status(),404);
+ const reapproval=await admin.request.post(`/api/admin/listings/${id}`,{data:{action:'approve'}});assert.equal(reapproval.status(),200,await reapproval.text());
+ console.log('PASS: SMS-free draft, 2–5 MB image compression, pending visibility, admin approval and reapproval after edit');
+ const contact=await visitor.request.post('/api/contact',{data:{listingId:id,kind:'phone_reveal'}});assert.equal(contact.status(),200);assert.equal((await contact.json()).phone,'+998000000001');
+ assert.equal((await visitor.request.patch(`/api/listings/${id}`,{data:{fields:{title:'Hijack'}}})).status(),401);
+ await visitor.request.post('/api/auth/guest');
+ assert.equal((await visitor.request.patch(`/api/listings/${id}`,{data:{fields:{title:'Hijack'}}})).status(),404);
+ for(const path of ['/api/auth/request-otp','/api/auth/verify-otp']) assert.equal((await visitor.request.post(path,{data:{phone:'+998000009999',code:'123456'}})).status(),503);
+ assert.equal((await visitor.request.post('/api/auth/test-login',{data:{account:'admin'}})).status(),404);
+ await visitorPage.goto('/admin/elonlar');await expect(visitorPage.getByRole('heading',{name:'Admin panelga kirish'})).toBeVisible();
+ console.log('PASS: anonymous search/contact, owner isolation, SMS and demo admin bypass disabled');
+
+ await page.goto('/admin/elonlar?holat=active');
+ const row=page.locator('li').filter({hasText:title});await expect(row).toHaveCount(1);
+ const reason='Sinov: noto‘g‘ri manzil ko‘rsatilgan';
+ page.once('dialog',dialog=>dialog.accept(reason));
+ await row.getByRole('button',{name:'Saytdan o‘chirish',exact:true}).click();
+ await expect(row).toHaveCount(0);
+ await ownerPage.goto('/kabinet/bildirishnomalar');await expect(ownerPage.getByText(reason,{exact:true})).toBeVisible();
+ assert.equal((await visitorPage.goto(href)).status(),404);
+ assert.equal((await owner.request.post(`/api/listings/${id}/submit`)).status(),403);
+ await page.waitForLoadState('networkidle');await page.screenshot({path:'test-results/admin-promo.png',fullPage:true,caret:'initial'});
+ await ownerPage.waitForLoadState('networkidle');await ownerPage.screenshot({path:'test-results/promo-notification.png',fullPage:true,caret:'initial'});
+ await page.getByRole('button',{name:'Admindan chiqish'}).click();await expect(page.getByLabel('Parol',{exact:true})).toBeVisible();
+ await visitorPage.setViewportSize({width:390,height:844});await visitorPage.goto('/kirish');await expect(visitorPage.getByRole('button',{name:'SMSsiz davom etish'})).toBeVisible();
+ await visitorPage.screenshot({path:'test-results/promo-mobile.png',fullPage:true,caret:'initial'});
+ assert.deepEqual(errors,[]);
+ console.log('PASS: admin removes via UI, owner receives reason, public listing disappears, admin logout and mobile login');
+} finally { await browser.close(); }

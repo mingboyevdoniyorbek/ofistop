@@ -1,0 +1,12 @@
+OfisIjara 0.2 — oxirgi tekshiruv
+
+npm test: 8 ta test fayli, 82 ta test muvaffaqiyatli.
+npm run typecheck: muvaffaqiyatli.
+npm run build: kesh tozalangandan keyin muvaffaqiyatli.
+setup:test: yangi sozlama yaratish va mavjud fayl ustidan yozmaslik tekshirildi.
+git diff --check: xatosiz.
+
+Baza integratsiyasi PGlite ichki PostgreSQL dvigatelida bajarildi.
+Haqiqiy tashqi SMS yuborilmadi. Test rejimi eski provayder credentiallarini ham chetlab o‘tishi tekshirildi.
+Windows/Docker va alohida PostgreSQL bilan to‘liq HTTP/Playwright sinovi bajarilmadi.
+Bir build urinishida Turbopack vaqtinchalik kesh xatosi bo‘ldi; .next tozalanib build qayta muvaffaqiyatli bajarildi. ZIP’da kesh yo‘q.

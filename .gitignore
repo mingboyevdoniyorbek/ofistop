@@ -1,0 +1,17 @@
+node_modules
+.next
+.env
+.env.local
+.env.production
+.env.production.local
+.env.development.local
+.test-data/
+uploads
+e2e/screenshots/
+e2e/.fixtures/
+test-results/
+playwright-report/
+
+*.tsbuildinfo
+playwright-report/
+test-results/

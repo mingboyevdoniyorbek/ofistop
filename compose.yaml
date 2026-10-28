@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ofisijara
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: ofisijara
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ofisijara_test_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ofisijara -d ofisijara"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  ofisijara_test_db:

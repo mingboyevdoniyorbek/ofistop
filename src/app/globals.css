@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@theme {
+  --color-brand: #12308a;
+  --color-brand-dark: #0b1f5c;
+  --color-accent: #16a34a;
+  --font-sans: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+body { font-family: var(--font-sans); color: #0f172a; background: #fff; }
+:focus-visible { outline: 3px solid #16a34a; outline-offset: 2px; }
+.oi-pin span { display: block; width: 18px; height: 18px; margin: 3px; border-radius: 50%; background: #12308a; border: 3px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.45); }
+.oi-pin span.oi-approx { background: #16a34a; }
+.leaflet-container { font-family: var(--font-sans); }
