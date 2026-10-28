@@ -1,5 +1,8 @@
 # SMSsiz bepul reklama davri
 
+> Ushbu hujjat avvalgi mehmon rejimini tasvirlaydi. Hozir Google/email/Telegram orqali kirish ishlatiladi:
+> [AUTH-SETUP.md](AUTH-SETUP.md). SMS endpointlari o'chirilgan; PROMO_MODE ularni qayta yoqmaydi.
+
 Hozirgi rejim: foydalanuvchi saytga kirib joylarni qidiradi, kontaktlarni ochadi yoki **E’lon berish** tugmasini bosib, SMSsiz e’lon yaratadi. Majburiy maydonlar va rasm to‘ldirilgach **Moderatsiyaga yuborish** bosiladi. E’lon faqat admin tasdiqlagach ommaga chiqadi. To‘lov olinmaydi.
 
 ## Mahalliy tekshirish

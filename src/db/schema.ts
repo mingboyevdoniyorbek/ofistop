@@ -89,6 +89,30 @@ export const rateLimits = pgTable("rate_limits", {
   resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
 });
 
+// Verified provider identities are separate from public contact details.
+export const authIdentities = pgTable("auth_identities", {
+  provider: text("provider").notNull(),
+  subject: text("subject").notNull(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.provider, t.subject] }), index("auth_identity_user_idx").on(t.userId)]);
+
+export const authChallenges = pgTable("auth_challenges", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  method: text("method").notNull(),
+  identifier: text("identifier").notNull().default(""),
+  browserHash: text("browser_hash").notNull(),
+  approvalHash: text("approval_hash").notNull().unique(),
+  codeHash: text("code_hash"),
+  payload: jsonb("payload").$type<Record<string, string>>().notNull().default({}),
+  next: text("next").notNull().default("/kabinet"),
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [index("auth_challenge_expiry_idx").on(t.expiresAt)]);
+
 // ---------- Hududlar ----------
 export const regions = pgTable("regions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

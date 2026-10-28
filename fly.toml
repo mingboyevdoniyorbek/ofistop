@@ -1,0 +1,44 @@
+# Replace with the actual, globally unique Fly app name before deployment.
+app = "ofistop-change-me"
+primary_region = "fra"
+kill_signal = "SIGTERM"
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  release_command = "npm run db:setup"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  PROMO_MODE = "true"
+  DEV_OTP_ENABLED = "false"
+  ADMIN_LOGIN = "ofis"
+  STORAGE_DRIVER = "local"
+  UPLOAD_DIR = "/data/uploads"
+  NODE_OPTIONS = "--max-old-space-size=1024"
+
+[[mounts]]
+  source = "ofistop_uploads"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "30s"
+    timeout = "5s"
+    method = "GET"
+    path = "/kirish"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "2gb"

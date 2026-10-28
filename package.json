@@ -12,6 +12,8 @@
     "db:seed": "node --import tsx src/db/seed.ts",
     "create-admin": "node --import tsx scripts/create-admin.ts",
     "admin:hash": "node scripts/hash-admin-password.mjs",
+    "bot:webhook": "node --import tsx scripts/setup-telegram-webhook.ts",
+    "bot:poll": "node --import tsx scripts/run-telegram-bot.ts",
     "test": "vitest run",
     "expire-listings": "node --import tsx scripts/expire-listings.ts",
     "api-check": "node --import tsx scripts/api-check.ts",

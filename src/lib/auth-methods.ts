@@ -1,9 +1,8 @@
 import { telegramEnabled } from "./telegram";
-import { isDevOtp, smsConfigured } from "./sms";
 import { localTestEnabled } from "./test-mode";
-import { promoEnabled } from "./launch-mode";
+import { emailEnabled } from "./email-login";
+import { googleEnabled } from "./google-login";
 /** Qaysi kirish usullari hozir ishlaydi (UI faqat ishlaydiganini ko'rsatadi; dekorativ tugma yo'q). */
 export function authMethods() {
-  if (promoEnabled()) return { telegram: false, phone: false, test: false, guest: true };
-  return { telegram: process.env.APP_MODE !== "test" && telegramEnabled(), phone: smsConfigured() || isDevOtp(), test: localTestEnabled() };
+  return { google: googleEnabled(), email: emailEnabled(), telegram: telegramEnabled(), phone: false, guest: false, test: localTestEnabled() };
 }

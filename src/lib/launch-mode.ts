@@ -11,3 +11,5 @@ export function promoEnabled(now = Date.now()) {
 }
 
 export const isGuestPhone = (phone: string) => phone.startsWith("guest:");
+// Legacy guest access is opt-in; free publishing no longer bypasses sign-in.
+export const guestAccessEnabled = () => promoEnabled() && process.env.ALLOW_GUEST_LOGIN === "true";

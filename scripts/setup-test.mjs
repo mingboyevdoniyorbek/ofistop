@@ -17,7 +17,8 @@ export function testEnvironment(port = 3000) {
   return {
     ...process.env, NODE_ENV: "development", APP_MODE: "test", TEST_DATABASE: "embedded",
     SESSION_SECRET: readFileSync(secretFile, "utf8").trim(),
-    DEV_OTP_ENABLED: "true", APP_URL: `http://localhost:${port}`, STORAGE_DRIVER: "local", UPLOAD_DIR: "./.test-data/uploads",
+    DEV_OTP_ENABLED: "false", ALLOW_GUEST_LOGIN: "false", APP_URL: `http://localhost:${port}`, STORAGE_DRIVER: "local", UPLOAD_DIR: "./.test-data/uploads",
+    GOOGLE_CLIENT_ID: "", GOOGLE_CLIENT_SECRET: "", RESEND_API_KEY: "", EMAIL_FROM: "",
     SMS_PROVIDER: "", ESKIZ_EMAIL: "", ESKIZ_PASSWORD: "", TELEGRAM_BOT_TOKEN: "", TELEGRAM_BOT_USERNAME: "", TELEGRAM_WEBHOOK_SECRET: "",
   };
 }

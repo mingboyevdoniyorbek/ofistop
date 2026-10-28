@@ -17,7 +17,7 @@ export const POST = handle(async (req) => {
   const [profile] = await d.select().from(s.profiles).where(eq(s.profiles.userId, user.id)).limit(1);
   const [l] = await d.insert(s.listings).values({
     slug: `joy-${randomBytes(4).toString("hex")}`, ownerId: user.id, posterType: profile?.posterType ?? "owner", category: "office",
-    title: "", regionId: region.id, contactPhone: profile?.contactPhone ?? (isGuestPhone(user.phone) ? null : user.phone), telegramUsername: profile?.telegramUsername ?? null,
+    title: "", regionId: region.id, contactPhone: profile?.contactPhone ?? (user.phone.startsWith("+") ? user.phone : null), telegramUsername: profile?.telegramUsername ?? null,
   }).returning({ id: s.listings.id });
   return NextResponse.json({ id: l.id }, { status: 201 });
 });

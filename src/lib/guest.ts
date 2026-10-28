@@ -2,17 +2,17 @@ import { randomUUID } from "node:crypto";
 import { db, schema as s } from "@/db/client";
 import { createSession, getCurrentUser, getSessionUser } from "./auth";
 import { HttpError, sameOrigin } from "./guard";
-import { promoEnabled, isGuestPhone } from "./launch-mode";
+import { guestAccessEnabled, isGuestPhone } from "./launch-mode";
 import { hit } from "./ratelimit";
 
 export async function getOrCreateGuest(req: Request) {
   sameOrigin(req);
   const user = await getCurrentUser();
   if (user) {
-    if (isGuestPhone(user.phone) && !promoEnabled()) throw new HttpError(401, "E’lon berish uchun telefoningizni tasdiqlang");
+    if (isGuestPhone(user.phone) && !guestAccessEnabled()) throw new HttpError(401, "E’lon berish uchun Google, email yoki Telegram orqali kiring");
     return user;
   }
-  if (!promoEnabled()) throw new HttpError(401, "Avval tizimga kiring");
+  if (!guestAccessEnabled()) throw new HttpError(401, "Avval tizimga kiring");
   if ((await getSessionUser())?.blocked) throw new HttpError(403, "Akkaunt bloklangan");
   const ip = (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
   if (!(await hit(`guest:ip:${ip}`, 10, 3600))) throw new HttpError(429, "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring.");

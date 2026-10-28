@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { and, eq, gt } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { adminPasswordHash } from "./admin-password";
+import type { Tx } from "./guard";
 
 const COOKIE = "oi_session";
 const SESSION_DAYS = 30;
@@ -20,10 +21,10 @@ export function safeEqual(a: string, b: string) {
 }
 
 const sessionHash = (token: string, admin: boolean) => sha(admin ? `admin|${adminPasswordHash()}|${token}` : token);
-export async function createSession(userId: string, admin = false) {
+export async function createSession(userId: string, admin = false, tx?: Tx) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + (admin ? 8 * 3600_000 : SESSION_DAYS * 864e5));
-  await db().insert(s.sessions).values({ userId, tokenHash: sessionHash(token, admin), expiresAt });
+  await (tx ?? db()).insert(s.sessions).values({ userId, tokenHash: sessionHash(token, admin), expiresAt });
   (await cookies()).set(admin ? "oi_admin_session" : COOKIE, token, {
     httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", expires: expiresAt,
   });

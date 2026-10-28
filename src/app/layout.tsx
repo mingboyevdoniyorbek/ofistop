@@ -1,5 +1,4 @@
 import "./globals.css";
-import { isDevOtp } from "@/lib/sms";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
@@ -9,7 +8,7 @@ import MobileMenu from "@/components/MobileMenu";
 import LangSwitch from "@/components/LangSwitch";
 import { I18nProvider } from "@/components/I18nProvider";
 import { getT } from "@/lib/i18n";
-import { promoEnabled, isGuestPhone } from "@/lib/launch-mode";
+import { guestAccessEnabled, isGuestPhone } from "@/lib/launch-mode";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale, t } = await getT();
@@ -24,14 +23,13 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser().catch(() => null);
   const { locale, t } = await getT();
-  const promo = promoEnabled();
+  const promo = guestAccessEnabled();
   const guest = !!user && isGuestPhone(user.phone);
   const loginLabel = promo ? (locale === "ru" ? "Мой кабинет" : "Kabinetim") : t("nav.login");
   return (
     <html lang={locale}>
       <body className="min-h-screen flex flex-col">
         <I18nProvider locale={locale}>
-        {isDevOtp() && <div role="status" className="bg-amber-100 px-4 py-2 text-center text-sm text-amber-950">{locale === "ru" ? "ТЕСТОВЫЙ РЕЖИМ · SMS не отправляются. Код входа отображается на экране." : "TEST REJIMI · SMS yuborilmaydi. Kirish kodi ekranda ko‘rsatiladi."}</div>}
         <header className="border-b border-slate-200 bg-white sticky top-0 z-20">
           <nav className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3 md:gap-4 text-sm" aria-label={t("nav.aria")}>
             <Link href="/" className="font-bold text-lg text-brand">Ofis<span className="text-accent">Top</span></Link>

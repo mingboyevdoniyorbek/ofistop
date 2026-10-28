@@ -26,6 +26,9 @@ try {
  const ownerPage=await owner.newPage();ownerPage.on('pageerror',e=>errors.push(e.message));
  await ownerPage.goto('/');
  await expect(ownerPage.locator('a[href="/admin"]')).toHaveCount(0);
+ assert.equal((await owner.request.post('/api/auth/guest')).status(),401);
+ assert.equal((await owner.request.post('/api/auth/test-login',{data:{account:'user'}})).status(),200);
+ await ownerPage.reload();
  await ownerPage.getByRole('button',{name:"E'lon berish",exact:true}).first().click();
  await ownerPage.waitForURL(/\/kabinet\/elon\/[0-9a-f-]+$/);
  const id=new URL(ownerPage.url()).pathname.split('/').pop();
@@ -62,10 +65,9 @@ try {
  console.log('PASS: SMS-free draft, 2–5 MB image compression, pending visibility, admin approval and reapproval after edit');
  const contact=await visitor.request.post('/api/contact',{data:{listingId:id,kind:'phone_reveal'}});assert.equal(contact.status(),200);assert.equal((await contact.json()).phone,'+998000000001');
  assert.equal((await visitor.request.patch(`/api/listings/${id}`,{data:{fields:{title:'Hijack'}}})).status(),401);
- await visitor.request.post('/api/auth/guest');
+ assert.equal((await visitor.request.post('/api/auth/test-login',{data:{account:'admin'}})).status(),200);
  assert.equal((await visitor.request.patch(`/api/listings/${id}`,{data:{fields:{title:'Hijack'}}})).status(),404);
- for(const path of ['/api/auth/request-otp','/api/auth/verify-otp']) assert.equal((await visitor.request.post(path,{data:{phone:'+998000009999',code:'123456'}})).status(),503);
- assert.equal((await visitor.request.post('/api/auth/test-login',{data:{account:'admin'}})).status(),404);
+ for(const path of ['/api/auth/request-otp','/api/auth/verify-otp']) assert.equal((await visitor.request.post(path,{data:{phone:'+998000009999',code:'123456'}})).status(),410);
  await visitorPage.goto('/admin/elonlar');await expect(visitorPage.getByRole('heading',{name:'Admin panelga kirish'})).toBeVisible();
  console.log('PASS: anonymous search/contact, owner isolation, SMS and demo admin bypass disabled');
 
@@ -81,7 +83,8 @@ try {
  await page.waitForLoadState('networkidle');await page.screenshot({path:'test-results/admin-promo.png',fullPage:true,caret:'initial'});
  await ownerPage.waitForLoadState('networkidle');await ownerPage.screenshot({path:'test-results/promo-notification.png',fullPage:true,caret:'initial'});
  await page.getByRole('button',{name:'Admindan chiqish'}).click();await expect(page.getByLabel('Parol',{exact:true})).toBeVisible();
- await visitorPage.setViewportSize({width:390,height:844});await visitorPage.goto('/kirish');await expect(visitorPage.getByRole('button',{name:'SMSsiz davom etish'})).toBeVisible();
+ await visitorPage.setViewportSize({width:390,height:844});await visitorPage.goto('/kirish');
+ for(const name of ['Google orqali kirish','Email orqali kirish','Telegram orqali kirish'])await expect(visitorPage.getByRole('button',{name,exact:true})).toBeVisible();
  await visitorPage.screenshot({path:'test-results/promo-mobile.png',fullPage:true,caret:'initial'});
  assert.deepEqual(errors,[]);
  console.log('PASS: admin removes via UI, owner receives reason, public listing disappears, admin logout and mobile login');

@@ -74,15 +74,14 @@ test('stale editor and invalid pending approvals are rejected',async()=>{
  await state.db.update(schema.listings).set({moderationStatus:'pending',title:''}).where(eq(schema.listings.id,id));
  expect((await moderate(id,staff,'approve',undefined,30)).ok).toBe(false);
 });
-test('test OTP is shown without a network request, sign-in works, code cannot be reused',async()=>{
+test('retired SMS routes never send messages or create sessions',async()=>{
  const network=vi.spyOn(globalThis,'fetch').mockRejectedValue(new Error('No external network allowed'));
- const phone='+998909991122';const response=await otp(req({phone}),ctx());expect(response.status).toBe(200);
- const result=await response.json();expect(result.devMode).toBe(true);expect(result.devCode).toMatch(/^\d{6}$/);
- expect((await verify(req({phone,code:result.devCode}),ctx())).status).toBe(200);expect(state.cookie.get('oi_session')).toBeTruthy();
- expect((await verify(req({phone,code:result.devCode}),ctx())).status).toBe(400);expect(network).not.toHaveBeenCalled();network.mockRestore();
+ const phone='+998909991122';const response=await otp(req({phone}),ctx());expect(response.status).toBe(410);
+ expect(await response.json()).not.toHaveProperty('devCode');
+ expect((await verify(req({phone,code:'123456'}),ctx())).status).toBe(410);expect(network).not.toHaveBeenCalled();network.mockRestore();
 });
 test('production refuses dev OTP even if flag is enabled',async()=>{
- Object.assign(process.env,{NODE_ENV:'production'});const r=await otp(req({phone:'+998909991133'}),ctx());expect(r.status).toBe(503);expect(await r.json()).not.toHaveProperty('devCode');Object.assign(process.env,{NODE_ENV:'test'});
+ Object.assign(process.env,{NODE_ENV:'production'});const r=await otp(req({phone:'+998909991133'}),ctx());expect(r.status).toBe(410);expect(await r.json()).not.toHaveProperty('devCode');Object.assign(process.env,{NODE_ENV:'test'});
 });
 test('unchanged full form saves do not hide an approved listing',async()=>{
  const {toForm}=await import('../src/lib/listing-input');
@@ -121,7 +120,7 @@ test('explicit test mode overrides old real-provider credentials',async()=>{
  const original={SMS_PROVIDER:process.env.SMS_PROVIDER,ESKIZ_EMAIL:process.env.ESKIZ_EMAIL,ESKIZ_PASSWORD:process.env.ESKIZ_PASSWORD};
  Object.assign(process.env,{APP_MODE:'test',SMS_PROVIDER:'eskiz',ESKIZ_EMAIL:'old@example.com',ESKIZ_PASSWORD:'old-credential'});
  const network=vi.spyOn(globalThis,'fetch').mockRejectedValue(new Error('Network must not be used'));
- try { const response=await otp(req({phone:'+998909991144'}),ctx());expect(response.status).toBe(200);expect((await response.json()).devMode).toBe(true);expect(network).not.toHaveBeenCalled(); }
+  try { const response=await otp(req({phone:'+998909991144'}),ctx());expect(response.status).toBe(410);expect(await response.json()).not.toHaveProperty('devCode');expect(network).not.toHaveBeenCalled(); }
  finally {delete process.env.APP_MODE;Object.assign(process.env,original);network.mockRestore();}
 });
 
@@ -150,6 +149,7 @@ test('demo login is disabled outside embedded local testing and cannot choose ar
 });
 
 test('promo guest listings require admin approval, edits and images require reapproval, removal notifies', async () => {
+ vi.stubEnv('ALLOW_GUEST_LOGIN', 'true');
  vi.stubEnv('PROMO_MODE', 'true');
  const previous = state.user;
  const { getCurrentUser: realCurrentUser } = await vi.importActual<typeof import('../src/lib/auth')>('../src/lib/auth');
@@ -198,7 +198,7 @@ test('promo guest listings require admin approval, edits and images require reap
   expect((await availability(req({action:'set',to:'available'}),ctx(lid))).status).toBe(403);
   expect((await patch(req({fields:{title:'Attempt to restore'}},'PATCH'),ctx(lid))).status).toBe(409);
   const network=vi.spyOn(globalThis,'fetch').mockRejectedValue(new Error('No SMS during promo'));
-  expect((await otp(req({phone:'+998901234555'}),ctx())).status).toBe(503);
+  expect((await otp(req({phone:'+998901234555'}),ctx())).status).toBe(410);
   expect(network).not.toHaveBeenCalled();network.mockRestore();
  } finally { state.user=previous; vi.unstubAllEnvs(); }
 });
@@ -222,24 +222,11 @@ test('admin password uses a separate expiring session and password changes inval
  } finally { vi.unstubAllEnvs(); }
 });
 
-test('turning promo off requires SMS and preserves guest listings only after successful verification',async()=>{
- const previous=state.user;vi.stubEnv('PROMO_MODE','true');state.cookie.clear();state.user=null;
- const actual=await vi.importActual<typeof import('../src/lib/auth')>('../src/lib/auth');
+test('promo alone cannot create anonymous accounts after identity login rollout',async()=>{
+ const previous=state.user;vi.stubEnv('PROMO_MODE','true');vi.stubEnv('ALLOW_GUEST_LOGIN','false');state.cookie.clear();state.user=null;
  const {POST:guest}=await import('../src/app/api/auth/guest/route');
  try {
-  expect((await guest(req(),ctx())).status).toBe(200);const visitor=await actual.getCurrentUser();state.user=visitor;
-  const response=await create(req(),ctx());expect(response.status).toBe(201);const lid=(await response.json()).id;
-  await state.db.insert(schema.notifications).values({userId:visitor!.id,title:'Preserve this notification'});
-  vi.stubEnv('PROMO_MODE','false');
+  expect((await guest(req(),ctx())).status).toBe(401);
   expect((await create(req(),ctx())).status).toBe(401);
-  expect((await submit(req(),ctx(lid))).status).toBe(401);
-  const phone='+998909991155';const challenge=await otp(req({phone}),ctx());expect(challenge.status).toBe(200);const {devCode}=await challenge.json();
-  const wrong=devCode==='000000'?'000001':'000000';expect((await verify(req({phone,code:wrong}),ctx())).status).toBe(400);
-  expect((await state.db.select().from(schema.listings).where(eq(schema.listings.id,lid)))[0].ownerId).toBe(visitor!.id);
-  expect((await verify(req({phone,code:devCode}),ctx())).status).toBe(200);
-  const verified=await actual.getCurrentUser();expect(verified!.phone).toBe(phone);
-  expect((await state.db.select().from(schema.listings).where(eq(schema.listings.id,lid)))[0].ownerId).toBe(verified!.id);
-  expect((await state.db.select().from(schema.notifications).where(eq(schema.notifications.userId,verified!.id))).some((n:any)=>n.title==='Preserve this notification')).toBe(true);
-  const [old]=await state.db.select().from(schema.users).where(eq(schema.users.id,visitor!.id));expect(old.isBlocked).toBe(true);
  }finally{state.user=previous;vi.unstubAllEnvs();}
 });

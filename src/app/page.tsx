@@ -4,7 +4,7 @@ import { getT } from "@/lib/i18n";
 import { parseFilters, searchListings } from "@/lib/search";
 import ListingCard from "@/components/ListingCard";
 import NewListingButton from "@/components/NewListingButton";
-import { promoEnabled } from "@/lib/launch-mode";
+import { promoEnabled, guestAccessEnabled } from "@/lib/launch-mode";
 import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +48,7 @@ export default async function Home() {
       <section className="mx-auto max-w-6xl px-4 py-8 text-center">
         <h2 className="text-lg font-semibold">{t("home.ownerTitle")}</h2>
         <p className="text-slate-600 mt-1">{promo ? (locale === "ru" ? "Разместите объявление бесплатно, без SMS. Оно появится после одобрения администратором." : "E’lonni bepul joylang.") : t("home.ownerBody")}</p>
-        <div className="mt-3"><NewListingButton loggedIn={!!user} promo={promo} className="rounded bg-accent text-white px-5 py-2.5 font-medium" /></div>
+        <div className="mt-3"><NewListingButton loggedIn={!!user} promo={guestAccessEnabled()} className="rounded bg-accent text-white px-5 py-2.5 font-medium" /></div>
       </section>
     </div>
   );

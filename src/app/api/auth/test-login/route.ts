@@ -4,10 +4,9 @@ import { db, schema as s } from "@/db/client";
 import { createSession } from "@/lib/auth";
 import { handle, sameOrigin } from "@/lib/guard";
 import { localTestEnabled, testAccounts } from "@/lib/test-mode";
-import { promoEnabled } from "@/lib/launch-mode";
 
 export const POST = handle(async req => {
-  if (!localTestEnabled() || promoEnabled()) return NextResponse.json({ error: "Topilmadi" }, { status: 404 });
+  if (!localTestEnabled()) return NextResponse.json({ error: "Topilmadi" }, { status: 404 });
   sameOrigin(req);
   const body = await req.json().catch(() => null);
   if (body?.account !== "admin" && body?.account !== "user") return NextResponse.json({ error: "Hisobni tanlang" }, { status: 400 });
