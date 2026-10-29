@@ -1,8 +1,24 @@
-// Rasm saqlash adapteri. Hozir faqat local (disk). S3 adapteri HALI ULANMAGAN: STORAGE_DRIVER=s3 aniq xato beradi.
+// Local development disk or private Cloudflare R2 bucket; database stores object keys.
 import { promises as fs } from "fs";
 import path from "path";
 import sharp from "sharp";
 import { randomUUID } from "crypto";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+
+export class StorageError extends Error {}
+let r2Client: S3Client | undefined;
+function remote() {
+  const driver = process.env.STORAGE_DRIVER ?? "local";
+  if (driver === "r2" || driver === "s3") return true;
+  if (driver !== "local" || process.env.VERCEL === "1") throw new StorageError("Rasm xotirasi sozlanmagan. Administrator R2 sozlamalarini tekshirishi kerak.");
+  return false;
+}
+function r2() {
+  const { R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET } = process.env;
+  if (!R2_ENDPOINT || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET) throw new StorageError("R2 rasm xotirasi sozlamalari yetishmaydi.");
+  r2Client ??= new S3Client({ region: "auto", endpoint: R2_ENDPOINT, credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY }, maxAttempts: 3 });
+  return { client: r2Client, Bucket: R2_BUCKET };
+}
 
 export class ImageError extends Error {}
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -16,13 +32,26 @@ function root() {
 }
 export async function putObject(key: string, buf: Buffer) {
   if (!KEY_RE.test(key)) throw new Error("Noto'g'ri kalit");
+  if (remote()) {
+    const { client, Bucket } = r2();
+    try { await client.send(new PutObjectCommand({ Bucket, Key: key, Body: buf, ContentType: "image/webp" })); }
+    catch { throw new StorageError("Rasm xotirasiga yozib bo‘lmadi. Keyinroq qayta urinib ko‘ring."); }
+    return;
+  }
   const p = path.join(root(), key); await fs.mkdir(path.dirname(p), { recursive: true }); await fs.writeFile(p, buf);
 }
 export async function getObject(key: string): Promise<Buffer | null> {
   if (!KEY_RE.test(key)) return null;
+  if (remote()) {
+    const { client, Bucket } = r2();
+    try { const result = await client.send(new GetObjectCommand({ Bucket, Key: key })); return result.Body ? Buffer.from(await result.Body.transformToByteArray()) : null; }
+    catch (e) { if ((e as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) return null; throw new StorageError("Rasm xotirasidan o‘qib bo‘lmadi"); }
+  }
   return fs.readFile(path.join(root(), key)).catch(() => null);
 }
 export async function deleteObject(key: string) {
+  if (!KEY_RE.test(key)) return;
+  if (remote()) { const { client, Bucket } = r2(); await client.send(new DeleteObjectCommand({ Bucket, Key: key })); return; }
   if (KEY_RE.test(key)) await fs.unlink(path.join(root(), key)).catch(() => {});
 }
 
@@ -45,7 +74,7 @@ export async function storeImage(input: Buffer) {
   const p = await processImage(input); const id = randomUUID();
   const key = `img/${id}.webp`, thumbKey = `img/${id}.thumb.webp`;
   try { await putObject(key, p.main); await putObject(thumbKey, p.thumb); }
-  catch (e) { await Promise.all([deleteObject(key), deleteObject(thumbKey)]); throw e; }
+  catch (e) { await Promise.allSettled([deleteObject(key), deleteObject(thumbKey)]); throw e; }
   return { key, thumbKey, width: p.width, height: p.height };
 }
 export const mediaUrl = (key: string | null | undefined) => (key && KEY_RE.test(key) ? `/api/media/${key}` : null);

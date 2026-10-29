@@ -14,7 +14,9 @@
     "admin:hash": "node scripts/hash-admin-password.mjs",
     "bot:webhook": "node --import tsx scripts/setup-telegram-webhook.ts",
     "auth:check": "node --import tsx scripts/check-auth.ts",
+    "storage:check": "node --import tsx scripts/check-storage.ts",
     "bot:poll": "node --import tsx scripts/run-telegram-bot.ts",
+    "bot:render": "node --import tsx scripts/render-bot.ts",
     "test": "vitest run",
     "expire-listings": "node --import tsx scripts/expire-listings.ts",
     "check-saved-searches": "node --import tsx scripts/check-saved-searches.ts",
@@ -30,9 +32,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1160.0",
     "@electric-sql/pglite": "^0.5.12",
     "@neon/config": "^1.9.5",
     "@neon/env": "^1.6.6",
+    "@radix-ui/react-select": "^2.4.1",
     "drizzle-orm": "^0.45.4",
     "jose": "^6.2.13",
     "leaflet": "^1.9.4",

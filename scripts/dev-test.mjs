@@ -20,7 +20,8 @@ try {
   prepareTest(env);
   console.log(`Sayt: http://localhost:${port}\nAdmin: http://localhost:${port}/admin (alohida login va parol)\nReklama rejimi: SMSsiz, bepul. E'lonlar admin tasdiqlagach chiqadi.`);
   const require = createRequire(import.meta.url);
-  const child = spawn(process.execPath, [require.resolve("next/dist/bin/next"), "dev", "--hostname", "127.0.0.1", "--port", String(port)], { stdio: "inherit", env });
+  // Webpack avoids the repeated Turbopack refresh observed with the embedded test server.
+  const child = spawn(process.execPath, [require.resolve("next/dist/bin/next"), "dev", "--webpack", "--hostname", "127.0.0.1", "--port", String(port)], { stdio: "inherit", env });
   child.on("error", error => { console.error(error.message); lock.close(); process.exitCode = 1; });
   child.on("exit", code => { lock.close(); process.exitCode = code ?? 0; });
   for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => child.kill(signal));

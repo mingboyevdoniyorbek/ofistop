@@ -12,6 +12,12 @@ function viewport(map: LMap) { const b = map.getBounds(); return [Math.max(-180,
 export default function ListingMap({ query, listHref, children }: { query: string; listHref: string; children?: ReactNode }) {
   const ru = useLocale() === "ru", router = useRouter();
   const box = useRef<HTMLDivElement>(null), mapRef = useRef<LMap | null>(null);
+  useEffect(() => {
+    if (!box.current) return;
+    const observer = new ResizeObserver(() => mapRef.current?.invalidateSize({ pan: false }));
+    observer.observe(box.current);
+    return () => observer.disconnect();
+  }, []);
   const [loading, setLoading] = useState(true), [error, setError] = useState("");
   const [tileError, setTileError] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -83,6 +89,11 @@ export default function ListingMap({ query, listHref, children }: { query: strin
   function searchHere() {
     if (!mapRef.current) return; const u = new URLSearchParams(query); u.set("bbox", viewport(mapRef.current)); u.set("view", "map"); u.delete("page"); router.push(`/joylar?${u}`, { scroll: false }); setMoved(false);
   }
+  function resetArea() {
+    try { sessionStorage.removeItem("ofistop-map-view"); } catch {}
+    mapRef.current?.setView(TASHKENT, 11);
+    router.push("/joylar?view=map", { scroll: false });
+  }
   function nearby() {
     if (!navigator.geolocation) { setError(ru ? "Геолокация недоступна" : "Joylashuv aniqlanmadi"); return; }
     navigator.geolocation.getCurrentPosition(p => mapRef.current?.setView([p.coords.latitude, p.coords.longitude], 15), () => setError(ru ? "Разрешите доступ к местоположению или выберите район вручную." : "Joylashuvga ruxsat bering yoki hududni xaritadan tanlang."), { timeout: 10000, maximumAge: 60000 });
@@ -104,7 +115,7 @@ export default function ListingMap({ query, listHref, children }: { query: strin
       </div>
       {error && <div role="alert" className="absolute inset-x-3 top-24 z-[500] rounded-2xl bg-white p-4 text-sm shadow"><p>{error}</p><button className="mt-2 text-brand underline" onClick={() => setAttempt(x => x + 1)}>{ru ? "Повторить" : "Qayta urinish"}</button></div>}
       {tileError && !error && count > 0 && <div role="status" className="absolute inset-x-3 top-24 z-[500] rounded-xl bg-white/95 p-3 text-xs shadow">{ru ? "Фон карты не загрузился. Проверьте подключение; объявления доступны в списке." : "Xarita foni yuklanmadi. Internetni tekshiring; e’lonlarni ro‘yxatda ko‘rishingiz mumkin."} <button className="text-brand underline" onClick={() => setAttempt(x=>x+1)}>{ru ? "Повторить" : "Qayta urinish"}</button></div>}
-      {!loading && !error && count === 0 && <div className="absolute inset-x-4 top-28 z-[500] rounded-2xl bg-white p-4 text-center text-sm shadow"><p>{ru ? "Здесь нет подходящих объявлений. Измените масштаб или фильтры." : "Bu hududda mos joy topilmadi. Xaritani uzoqlashtiring yoki filtrlarni kengaytiring."}</p><a href="/joylar?view=map" className="text-brand underline">{ru ? "Сбросить фильтры" : "Filtrlarni tozalash"}</a></div>}
+      {!loading && !error && count === 0 && <div role="status" className="absolute inset-x-3 bottom-24 z-[500] rounded-2xl bg-white/95 p-3 text-center text-sm shadow"><p>{ru ? "В этой области нет подходящих опубликованных объявлений с отметкой на карте." : "Bu hududda xaritada joyi belgilangan, tasdiqlangan e’lon topilmadi."}</p><button type="button" onClick={resetArea} className="mt-2 text-brand underline">{ru ? "Сбросить фильтры и область" : "Filtr va xarita hududini tiklash"}</button></div>}
       <div className="absolute bottom-8 left-3 right-3 z-[500] flex justify-between gap-2"><button onClick={() => setSheet(true)} className="rounded-full bg-brand px-4 py-3 text-sm text-white shadow lg:hidden">{ru ? "Результаты" : "Natijalar"} ↑</button><button onClick={nearby} className="ml-auto rounded-full bg-white px-4 py-3 text-sm font-semibold shadow">⌖ {ru ? "Рядом со мной" : "Menga yaqin"}</button></div>
     </div>
     {!fullscreen && <a className="text-sm text-brand underline lg:col-span-2" href={listHref}>{ru ? "Показать списком" : "Ro‘yxatda ko‘rish"}</a>}

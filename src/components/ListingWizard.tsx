@@ -5,6 +5,8 @@ import { labels, priceLabel, totalLabel, primaryPrice } from "@/lib/format";
 import type { MsgKey } from "@/messages/uz";
 import { useLocale, useT } from "./I18nProvider";
 import PickMap from "./PickMap";
+import InlineSelect from "./InlineSelect";
+import { prepareUpload } from "@/lib/prepare-upload";
 import { parseMajorToMinor } from "@/lib/money";
 import { STEP_OF as ORIGINAL_STEPS, USES_FLOOR, USES_SEATS, type Form } from "@/lib/listing-input";
 
@@ -105,14 +107,22 @@ export default function ListingWizard(p: Props) {
 
   async function upload(files: FileList | null) {
     if (!files?.length) return; setBusy(true); setMsg(null); setUpRes([]);
-    const fd = new FormData(); [...files].forEach((x) => fd.append("files", x));
-    const r = await fetch(`/api/listings/${p.id}/images`, { method: "POST", body: fd }).catch(() => null);
-    const d = await r?.json().catch(() => ({})); setBusy(false); if (fileRef.current) fileRef.current.value = "";
-    if (!r) return setMsg({ ok: false, t: t("wiz.netUpload") });
-    if (d.updatedAt) version.current = d.updatedAt;
-    if (d.images) setImages(d.images); if (d.results) setUpRes(d.results);
-    if (!r.ok && !d.results) setMsg({ ok: false, t: d.error ?? t("wiz.uploadFail") });
-    if (d.remoderation) setMsg({ ok: true, t: t("wiz.imgRemod") });
+    const results: { name: string; ok: boolean; error?: string }[] = [];
+    try {
+      for (const file of Array.from(files).slice(0, Math.max(0, 15 - images.length))) {
+        try {
+          const fd = new FormData(); fd.append("files", await prepareUpload(file));
+          const r = await fetch(`/api/listings/${p.id}/images`, { method: "POST", body: fd });
+          const d = await r.json().catch(() => ({}));
+          if (d.updatedAt) version.current = d.updatedAt;
+          if (d.images) setImages(d.images);
+          if (!r.ok || !d.results?.[0]?.ok) throw new Error(d.results?.[0]?.error ?? d.error ?? t("wiz.uploadFail"));
+          results.push({ name: file.name, ok: true });
+          if (d.remoderation) setMsg({ ok: true, t: t("wiz.imgRemod") });
+        } catch (e) { results.push({ name: file.name, ok: false, error: e instanceof Error ? e.message : t("wiz.netUpload") }); }
+        setUpRes([...results]);
+      }
+    } finally { setBusy(false); if (fileRef.current) fileRef.current.value = ""; }
   }
   async function imgCall(url: string, init: RequestInit) {
     setBusy(true); const r = await fetch(url, init).catch(() => null); const d = await r?.json().catch(() => ({})); setBusy(false);
@@ -139,7 +149,7 @@ export default function ListingWizard(p: Props) {
     ...x, currency: v,
     ...(x.depositCurrency === x.currency ? { depositCurrency: v } : {}), ...(x.commissionCurrency === x.currency ? { commissionCurrency: v } : {}), ...(x.serviceFeeCurrency === x.currency ? { serviceFeeCurrency: v } : {}),
   });
-  const cur = (k: keyof F) => <select aria-label={t("f.currency")} className="rounded border border-slate-300 px-2" value={f[k] as string} onChange={(e) => setCur(k, e.target.value as "UZS" | "USD")}><option>UZS</option><option>USD</option></select>;
+  const cur = (k: keyof F) => <InlineSelect aria-label={t("f.currency")} className="rounded border border-slate-300 px-2" value={f[k] as string} onChange={(e) => setCur(k, e.target.value as "UZS" | "USD")}><option>UZS</option><option>USD</option></InlineSelect>;
 
   const amount = parseMajorToMinor(f.priceAmount);
   const price = { amount, currency: f.currency, period: f.pricePeriod, basis: f.priceBasis, negotiable: f.priceNegotiable };
@@ -159,20 +169,20 @@ export default function ListingWizard(p: Props) {
 
       <fieldset disabled={(busy && !backgroundSaving) || !editable} className="space-y-4">
         {step === 1 && <>
-          <L errors={errors} k="category" label={t("wiz.f.category")}><select className={inp} value={f.category} onChange={(e) => setF(x => ({ ...x, category: e.target.value as F["category"], priceBasis: e.target.value !== "coworking" && x.priceBasis === "per_seat" ? "whole" : x.priceBasis }))}>{Object.entries(LB.category).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></L>
+          <L errors={errors} k="category" label={t("wiz.f.category")}><InlineSelect className={inp} value={f.category} onChange={(e) => setF(x => ({ ...x, category: e.target.value as F["category"], priceBasis: e.target.value !== "coworking" && x.priceBasis === "per_seat" ? "whole" : x.priceBasis }))}>{Object.entries(LB.category).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</InlineSelect></L>
           <L errors={errors} k="title" label={t("wiz.f.title")} hint={t("wiz.h.title")}><input className={inp} maxLength={120} {...bind("title")} /></L>
           <L errors={errors} k="description" label={t("wiz.f.description")} hint={t("wiz.h.description")}><textarea className={inp} rows={6} maxLength={5000} {...bind("description")} /></L>
-          <L errors={errors} k="posterType" label={t("prof.poster")}><select className={inp} {...bind("posterType")}>{Object.entries(LB.poster).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></L>
+          <L errors={errors} k="posterType" label={t("prof.poster")}><InlineSelect className={inp} {...bind("posterType")}>{Object.entries(LB.poster).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</InlineSelect></L>
           <L errors={errors} k="centerId" label={t("wiz.f.center")} hint={p.centers.length ? t("wiz.h.centerYes") : t("wiz.h.centerNo")}>
-            <select className={inp} value={f.centerId ?? ""} onChange={(e) => set("centerId", e.target.value || null)}><option value="">{t("wiz.noCenter")}</option>{p.centers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></L>
+            <InlineSelect className={inp} value={f.centerId ?? ""} onChange={(e) => set("centerId", e.target.value || null)}><option value="">{t("wiz.noCenter")}</option>{p.centers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</InlineSelect></L>
           {f.centerId && <>
             <L errors={errors} k="unitCode" label={t("wiz.f.unitCode")} hint={t("wiz.h.unitCode")}><input className={inp} maxLength={40} {...bind("unitCode")} /></L>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.unitCodePublic} onChange={(e) => set("unitCodePublic", e.target.checked)} />{t("wiz.unitPublic")}</label></>}
         </>}
 
         {step === 2 && <>
-          <L errors={errors} k="regionId" label={t("f.region")}><select className={inp} value={f.regionId} onChange={(e) => { set("regionId", Number(e.target.value)); set("districtId", null); }} {...bad("regionId")}>{p.regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></L>
-          <L errors={errors} k="districtId" label={t("f.district")} hint={distOpts.length ? undefined : t("wiz.h.noDistricts")}><select className={inp} value={f.districtId ?? ""} onChange={(e) => set("districtId", e.target.value ? Number(e.target.value) : null)}><option value="">{t("wiz.notSelected")}</option>{distOpts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></L>
+          <L errors={errors} k="regionId" label={t("f.region")}><InlineSelect className={inp} value={f.regionId} onChange={(e) => { set("regionId", Number(e.target.value)); set("districtId", null); }} {...bad("regionId")}>{p.regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</InlineSelect></L>
+          <L errors={errors} k="districtId" label={t("f.district")} hint={distOpts.length ? undefined : t("wiz.h.noDistricts")}><InlineSelect className={inp} value={f.districtId ?? ""} onChange={(e) => set("districtId", e.target.value ? Number(e.target.value) : null)}><option value="">{t("wiz.notSelected")}</option>{distOpts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</InlineSelect></L>
           <L errors={errors} k="address" label={t("wiz.f.address")}><input className={inp} maxLength={200} {...bind("address")} /></L>
           <fieldset className="rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("wiz.coords")}</legend>
             <p className="mb-2 text-xs text-slate-500">{t("wiz.coordsHint")}</p>
@@ -189,24 +199,24 @@ export default function ListingWizard(p: Props) {
             {floors && <L errors={errors} k="totalFloors" label={t("wiz.f.totalFloors")}><input className={inp} inputMode="numeric" {...bind("totalFloors")} /></L>}
             {seats && <L errors={errors} k="seats" label={t("wiz.f.seats")}><input className={inp} inputMode="numeric" {...bind("seats")} /></L>}
             <L errors={errors} k="roomsCount" label={t("wiz.f.rooms")}><input className={inp} inputMode="numeric" {...bind("roomsCount")} /></L>
-            <L errors={errors} k="furnished" label={t("wiz.f.furnished")}><select className={inp} {...bind("furnished")}><option value="">{t("wiz.unspecified")}</option><option value="1">{t("f.furnYes")}</option><option value="0">{t("f.furnNo")}</option></select></L>
+            <L errors={errors} k="furnished" label={t("wiz.f.furnished")}><InlineSelect className={inp} {...bind("furnished")}><option value="">{t("wiz.unspecified")}</option><option value="1">{t("f.furnYes")}</option><option value="0">{t("f.furnNo")}</option></InlineSelect></L>
           </div>
           <fieldset className="space-y-3 rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("f.price")}</legend>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]"><L errors={errors} k="priceAmount" label={t("wiz.f.amount")}><input className={inp} inputMode="decimal" {...bind("priceAmount")} /></L><div className="self-end">{cur("currency")}</div></div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <L errors={errors} k="pricePeriod" label={t("wiz.f.period")}><select className={inp} {...bind("pricePeriod")}><option value="month">{t("wiz.per.month")}</option><option value="day">{t("wiz.per.day")}</option><option value="hour">{t("wiz.per.hour")}</option></select></L>
-              <L errors={errors} k="priceBasis" label={t("wiz.f.basis")}><select className={inp} {...bind("priceBasis")}><option value="whole">{t("wiz.b.whole")}</option><option value="per_m2">{t("wiz.b.per_m2")}</option>{seats && <option value="per_seat">{t("wiz.b.per_seat")}</option>}</select></L></div>
+              <L errors={errors} k="pricePeriod" label={t("wiz.f.period")}><InlineSelect className={inp} {...bind("pricePeriod")}><option value="month">{t("wiz.per.month")}</option><option value="day">{t("wiz.per.day")}</option><option value="hour">{t("wiz.per.hour")}</option></InlineSelect></L>
+              <L errors={errors} k="priceBasis" label={t("wiz.f.basis")}><InlineSelect className={inp} {...bind("priceBasis")}><option value="whole">{t("wiz.b.whole")}</option><option value="per_m2">{t("wiz.b.per_m2")}</option>{seats && <option value="per_seat">{t("wiz.b.per_seat")}</option>}</InlineSelect></L></div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.priceNegotiable} onChange={(e) => set("priceNegotiable", e.target.checked)} />{t("wiz.negotiable")}</label>
             <p className="rounded bg-slate-50 p-2 text-sm" aria-live="polite">{t("wiz.preview")} <strong>{priceLabel(price, locale)}</strong>{total ? ` · ${total}` : ""}</p></fieldset>
           <fieldset className="space-y-3 rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("wiz.extra")}</legend>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]"><L errors={errors} k="depositAmount" label={t("wiz.f.deposit")}><input className={inp} inputMode="decimal" {...bind("depositAmount")} /></L><div className="self-end">{cur("depositCurrency")}</div></div>
-            <L errors={errors} k="commissionType" label={t("wiz.f.commission")}><select className={inp} {...bind("commissionType")}><option value="none">{t("wiz.c.none")}</option><option value="fixed">{t("wiz.c.fixed")}</option><option value="percent">{t("wiz.c.percent")}</option></select></L>
+            <L errors={errors} k="commissionType" label={t("wiz.f.commission")}><InlineSelect className={inp} {...bind("commissionType")}><option value="none">{t("wiz.c.none")}</option><option value="fixed">{t("wiz.c.fixed")}</option><option value="percent">{t("wiz.c.percent")}</option></InlineSelect></L>
             {f.commissionType === "fixed" && <div className="grid gap-3 sm:grid-cols-[1fr_auto]"><L errors={errors} k="commissionFixed" label={t("wiz.f.commFixed")}><input className={inp} inputMode="decimal" {...bind("commissionFixed")} /></L><div className="self-end">{cur("commissionCurrency")}</div></div>}
             {f.commissionType === "percent" && <div className="grid gap-3 sm:grid-cols-2"><L errors={errors} k="commissionPercent" label={t("wiz.f.commPct")}><input className={inp} inputMode="decimal" {...bind("commissionPercent")} /></L>
-              <L errors={errors} k="commissionPercentBase" label={t("wiz.f.commBase")}><select className={inp} {...bind("commissionPercentBase")}><option value="monthly_rent">{t("wiz.cb.monthly")}</option><option value="annual_rent">{t("wiz.cb.annual")}</option></select></L></div>}
-            <L errors={errors} k="utilities" label={t("wiz.f.utilities")}><select className={inp} {...bind("utilities")}><option value="">{t("wiz.unspecified")}</option><option value="included">{t("wiz.u.included")}</option><option value="separate">{t("wiz.u.separate")}</option><option value="partly">{t("wiz.u.partly")}</option></select></L>
+              <L errors={errors} k="commissionPercentBase" label={t("wiz.f.commBase")}><InlineSelect className={inp} {...bind("commissionPercentBase")}><option value="monthly_rent">{t("wiz.cb.monthly")}</option><option value="annual_rent">{t("wiz.cb.annual")}</option></InlineSelect></L></div>}
+            <L errors={errors} k="utilities" label={t("wiz.f.utilities")}><InlineSelect className={inp} {...bind("utilities")}><option value="">{t("wiz.unspecified")}</option><option value="included">{t("wiz.u.included")}</option><option value="separate">{t("wiz.u.separate")}</option><option value="partly">{t("wiz.u.partly")}</option></InlineSelect></L>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]"><L errors={errors} k="serviceFee" label={t("wiz.f.serviceFee")}><input className={inp} inputMode="decimal" {...bind("serviceFee")} /></L><div className="self-end">{cur("serviceFeeCurrency")}</div></div>
-            <L errors={errors} k="serviceFeePeriod" label={locale === "ru" ? "Период платы за обслуживание" : "Xizmat to‘lovi davri"}><select className={inp} {...bind("serviceFeePeriod")}><option value="month">{locale === "ru" ? "Ежемесячно" : "Har oy"}</option><option value="once">{locale === "ru" ? "Один раз" : "Bir martalik"}</option></select></L>
+            <L errors={errors} k="serviceFeePeriod" label={locale === "ru" ? "Период платы за обслуживание" : "Xizmat to‘lovi davri"}><InlineSelect className={inp} {...bind("serviceFeePeriod")}><option value="month">{locale === "ru" ? "Ежемесячно" : "Har oy"}</option><option value="once">{locale === "ru" ? "Один раз" : "Bir martalik"}</option></InlineSelect></L>
             <div className="grid gap-3 sm:grid-cols-2"><L errors={errors} k="minTermMonths" label={t("wiz.f.minTerm")}><input className={inp} inputMode="numeric" {...bind("minTermMonths")} /></L>
               <L errors={errors} k="availableFrom" label={t("wiz.f.availFrom")} hint={t("wiz.h.availFrom")}><input type="date" className={inp} {...bind("availableFrom")} /></L></div></fieldset>
         </>}

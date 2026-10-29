@@ -1,6 +1,7 @@
 import "./load-env";
 import { tgCall, telegramEnabled } from "../src/lib/telegram";
 async function main() {
+  if (process.env.TELEGRAM_BOT_HOST === "render") throw new Error("Render webhookni o‘zi ulaydi");
   if (!telegramEnabled() || !process.env.APP_URL) throw new Error("APP_URL va TELEGRAM_* sozlamalarini kiriting.");
   const origin = new URL(process.env.APP_URL);
   if (origin.protocol !== "https:") throw new Error("Webhook uchun HTTPS domen kerak.");

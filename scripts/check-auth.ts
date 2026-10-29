@@ -1,5 +1,6 @@
 import "./load-env";
 import { Pool } from "pg";
+import { adminPasswordConfigured } from "../src/lib/admin-password";
 
 // Read-only deployment diagnosis. Never prints secrets, SQL parameters or provider errors.
 let failed = false;
@@ -15,6 +16,7 @@ async function main() {
   } catch {}
   report(!!origin, "APP_URL: asosiy HTTPS domen (path/query bo'lmasin)");
   report((process.env.SESSION_SECRET?.length ?? 0) >= 32, "SESSION_SECRET: kamida 32 belgi");
+  report(adminPasswordConfigured(), "ADMIN_PASSWORD_HASH: scrypt hash (oddiy parol emas)");
   report(!!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET, "Google Client ID va Secret mavjudligi (Google tasdiqlashi kirishda tekshiriladi)");
   report(!!process.env.DATABASE_URL, "DATABASE_URL mavjudligi");
   if (process.env.DATABASE_URL) {
@@ -48,7 +50,11 @@ async function main() {
       const me = await read("getMe");
       report(me.username?.toLowerCase() === username.toLowerCase(), "TELEGRAM_BOT_USERNAME shu tokenning botiga tegishli");
       const info = await read("getWebhookInfo");
-      report(!!origin && info.url === `${origin}/api/telegram/webhook`, "Webhook APP_URL/api/telegram/webhook manziliga ulangan");
+      if (process.env.TELEGRAM_BOT_HOST === "render") {
+        const actual = new URL(info.url || "https://invalid.invalid");
+        const expected = process.env.BOT_PUBLIC_URL ? `${new URL(process.env.BOT_PUBLIC_URL).origin}/telegram/webhook` : null;
+        report(expected ? info.url === expected : actual.protocol === "https:" && actual.hostname.endsWith(".onrender.com") && actual.pathname === "/telegram/webhook", "Webhook Render bot manziliga ulangan");
+      } else report(!!origin && info.url === `${origin}/api/telegram/webhook`, "Webhook APP_URL/api/telegram/webhook manziliga ulangan");
       report(!info.allowed_updates?.length || ["message", "callback_query"].every(type => info.allowed_updates.includes(type)), "Webhook kontakt va tasdiqlash tugmasini qabul qiladi");
       console.log(`Telegram kutayotgan update soni: ${Number(info.pending_update_count) || 0}`);
       if (info.last_error_date) console.log("Telegram oldingi yetkazish xatosini qayd etgan; Vercel webhook loglarini tekshiring.");

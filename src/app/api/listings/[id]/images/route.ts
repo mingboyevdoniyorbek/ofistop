@@ -3,7 +3,7 @@ import { count, eq, max } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema as s } from "@/db/client";
 import { handle, requireUser, loadEditable, HttpError } from "@/lib/guard";
-import { ImageError, MAX_IMAGES, MAX_UPLOAD_BYTES, MAX_IMAGE_BYTES, storeImage, deleteObject } from "@/lib/storage";
+import { ImageError, StorageError, MAX_IMAGES, MAX_UPLOAD_BYTES, MAX_IMAGE_BYTES, storeImage, deleteObject } from "@/lib/storage";
 import { listImages, remoderateIfApproved } from "@/lib/listing-images";
 import { hit } from "@/lib/ratelimit";
 
@@ -27,7 +27,7 @@ export const POST = handle(async (req, ctx) => {
   const results: { name: string; ok: boolean; error?: string }[] = [];
   for (const f of files) {
     try { if (f.size > MAX_IMAGE_BYTES) throw new ImageError("Fayl hajmi 8 MB dan oshmasligi kerak"); stored.push(await storeImage(Buffer.from(await f.arrayBuffer()))); results.push({ name: f.name, ok: true }); }
-    catch (e) { results.push({ name: f.name, ok: false, error: e instanceof ImageError ? e.message : "Rasmni qayta ishlab bo'lmadi" }); }
+    catch (e) { results.push({ name: f.name, ok: false, error: e instanceof ImageError || e instanceof StorageError ? e.message : "Rasmni qayta ishlab bo'lmadi" }); }
   }
   let remod = false;
   if (stored.length) {

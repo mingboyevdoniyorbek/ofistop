@@ -1,5 +1,8 @@
 # OfisTop: Google va Telegram orqali kirish
 
+> Yangi joylashtirish tartibi: [Vercel + Neon + R2 + Render](DEPLOY-VERCEL-R2-RENDER.md).
+> Bot Render'da ishlatilganda `bot:webhook` buyrug'ini bajarmang: Render ishga tushganda webhookni o'zi ulaydi. Quyidagi Vercel webhook ko'rsatmalari eski joylashtirish varianti uchun.
+
 Email orqali kirish olib tashlangan: UI, xat yuborish va eski tasdiqlash endpointlari o'chirilgan.
 RESEND_API_KEY va EMAIL_FROM endi kerak emas. SMS ham o'chirilgan.
 Google tasdiqlagan email hisob identifikatori sifatida saqlanadi; xat yuborilmaydi.

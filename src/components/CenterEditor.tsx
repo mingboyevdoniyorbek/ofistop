@@ -1,4 +1,5 @@
 "use client";
+import { prepareUpload } from "@/lib/prepare-upload";
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import {useLocale} from "./I18nProvider";
@@ -20,6 +21,6 @@ export default function CenterEditor({center,regions,districts,amenities,images,
  <button className="rounded bg-brand p-2 text-white">{ru?'Сохранить':'Saqlash'}</button></fieldset></form>
  <p className="mt-4 text-sm text-slate-500">{ru?'Первое фото — обложка страницы.':'Birinchi rasm — sahifa muqovasi.'}</p>
  <div className="mt-3 flex flex-wrap gap-2">{images.map((im,i)=><div key={im.id}>{im.url&&<img src={im.url} alt="" className="h-24 w-32 object-cover"/>}{i>0&&<button disabled={busy} type="button" className="mr-2 text-brand underline" onClick={()=>patch({action:'reorder_images',order:[im.id,...images.filter(x=>x.id!==im.id).map(x=>x.id)]})}>{ru?'Обложка':'Muqova'}</button>}<button disabled={busy} type="button" className="text-red-700 underline" onClick={()=>window.confirm(ru?'Удалить фотографию?':'Rasm o‘chirilsinmi?')&&patch({action:'delete_image',imageId:im.id})}>{ru?'Удалить':'O‘chirish'}</button></div>)}</div>
- <label className="mt-3 block">{ru?'Фотография (до 8 МБ)':'Rasm (8 MB gacha)'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy||images.length>=8} onChange={e=>{const file=e.target.files?.[0];if(file){const fd=new FormData();fd.set('file',file);call({method:'POST',body:fd});}e.target.value='';}}/></label>
+ <label className="mt-3 block">{ru?'Фотография (до 8 МБ)':'Rasm (8 MB gacha)'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy||images.length>=8} onChange={async e=>{const file=e.target.files?.[0];e.target.value='';if(!file)return;setBusy(true);try{const fd=new FormData();fd.set('file',await prepareUpload(file));await call({method:'POST',body:fd});}catch(error){setMsg(error instanceof Error?error.message:'Upload failed');}finally{setBusy(false);}}}/></label>
  {msg&&<p role="status" className="mt-2">{msg}</p>}</details>;
 }
