@@ -1,19 +1,19 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { labels, priceLabel, totalLabel } from "@/lib/format";
+import { labels, priceLabel, totalLabel, primaryPrice } from "@/lib/format";
 import type { MsgKey } from "@/messages/uz";
 import { useLocale, useT } from "./I18nProvider";
 import PickMap from "./PickMap";
 import { parseMajorToMinor } from "@/lib/money";
-import { STEP_OF, USES_FLOOR, USES_SEATS, type Form } from "@/lib/listing-input";
+import { STEP_OF as ORIGINAL_STEPS, USES_FLOOR, USES_SEATS, type Form } from "@/lib/listing-input";
 
 type F = Required<Form>;
 type Img = { id: string; url: string | null; thumbUrl: string | null; isPrimary: boolean };
 interface Props { promo?: boolean; updatedAt: string; id: string; slug: string; initial: F; images: Img[]; moderation: "draft" | "pending" | "approved" | "rejected"; rejectionReason: string | null; archived: boolean;
   regions: { id: number; name: string }[]; districts: { id: number; regionId: number; name: string }[]; amenities: { code: string; name: string }[]; centers: { id: string; name: string }[] }
 
-const STEPS = ["wiz.s1", "wiz.s2", "wiz.s3", "wiz.s4", "wiz.s5", "wiz.s6"] as const;
+const STEP_OF = Object.fromEntries(Object.entries(ORIGINAL_STEPS).map(([key, step]) => [key, step <= 3 ? step : step === 4 ? 3 : 4]));
 /** Xatolar ro'yxatidagi maydon nomlari (forma yorliqlari bilan bir xil kalitlar). */
 const LABELS: Record<string, MsgKey> = { title: "wiz.f.title", description: "wiz.f.description", regionId: "f.region", districtId: "f.district", address: "wiz.f.address", areaM2: "f.area", priceAmount: "f.price", priceBasis: "wiz.f.basis", seats: "wiz.f.seats", commissionFixed: "wiz.f.commFixed", commissionPercent: "wiz.f.commPct", commissionPercentBase: "wiz.f.commBase", depositAmount: "wiz.l.deposit", contactPhone: "wiz.f.phone", telegramUsername: "prof.telegram", images: "wiz.l.images", lat: "wiz.lat", lng: "wiz.lng", floor: "wiz.f.floor", totalFloors: "wiz.f.totalFloors", minTermMonths: "wiz.f.minTerm", availableFrom: "wiz.f.availFrom", centerId: "wiz.f.center", unitCode: "wiz.f.unitCode", roomsCount: "wiz.f.rooms", serviceFee: "wiz.f.serviceFee" };
 const inp = "w-full rounded border border-slate-300 px-3 py-2.5 bg-white";
@@ -29,6 +29,7 @@ export default function ListingWizard(p: Props) {
   const router = useRouter();
   const version = useRef(p.updatedAt);
   const t = useT(); const locale = useLocale(); const LB = labels(locale);
+  const steps = locale === "ru" ? ["О помещении", "Адрес", "Цена и фотографии", "Проверка и отправка"] : ["Joy haqida", "Manzil", "Narx va rasmlar", "Tekshirish va yuborish"];
   const publishLabel = t("wiz.submitTitle");
   const [f, setF] = useState<F>(p.initial);
   const [saved, setSaved] = useState(JSON.stringify(p.initial));
@@ -152,8 +153,9 @@ export default function ListingWizard(p: Props) {
       {p.moderation === "rejected" && <p role="status" className="mb-3 rounded border border-red-300 bg-red-50 p-3 text-sm"><strong>{t("wiz.rejected")}</strong> {p.rejectionReason}. {t("wiz.rejectedFix")}</p>}
       {p.moderation === "approved" && <p role="status" className="mb-3 rounded bg-slate-50 p-3 text-sm">{t("wiz.approvedNote")}</p>}
       <ol className="mb-5 flex flex-wrap gap-2" aria-label={t("wiz.stepsAria")}>
-        {STEPS.map((key, i) => <li key={key}><button type="button" onClick={() => go(i + 1)} aria-current={step === i + 1 ? "step" : undefined} disabled={busy} className={`rounded-full border px-3 py-1 text-sm ${step === i + 1 ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{i + 1}. {t(key)}</button></li>)}
+        {steps.map((label, i) => <li key={i}><button type="button" onClick={() => go(i + 1)} aria-current={step === i + 1 ? "step" : undefined} disabled={busy} className={`rounded-full border px-3 py-1 text-sm ${step === i + 1 ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{i + 1}. {label}</button></li>)}
       </ol>
+          {Object.keys(errors).length > 0 && <div role="alert" className="mb-3 rounded border border-red-300 bg-red-50 p-3 text-sm"><p className="font-medium">{t("wiz.mustFill")}</p><ul className="mt-1 list-disc pl-5">{Object.entries(errors).map(([k, v]) => <li key={k}>{LABELS[k] ? t(LABELS[k]) : k}: {v} {STEP_OF[k] && <button type="button" onClick={() => setStep(STEP_OF[k])} className="text-brand underline">{t("wiz.fix")}</button>}</li>)}</ul></div>}
 
       <fieldset disabled={(busy && !backgroundSaving) || !editable} className="space-y-4">
         {step === 1 && <>
@@ -209,7 +211,7 @@ export default function ListingWizard(p: Props) {
               <L errors={errors} k="availableFrom" label={t("wiz.f.availFrom")} hint={t("wiz.h.availFrom")}><input type="date" className={inp} {...bind("availableFrom")} /></L></div></fieldset>
         </>}
 
-        {step === 4 && <>
+        {step === 3 && <>
           <section aria-labelledby="img-h"><h2 id="img-h" className="mb-1 font-medium">{t("wiz.images", { n: images.length })}</h2>
             <p className="mb-2 text-xs text-slate-500">{t("wiz.imgHint")}</p>
             <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={busy || !editable || images.length >= 15} onChange={(e) => upload(e.target.files)} aria-label={t("wiz.pickImg")} className="block w-full text-sm" />
@@ -227,26 +229,25 @@ export default function ListingWizard(p: Props) {
                   <button type="button" disabled={busy} onClick={() => window.confirm(t("wiz.delConfirm")) && imgCall(`/api/listings/${p.id}/images/${im.id}`, { method: "DELETE" })} className="rounded border border-red-300 px-1.5 py-0.5 text-red-700">{t("wiz.del")}</button>
                 </div></li>))}</ul></section>
           <fieldset className="rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("f.amenities")}</legend>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{p.amenities.map((a) => <label key={a.code} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.amenities.includes(a.code)} onChange={(e) => set("amenities", e.target.checked ? [...f.amenities, a.code] : f.amenities.filter((x) => x !== a.code))} />{a.name}</label>)}</div></fieldset>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{p.amenities.filter(a => f.amenities.includes(a.code) || !["three_phase", "truck_access"].includes(a.code) || ["warehouse", "production", "retail"].includes(f.category)).map((a) => <label key={a.code} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.amenities.includes(a.code)} onChange={(e) => set("amenities", e.target.checked ? [...f.amenities, a.code] : f.amenities.filter((x) => x !== a.code))} />{a.name}</label>)}</div></fieldset>
         </>}
 
-        {step === 5 && <>
+        {step === 4 && <>
           <L errors={errors} k="contactPhone" label={t("wiz.f.phone")} hint={t("wiz.h.phone")}><input className={inp} inputMode="tel" placeholder="+998 90 123 45 67" {...bind("contactPhone")} /></L>
           <L errors={errors} k="telegramUsername" label={t("prof.telegram")}><input className={inp} placeholder="@username" {...bind("telegramUsername")} /></L>
           <section aria-labelledby="pv"><h2 id="pv" className="mb-2 font-medium">{t("wiz.previewTitle")}</h2>
             <article className="max-w-xs overflow-hidden rounded-lg border border-slate-200 bg-white">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {images.find((x) => x.isPrimary)?.thumbUrl ? <img src={images.find((x) => x.isPrimary)!.thumbUrl!} alt="" className="aspect-[16/10] w-full object-cover" /> : <div className="grid aspect-[16/10] place-items-center bg-slate-100 text-sm text-slate-500">{t("card.noImg")}</div>}
-              <div className="space-y-1 p-3"><h3 className="font-semibold">{f.title || t("wiz.noTitle")}</h3><p className="font-bold text-brand">{priceLabel(price, locale)}</p>
-                {total && <p className="text-sm text-slate-600">{total}</p>}
+              <div className="space-y-1 p-3"><h3 className="font-semibold">{f.title || t("wiz.noTitle")}</h3><p className="font-bold text-brand">{primaryPrice(price, f.areaM2.replace(",", "."), locale)}</p>
+                {total && <p className="text-sm text-slate-600">{priceLabel(price, locale)}</p>}
                 <p className="text-sm text-slate-600">{f.areaM2 ? `${f.areaM2} ${t("unit.m2")}` : ""}{f.floor ? ` · ${t("card.floor", { n: f.floor })}` : ""}</p>
                 <p className="text-sm text-slate-600">{[p.districts.find((x) => x.id === f.districtId)?.name, p.regions.find((x) => x.id === f.regionId)?.name].filter(Boolean).join(", ")}</p>
                 <p className="text-xs text-slate-500">{LB.poster[f.posterType]}</p></div></article></section>
         </>}
 
-        {step === 6 && <section aria-labelledby="sub">
+        {step === 4 && <section aria-labelledby="sub">
           <h2 id="sub" className="mb-2 font-medium">{p.moderation === "draft" || p.moderation === "rejected" ? publishLabel : t("wiz.saveTitle")}</h2>
-          {Object.keys(errors).length > 0 && <div role="alert" className="mb-3 rounded border border-red-300 bg-red-50 p-3 text-sm"><p className="font-medium">{t("wiz.mustFill")}</p><ul className="mt-1 list-disc pl-5">{Object.entries(errors).map(([k, v]) => <li key={k}>{LABELS[k] ? t(LABELS[k]) : k}: {v} {STEP_OF[k] && <button type="button" onClick={() => setStep(STEP_OF[k])} className="text-brand underline">{t("wiz.fix")}</button>}</li>)}</ul></div>}
           {p.moderation === "pending" && <p className="mb-3 text-sm">{t("wiz.pendingNote")}</p>}
           {(p.moderation === "draft" || p.moderation === "rejected") ? <>
             <p className="mb-3 text-sm text-slate-600">{t("wiz.submitNote")}</p>
@@ -261,7 +262,7 @@ export default function ListingWizard(p: Props) {
       <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
         <button type="button" disabled={busy || step === 1} onClick={() => go(step - 1)} className="rounded border border-slate-300 px-4 py-2 disabled:opacity-50">{t("wiz.back")}</button>
         <button type="button" disabled={busy || !editable} onClick={() => void save()} className="rounded border border-brand px-4 py-2 text-brand disabled:opacity-50">{t("wiz.saveDraft")}</button>
-        {step < 6 && <button type="button" disabled={busy} onClick={() => go(step + 1)} className="rounded bg-brand px-4 py-2 text-white disabled:opacity-60">{t("wiz.next")}</button>}
+        {step < 4 && <button type="button" disabled={busy} onClick={() => go(step + 1)} className="rounded bg-brand px-4 py-2 text-white disabled:opacity-60">{t("wiz.next")}</button>}
       </div>
     </div>
   );

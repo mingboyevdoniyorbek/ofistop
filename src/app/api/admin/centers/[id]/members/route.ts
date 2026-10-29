@@ -24,6 +24,9 @@ export const POST = handle(async (req, ctx) => {
     userId = u.id;
   }
   if (!isUuid(userId)) throw new HttpError(400, "So'rov noto'g'ri");
+  const [memberUser] = await d.select().from(s.users).where(eq(s.users.id,userId)).limit(1);
+  if (!memberUser) throw new HttpError(404,"Foydalanuvchi topilmadi");
+  if (b.data.action === "add" && memberUser.isBlocked) throw new HttpError(403,"Akkaunt bloklangan");
   await d.transaction(async (tx) => {
     if (b.data.action === "add") {
       await tx.insert(s.businessCenterMemberships).values({ centerId, userId: userId!, createdBy: actor.id }).onConflictDoNothing();

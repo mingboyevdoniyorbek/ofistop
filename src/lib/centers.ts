@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
-import { publicCond } from "./search";
+import { publicCond, rentTotalSql } from "./search";
 
 export type CenterStat = { rooms: number; areaMin: number | null; areaMax: number | null;
   prices: { currency: "UZS" | "USD"; period: "month" | "day" | "hour"; basis: "whole" | "per_m2" | "per_seat"; min: bigint; max: bigint }[] };
@@ -10,11 +10,13 @@ export async function centerStats(ids: string[]): Promise<Map<string, CenterStat
   const out = new Map<string, CenterStat>();
   if (!ids.length) return out;
   const L = s.listings;
+  const basis = sql<"whole" | "per_seat">`CASE WHEN ${L.priceBasis} = 'per_seat' THEN 'per_seat' ELSE 'whole' END`;
+  const amount = sql`CASE WHEN ${L.priceBasis} = 'per_seat' THEN ${L.priceAmountMinor} ELSE ${rentTotalSql()} END`;
   const rows = await db().select({
-    centerId: L.centerId, currency: L.currency, period: L.pricePeriod, basis: L.priceBasis,
+    centerId: L.centerId, currency: L.currency, period: L.pricePeriod, basis,
     n: sql<number>`count(*)::int`, aMin: sql<string | null>`min(${L.areaM2})`, aMax: sql<string | null>`max(${L.areaM2})`,
-    pMin: sql<string | null>`min(${L.priceAmountMinor})`, pMax: sql<string | null>`max(${L.priceAmountMinor})`,
-  }).from(L).where(and(publicCond(), inArray(L.centerId, ids))).groupBy(L.centerId, L.currency, L.pricePeriod, L.priceBasis);
+    pMin: sql<string | null>`min(${amount})`, pMax: sql<string | null>`max(${amount})`,
+  }).from(L).where(and(publicCond(), inArray(L.centerId, ids))).groupBy(L.centerId, L.currency, L.pricePeriod, basis);
   for (const r of rows) {
     const id = r.centerId!; const st = out.get(id) ?? { rooms: 0, areaMin: null, areaMax: null, prices: [] };
     st.rooms += r.n;
@@ -28,6 +30,8 @@ export async function centerStats(ids: string[]): Promise<Map<string, CenterStat
 
 export async function listCenters(locale: "uz" | "ru" = "uz") {
   return db().select({ id: s.businessCenters.id, slug: s.businessCenters.slug, name: s.businessCenters.name, address: s.businessCenters.address,
+    tagline: s.businessCenters.tagline, regionId: s.businessCenters.regionId,
+    cover: sql<string | null>`(SELECT storage_key FROM business_center_images WHERE center_id = ${s.businessCenters.id} ORDER BY position, id LIMIT 1)`,
     region: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, district: locale === "ru" ? s.districts.nameRu : s.districts.nameUz, isDemo: s.businessCenters.isDemo })
     .from(s.businessCenters).innerJoin(s.regions, eq(s.regions.id, s.businessCenters.regionId))
     .leftJoin(s.districts, eq(s.districts.id, s.businessCenters.districtId)).orderBy(s.businessCenters.name);

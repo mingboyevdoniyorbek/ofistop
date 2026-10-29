@@ -1,6 +1,6 @@
-# OfisTop — Railway va vaqtinchalik ofisijara.uz domeni
+# OfisTop — Railway va ofistop.uz domeni
 
-> Kirish tartibi yangilandi: Google, email va Telegram uchun [AUTH-SETUP.md](AUTH-SETUP.md)ga qarang.
+> Yangi asosiy domen `https://ofistop.uz`. Domen ko‘chirish: [OFISTOP-DOMAIN.md](OFISTOP-DOMAIN.md). Google va Telegram uchun [AUTH-SETUP.md](AUTH-SETUP.md)ga qarang.
 > Bepul davr endi anonim kirishni avtomatik yoqmaydi. Quyidagi eski SMSsiz mehmon sinovlari o'rniga yangi login oqimini tekshiring.
 
 ## Nega localhost bilan farq bor?
@@ -38,7 +38,7 @@ Web xizmat → Variables bo'limida:
 
 ```dotenv
 DATABASE_URL=${{Postgres.DATABASE_URL}}
-APP_URL=https://ofisijara.uz
+APP_URL=https://ofistop.uz
 NODE_ENV=production
 PORT=3000
 PROMO_MODE=true
@@ -98,27 +98,26 @@ Health check `/kirish` web server javobini tekshiradi; yuqoridagi sinovlar
 baza va rasm saqlashni tekshiradi. Xato bo'lsa Deploy/Runtime Logs'dagi
 xatoni o'qing; parol, token va DATABASE_URL'ni boshqalarga ko'rsatmang.
 
-## 5. ofisijara.uz'ni Railway'ga o'tkazish
+## 5. ofistop.uz'ni Railway'ga ulash
 
-1. Railway web xizmatining Networking/Custom Domain bo'limiga `ofisijara.uz`
-   qo'shing. `www.ofisijara.uz` ham kerak bo'lsa, uni ham qo'shing.
+1. Railway web xizmatining Networking/Custom Domain bo'limiga `ofistop.uz`
+   va `www.ofistop.uz` qo'shing.
 2. Domen provayderida aynan Railway ko'rsatgan DNS qiymatlarini kiriting.
    Faqat shu web domen uchun eski Vercel yozuvlarini almashtiring;
    pochta MX va boshqa xizmatlarning TXT yozuvlariga tegmang.
 3. SSL sertifikati tayyor bo'lib, domen Railway saytingizni ochishini tekshiring.
-4. Asosiy ishlatadigan manzilingizga `APP_URL` mos bo'lsin. `www`ni asosiy
-   qilsangiz, `APP_URL=https://www.ofisijara.uz` ishlating.
+4. `APP_URL=https://ofistop.uz` bo'lsin. `www` asosiy domenga yo'naltiriladi.
 5. `/robots.txt` ichidagi Sitemap manzili haqiqiy domen bilan boshlansin.
 
 Domenni o'zgartirish baza va rasmlarni ko'chirmaydi. Vercel'da haqiqiy
 foydalanuvchi ma'lumotlari bo'lsa, DNS almashtirishdan oldin ularni alohida
 ko'chirish kerak. Mahalliy sinov e'lonlari production'ga avtomatik ko'chirilmaydi.
 
-## 6. Keyin ofistop.uz
+## 6. Eski domendan ko'chish
 
-Tasdiqlangach uni **shu Railway web xizmatiga** qo'shing, yangi sayt yoki baza
-yaratmang. DNS/HTTPS tayyor bo'lgach `APP_URL=https://ofistop.uz`ga almashtiring
-va redeploy qiling. Eski domenni yangi domenga doimiy yo'naltirishni alohida sozlang.
+Yangi domenni **shu Railway web xizmatiga** qo'shing, yangi sayt yoki baza
+yaratmang. DNS/HTTPS tayyor bo'lgach `APP_URL=https://ofistop.uz` bilan
+redeploy qiling. Kod eski domenni yangi manzilga yo'naltiradi; eski domen DNS'i ham shu xizmatga kelishi kerak.
 
 SMSsiz mehmon sessiyasi domenga bog'langan: `ofisijara.uz` cookie'si
 `ofistop.uz`ga o'tmaydi. Faol foydalanuvchilarni ko'chirishdan oldin hisobga

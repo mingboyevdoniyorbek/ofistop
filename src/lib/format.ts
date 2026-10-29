@@ -1,4 +1,9 @@
 import { formatMinor, totalPrice, type Basis, type Currency, type Period } from "./money";
+/** Main amount is rent for the entire unit; per-seat prices remain explicitly per-seat. */
+export function primaryPrice(p: Parameters<typeof priceLabel>[0], area: string | null | undefined, locale: "uz" | "ru" = "uz") {
+  const total = p.amount == null ? null : totalPrice({ amountMinor: p.amount, currency: p.currency, period: p.period, basis: p.basis }, area);
+  return total == null ? priceLabel(p, locale) : priceLabel({ ...p, amount: total, basis: "whole" }, locale);
+}
 import type { Locale } from "./i18n-core";
 export const CATEGORY_UZ: Record<string, string> = {
   office: "Alohida ofis", bc_room: "Biznes markazdagi xona", coworking: "Kovorking", retail: "Savdo joyi / do'kon",

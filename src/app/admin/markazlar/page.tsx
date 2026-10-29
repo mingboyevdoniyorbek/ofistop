@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { requireStaffPage } from "@/lib/staff";
 import { getT } from "@/lib/i18n";
@@ -17,6 +17,7 @@ export default async function Centers() {
   const members = await d.select({ centerId: s.businessCenterMemberships.centerId, userId: s.businessCenterMemberships.userId, phone: s.users.phone, name: s.profiles.displayName })
     .from(s.businessCenterMemberships).innerJoin(s.users, eq(s.users.id, s.businessCenterMemberships.userId)).leftJoin(s.profiles, eq(s.profiles.userId, s.users.id));
   const amenities = await db().select().from(s.amenities);
+  const accounts = await d.select({ id:s.users.id,phone:s.users.phone,name:s.profiles.displayName,contact:s.profiles.contactPhone }).from(s.users).leftJoin(s.profiles,eq(s.profiles.userId,s.users.id)).where(eq(s.users.isBlocked,false)).orderBy(desc(s.users.createdAt)).limit(500);
   const images = await db().select().from(s.businessCenterImages).orderBy(s.businessCenterImages.position);
   return (
     <div className="space-y-6">
@@ -35,7 +36,10 @@ export default async function Centers() {
           <CenterEditor center={c} regions={regions.map(r=>({id:r.id,name:nm(r)}))} districts={districts.map(r=>({id:r.id,regionId:r.regionId,name:nm(r)}))} amenities={amenities.map(a=>({code:a.code,name:locale === "ru"?a.nameRu:a.nameUz}))} images={images.filter(i=>i.centerId===c.id).map(i=>({id:i.id,url:mediaUrl(i.storageKey)}))}/>
           <p className="mt-2 text-slate-500">{t("adm.c.reps")}</p>
           <ul className="mb-2">{ms.length === 0 && <li className="text-slate-400">{t("adm.c.none")}</li>}{ms.map((m) => <li key={m.userId} className="flex items-center gap-2 py-0.5">{m.name} · {m.phone}<AdminAction url={`/api/admin/centers/${c.id}/members`} body={{ action: "remove", userId: m.userId }} label={t("adm.c.remove")} tone="danger" confirm={t("adm.c.confirmRemove")} /></li>)}</ul>
-          <AdminForm url={`/api/admin/centers/${c.id}/members`} extra={{ action: "add" }} submit={t("adm.c.attach")} fields={[{ name: "phone", label: t("adm.c.repPhone"), required: true }]} />
+          <AdminForm url={`/api/admin/centers/${c.id}/members`} extra={{ action: "add" }} submit={t("adm.c.attach")} fields={[
+            { name:"userId",label:locale === "ru" ? "Выберите аккаунт (последние 500)" : "Hisobni tanlang (oxirgi 500 ta)",type:"select",options:accounts.map(a=>({value:a.id,label:`${a.name || (locale === "ru" ? "Без имени" : "Nomsiz")} · ${a.phone.startsWith("+") ? a.phone : a.contact || a.id.slice(-6)}`})) },
+            { name:"phone",label:locale === "ru" ? "Или номер телефона аккаунта" : "Yoki hisobning telefon raqami",placeholder:"+998 ..." }
+          ]} />
         </li>); })}</ul>
     </div>
   );

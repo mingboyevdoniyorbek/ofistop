@@ -17,6 +17,7 @@
     "bot:poll": "node --import tsx scripts/run-telegram-bot.ts",
     "test": "vitest run",
     "expire-listings": "node --import tsx scripts/expire-listings.ts",
+    "check-saved-searches": "node --import tsx scripts/check-saved-searches.ts",
     "api-check": "node --import tsx scripts/api-check.ts",
     "e2e": "playwright test",
     "sms-check": "node --import tsx scripts/sms-check.ts",
@@ -30,6 +31,8 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.12",
+    "@neon/config": "^1.9.5",
+    "@neon/env": "^1.6.6",
     "drizzle-orm": "^0.45.4",
     "jose": "^6.2.13",
     "leaflet": "^1.9.4",

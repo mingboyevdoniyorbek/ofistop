@@ -12,6 +12,7 @@ test('typing multiple characters keeps the same input and focus', async () => {
  const host=document.createElement('div'); document.body.append(host); const root=createRoot(host);
  const initial={category:'office',posterType:'owner',title:'',description:'',priceAmount:'',areaM2:'',currency:'UZS',pricePeriod:'month',priceBasis:'whole',priceNegotiable:false,amenities:[],centerId:null};
  await act(async()=>root.render(React.createElement(Wizard,{updatedAt:new Date().toISOString(),id:'test',slug:'test',initial,images:[],moderation:'draft',rejectionReason:null,archived:false,regions:[],districts:[],amenities:[],centers:[]} as any)));
+ expect(host.querySelectorAll('ol li')).toHaveLength(4);
  const input=host.querySelector('input[maxlength="120"]') as HTMLInputElement; input.focus();
  for(const value of ['O','Of','Ofi','Ofis']) {
   const key=Object.keys(input).find(k=>k.startsWith('__reactProps'))!;

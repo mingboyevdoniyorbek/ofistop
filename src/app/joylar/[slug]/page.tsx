@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { and, eq, ne } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
-import { labels, fmtDate, priceLabel, totalLabel } from "@/lib/format";
+import { labels, fmtDate, priceLabel, totalLabel, primaryPrice } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { formatMinor } from "@/lib/money";
 import { parseFilters, publicCond, searchListings } from "@/lib/search";
@@ -14,6 +14,7 @@ import ListingCard from "@/components/ListingCard";
 import Gallery from "@/components/Gallery";
 import FavoriteButton from "@/components/FavoriteButton";
 import ReportButton from "@/components/ReportButton";
+import { CompareButton } from "@/components/Compare";
 import { listImages } from "@/lib/listing-images";
 import { favState } from "@/lib/favorites";
 
@@ -76,8 +77,9 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
         <div>
           <Gallery images={imgs} alt={l.title} fallback={l.isDemo ? t("det.demoImg") : t("det.noImg")} />
           <div className="mt-4 flex items-start justify-between gap-3"><h1 className="text-2xl font-bold">{l.title}</h1><FavoriteButton listingId={l.id} initial={fav.ids.has(l.id)} loggedIn={fav.loggedIn} /></div>
-          <p className="text-brand text-xl font-bold mt-1">{priceLabel(price, locale)}</p>
-          {total && <p className="text-slate-700">{total}</p>}
+          <p className="text-brand text-2xl font-bold mt-2">{primaryPrice(price, l.areaM2, locale)}</p>
+          {total && <p className="text-sm text-slate-600">{priceLabel(price, locale)}</p>}
+          <div className="mt-3 flex flex-wrap items-center gap-2"><span title={ru ? "Администратор проверил объявление. Это не техническая проверка здания." : "Administrator e’lon ma’lumotlarini ko‘rib chiqqan. Bu binoning texnik tekshiruvi emas."} className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-brand">✓ {ru ? "Объявление проверено" : "E’lon tekshirilgan"}</span>{l.availabilityConfirmedAt && visible && <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs text-green-800">{ru ? "Доступность подтверждена" : "Bo‘shligi tasdiqlangan"}: {fmtDate(l.availabilityConfirmedAt, locale)}</span>}{visible && <CompareButton id={l.id} />}</div>
           <dl className="mt-4 grid grid-cols-[150px_1fr] gap-y-1.5 text-sm">
             {rows.filter(([, v]) => v).map(([k, v]) => <div key={k} className="contents"><dt className="text-slate-500">{k}</dt><dd>{v}</dd></div>)}
           </dl>

@@ -67,7 +67,7 @@ test("2–4. Qoralama, validatsiya, xarita, rasm, asosiy rasm, moderatsiyaga yub
 
   // Validatsiya xatosida kiritilgan ma'lumot yo'qolmaydi
   await page.getByLabel(uz["wiz.f.title"]).fill("Ofis");
-  await page.getByRole("button", { name: `6. ${uz["wiz.s6"]}` }).click();
+  await page.getByRole("button", { name: "4. Tekshirish va yuborish" }).click();
   await page.getByRole("button", { name: uz["wiz.submitTitle"] }).click();
   const summary = page.getByRole("alert").filter({ hasText: uz["wiz.mustFill"] });
   await expect(summary).toContainText("Sarlavha kamida 5 belgi bo'lsin");
@@ -107,9 +107,8 @@ test("2–4. Qoralama, validatsiya, xarita, rasm, asosiy rasm, moderatsiyaga yub
   await page.getByLabel(uz["wiz.f.basis"]).selectOption("per_m2");
   await expect(page.getByText(/Jami: 1 000 USD \/ oy/).first()).toBeVisible();
   await page.getByLabel(uz["wiz.f.deposit"]).fill("1000");
-  await next(page);
 
-  // 4-bosqich: rasm (biri yaroqsiz — qisman xato), asosiy rasmni tanlash
+  // 3-bosqichda rasmlar ham: biri yaroqsiz — qisman xato
   await page.getByLabel(uz["wiz.pickImg"]).setInputFiles([img.a, img.b, img.bad]);
   await expect(page.getByText("2 ta rasm yuklandi.")).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "not-an-image.jpg" })).toContainText("Fayl rasm emas yoki buzilgan");
@@ -120,13 +119,11 @@ test("2–4. Qoralama, validatsiya, xarita, rasm, asosiy rasm, moderatsiyaga yub
   await shot(page, "04-forma-rasmlar");
   await next(page);
 
-  // 5-bosqich: aloqa va oldindan ko'rish
+  // 4-bosqich: aloqa, oldindan ko'rish va yuborish
   await page.getByLabel(uz["wiz.f.phone"]).fill("+998 99 100 20 30");
   await page.getByLabel(uz["prof.telegram"]).fill("@ofis_e2e_test");
   await expect(page.getByRole("heading", { name: uz["wiz.previewTitle"] })).toBeVisible();
-  await next(page);
 
-  // 6-bosqich: yuborish
   await page.getByRole("button", { name: uz["wiz.submitTitle"] }).click();
   await page.waitForURL(/\/kabinet\?holat=pending/);
   await expect(page.getByRole("listitem").filter({ hasText: TITLE })).toContainText(uz["cab.st.pending"]);
@@ -313,7 +310,7 @@ test("15. Mobil: navigatsiya, filtr paneli, tafsilot va forma gorizontal skrolls
   await noHorizontalScroll(p);
   await p.getByRole("button", { name: uz["nav.newListing"] }).first().click();
   await p.waitForURL(/\/kabinet\/elon\//);
-  for (let i = 0; i < 5; i++) { await noHorizontalScroll(p); await next(p); }
+  for (let i = 0; i < 3; i++) { await noHorizontalScroll(p); await next(p); }
   await shot(p, "12-mobil-forma");
   await c.close();
 });
@@ -321,7 +318,7 @@ test("15. Mobil: navigatsiya, filtr paneli, tafsilot va forma gorizontal skrolls
 test("16. Xarita API xatosi saytni buzmaydi: katalog ro'yxati ishlaydi", async ({ page }) => {
   await page.route("**/api/map**", (r) => r.fulfill({ status: 500, contentType: "application/json", body: '{"error":"x"}' }));
   await page.goto("/joylar?view=map");
-  await expect(page.getByRole("link", { name: uz["map.backList"] })).toBeVisible();
-  await page.getByRole("link", { name: uz["map.backList"] }).click();
+  await expect(page.getByRole("link", { name: "Ro‘yxatda ko‘rish" })).toBeVisible();
+  await page.getByRole("link", { name: "Ro‘yxatda ko‘rish" }).click();
   await expect(page.locator("main article").first()).toBeVisible();
 });

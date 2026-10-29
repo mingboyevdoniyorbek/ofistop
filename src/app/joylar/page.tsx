@@ -7,6 +7,8 @@ import ListingCard from "@/components/ListingCard";
 import FilterForm from "@/components/FilterForm";
 import ListingMap from "@/components/ListingMap";
 import { getT } from "@/lib/i18n";
+import SearchTools from "@/components/SearchTools";
+import SearchRestore from "@/components/SearchRestore";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata() { const { t } = await getT(); return { title: t("cat.title"), robots: { index: true, follow: true } }; }
@@ -14,7 +16,7 @@ export async function generateMetadata() { const { t } = await getT(); return { 
 export default async function Catalog({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { locale, t } = await getT();
   const sp = await searchParams;
-  const f = parseFilters(sp);
+  const f = parseFilters({ ...sp, priceMode: sp.priceMode ?? "total" });
   let data: Awaited<ReturnType<typeof searchListings>> | null = null;
   let regions: { id: number; name: string }[] = [], districts: { id: number; name: string; regionId: number }[] = [], amenities: { code: string; name: string }[] = [];
   const ru = locale === "ru";
@@ -34,7 +36,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
   }
 
   const view = (Array.isArray(sp.view) ? sp.view[0] : sp.view) === "map" ? "map" : "list";
-  const mapQuery = (() => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(sp)) { if (k === "view" || k === "page") continue; for (const x of Array.isArray(v) ? v : v ? [v] : []) u.append(k, x); } return u.toString(); })();
+  const mapQuery = (() => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(sp)) { if (k === "view" || k === "page") continue; for (const x of Array.isArray(v) ? v : v ? [v] : []) u.append(k, x); } if (!u.has("priceMode")) u.set("priceMode", "total"); return u.toString(); })();
   const qs = (over: Record<string, string>) => {
     const u = new URLSearchParams();
     for (const [k, v] of Object.entries(sp)) for (const x of Array.isArray(v) ? v : v ? [v] : []) u.append(k, x);
@@ -44,15 +46,18 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
   const sorts = (["new", "price_asc", "price_desc", "area_asc", "area_desc"] as const).map((k) => [k, t(`sort.${k}`)] as [string, string]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 grid gap-6 lg:grid-cols-[280px_1fr]">
+    <div className={`mx-auto max-w-[1440px] px-3 py-5 sm:px-6 ${view === "map" ? "space-y-4" : "grid gap-6 lg:grid-cols-[280px_1fr]"}`}>
+      <SearchRestore/>
       <aside>
-        <details className="lg:hidden rounded border border-slate-300 p-3" open={false}>
+        <details className={`${view === "map" ? "" : "lg:hidden"} rounded-2xl border border-slate-200 bg-white p-3`} open={false}>
           <summary className="cursor-pointer font-medium">{t("cat.filters")}</summary>
           <div className="mt-3"><FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} /></div>
         </details>
-        <div className="hidden lg:block"><FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} /></div>
+        {view !== "map" && <div className="hidden rounded-2xl border border-slate-200 bg-white p-4 lg:block"><FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} /></div>}
       </aside>
-      <section>
+      <section className="min-w-0">
+        <h1 className="mb-4 text-2xl font-bold text-brand-dark">{locale === "ru" ? "Найдите место для бизнеса" : "Biznesingizga mos joyni toping"}</h1>
+        <SearchTools key={mapQuery} query={`${mapQuery}&view=${view}`} regions={regions} districts={districts} amenities={amenities}/>
         {!!f.errors?.length && <p role="alert" className="mb-3 rounded bg-red-50 p-3 text-red-800">{locale === "ru" ? "Проверьте диапазоны чисел и дату" : f.errors.join(". ")}</p>}
         {data === null ? (
           <div role="alert" className="rounded border border-red-300 bg-red-50 p-4 text-red-800">{t("cat.loadFail")} <Link href="/joylar" className="underline">{t("cat.retry")}</Link>.</div>
@@ -61,14 +66,14 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
             <Link href={qs({ view: "list" })} aria-current={view === "list"} className={`rounded border px-3 py-1.5 ${view === "list" ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t("cat.list")}</Link>
             <Link href={qs({ view: "map" })} aria-current={view === "map"} className={`rounded border px-3 py-1.5 ${view === "map" ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t("cat.map")}</Link>
           </div>
-          {view === "map" ? <ListingMap query={mapQuery} listHref={qs({ view: "list" })} /> : <>
+          {view === "map" ? <ListingMap query={mapQuery} listHref={qs({ view: "list" })}><p className="mb-3 font-semibold">{t("cat.results", { n: data.total })}</p><div className="space-y-3">{data.items.map(it => <ListingCard key={it.id} it={it}/>)}</div>{data.pages > 1 && <Link className="mt-4 block text-brand underline" href={qs({ view: "list", page: "1" })}>{locale === "ru" ? "Все результаты" : "Barcha natijalar"}</Link>}</ListingMap> : <>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-sm">
             <p>{t("cat.results", { n: data.total })}</p>
             <div className="flex flex-wrap gap-1.5" aria-label={t("cat.sortAria")}>
               {sorts.map(([k, v]) => <Link key={k} href={qs({ sort: k, page: "1" })} aria-current={f.sort === k} className={`rounded-full border px-2.5 py-1 ${f.sort === k ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{v}</Link>)}
             </div>
           </div>
-          {(f.sort === "price_asc" || f.sort === "price_desc") && <p className="text-xs text-slate-500 mb-2">{t("cat.sortNote", { cur: f.currency, period: t(`period.${f.period}`), basis: t(`basis.${f.basis}`) })}</p>}
+          {(f.sort === "price_asc" || f.sort === "price_desc") && <p className="text-xs text-slate-500 mb-2">{locale === "ru" ? "Сначала общая аренда в выбранной валюте и периоде; другие цены ниже." : "Avval tanlangan valyuta va davrdagi jami ijara; boshqa narxlar keyin."} {f.currency} / {t(`period.${f.period}`)}</p>}
           {data.items.length === 0 ? (
             <div className="rounded border border-slate-200 p-6 text-center">
               <p className="font-medium">{t("cat.empty")}</p>

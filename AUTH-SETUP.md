@@ -28,7 +28,7 @@ Vercel'dagi sayt va bot webhooki shu bitta bazadan foydalanadi.
 
 ## Vercel sozlamalari
 
-APP_URL=https://www.ofisijara.uz
+APP_URL=https://ofistop.uz
 DATABASE_URL=PROVAYDER_BERGAN_POSTGRESQL_MANZILI
 SESSION_SECRET=KAMIDA_32_BELGILI_TASODIFIY_SIR
 GOOGLE_CLIENT_ID=GOOGLE_BERGAN_ID
@@ -51,10 +51,11 @@ SESSION_SECRET va TELEGRAM_WEBHOOK_SECRET uchun alohida qiymatlar ishlating.
 ## Google
 
 Google Auth Platform > Clients > Web application uchun redirect URI:
-https://www.ofisijara.uz/api/auth/google/callback
+https://ofistop.uz/api/auth/google/callback
 Local sinov: http://localhost:3000/api/auth/google/callback
 
 Branding'da OfisTop, bosh sahifa, /maxfiylik va /shartlar havolalarini kiriting.
+Yangi asosiy domen: `ofistop.uz` (www siz). Aniq maydonlar va domen ko‘chirish qadamlari: [OFISTOP-DOMAIN.md](OFISTOP-DOMAIN.md).
 Audience External bo'lsin. Ommaviy ishga tushirishda Publish app va branding tekshiruvini yakunlang.
 Kod faqat openid email profile so'raydi. Google Gmail xatlarini o'qimaydi.
 Client ID va Secret bir clientdan bo'lsin. Domen almashsa APP_URL va redirectni moslang.

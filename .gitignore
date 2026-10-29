@@ -16,3 +16,4 @@ playwright-report/
 *.tsbuildinfo
 playwright-report/
 test-results/
+.neon

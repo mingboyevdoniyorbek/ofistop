@@ -135,6 +135,9 @@ export const businessCenters = pgTable("business_centers", {
   slug: text("slug").notNull(),
   name: text("name").notNull(),
   description: text("description"),
+  tagline: text("tagline").notNull().default(""),
+  workingHours: text("working_hours").notNull().default(""),
+  website: text("website").notNull().default(""),
   regionId: integer("region_id").notNull().references(() => regions.id),
   districtId: integer("district_id").references(() => districts.id),
   address: text("address").notNull(),
@@ -336,3 +339,12 @@ export const notifications = pgTable("notifications", {
   readAt: timestamp("read_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("notifications_user_idx").on(t.userId, t.createdAt)]);
+
+export const savedSearches = pgTable("saved_searches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  query: text("query").notNull(),
+  lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("saved_search_user_query_uq").on(t.userId, t.query)]);

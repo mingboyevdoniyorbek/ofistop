@@ -26,6 +26,7 @@ export default async function Home() {
               {Object.entries(CAT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
             <button className="rounded bg-brand text-white px-6 py-2.5 font-medium hover:bg-brand-dark">{t("home.search")}</button>
           </form>
+          <div className="mt-4 flex flex-wrap gap-3"><Link href="/joylar?view=map" className="rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-white">⌖ {locale === "ru" ? "Найти на карте" : "Xaritadan joy topish"}</Link><Link href="/markazlar" className="rounded-xl border border-brand px-5 py-3 text-sm font-semibold text-brand">{locale === "ru" ? "Бизнес-центры и свободные помещения →" : "Biznes markazlar va bo‘sh xonalar →"}</Link></div>
         </div>
       </section>
       <section className="mx-auto max-w-6xl px-4 py-8">
@@ -39,6 +40,7 @@ export default async function Home() {
         {latest === null ? <p className="text-red-700">{t("home.loadFail")}</p>
           : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{latest.items.slice(0, 8).map((it) => <ListingCard key={it.id} it={it} />)}</div>}
       </section>
+      <section className="mx-auto max-w-6xl px-4 pb-10"><div className="rounded-3xl bg-brand-dark p-6 text-white sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-10"><div><h2 className="text-2xl font-bold">{locale === "ru" ? "Все помещения вашего центра — на одной странице" : "Markazingizdagi barcha xonalar — bitta sahifada"}</h2><p className="mt-3 max-w-2xl text-blue-100">{locale === "ru" ? "Фотографии, удобства, свободные офисы и прямой контакт с представителем. Выбирайте центр и найдите подходящее помещение." : "Rasmlar, qulayliklar, bo‘sh ofislar va vakil bilan to‘g‘ridan-to‘g‘ri aloqa. Markazni tanlang va o‘zingizga mos xonani toping."}</p></div><Link href="/markazlar" className="mt-5 inline-block shrink-0 rounded-xl bg-white px-5 py-3 font-semibold text-brand sm:mt-0">{locale === "ru" ? "Смотреть центры →" : "Markazlarni ko‘rish →"}</Link></div></section>
       <section className="bg-slate-50 border-y border-slate-200">
         <div className="mx-auto max-w-6xl px-4 py-8 grid gap-4 sm:grid-cols-3 text-sm">
           {[[t("home.s1"), t("home.s1b")], [t("home.s2"), t("home.s2b")], [t("home.s3"), t("home.s3b")]].map(([a, b]) => (

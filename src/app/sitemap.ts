@@ -1,3 +1,4 @@
+import { publicSiteUrl } from "@/lib/site-url";
 import type { MetadataRoute } from "next";
 import { and, eq } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
@@ -5,7 +6,7 @@ import { publicCond } from "@/lib/search";
 export const dynamic = "force-dynamic";
 // Faqat ommaviy sahifalar. Filtr kombinatsiyalari, kabinet, admin va profillar kiritilmaydi.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.APP_URL ?? "http://localhost:3000";
+  const base = publicSiteUrl();
   const fixed = ["", "/joylar", "/markazlar", "/qoidalar", "/maxfiylik", "/shartlar"].map((p) => ({ url: `${base}${p}` }));
   try {
     const prod = process.env.NODE_ENV === "production"; // production sitemap'ida demo ma'lumot bo'lmaydi

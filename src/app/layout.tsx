@@ -1,4 +1,5 @@
 import "./globals.css";
+import { publicSiteUrl } from "@/lib/site-url";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
@@ -7,13 +8,15 @@ import NewListingButton from "@/components/NewListingButton";
 import MobileMenu from "@/components/MobileMenu";
 import LangSwitch from "@/components/LangSwitch";
 import { I18nProvider } from "@/components/I18nProvider";
+import { CompareBar } from "@/components/Compare";
+import { SearchUpdates } from "@/components/SavedSearch";
 import { getT } from "@/lib/i18n";
 import { guestAccessEnabled, isGuestPhone } from "@/lib/launch-mode";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale, t } = await getT();
   return {
-    metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
+    metadataBase: new URL(publicSiteUrl()),
     openGraph: { siteName: "OfisTop", locale: locale === "ru" ? "ru_RU" : "uz_UZ", type: "website" },
     title: { default: t("site.title"), template: "%s | OfisTop" },
     description: t("site.desc"),
@@ -51,6 +54,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </nav>
         </header>
         <main className="flex-1">{children}</main>
+        <CompareBar/>
+        {user && <SearchUpdates/>}
         <footer className="border-t border-slate-200 text-xs text-slate-500 py-6 text-center">
           <p>{t("footer.tagline")}</p>
           <p className="mt-1 space-x-3"><Link href="/qoidalar" className="underline">{t("footer.rules")}</Link><Link href="/maxfiylik" className="underline">{t("footer.privacy")}</Link><Link href="/shartlar" className="underline">{t("footer.terms")}</Link></p>

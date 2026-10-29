@@ -4,6 +4,13 @@
 // (masalan, maydon nomi "Qavat" → "Этаж"); foydalanuvchi yozgan matn mos kelmaydi va o'zgarmay qoladi.
 // `tests/server-i18n.test.ts` koddagi har bir o'zbekcha xato matni shu yerda borligini tekshiradi.
 export const SERVER_MSGS: readonly (readonly [string, string])[] = [
+  ["Xarita hududi noto‘g‘ri", "Неверная область карты"],
+  ["Joylashuv yoki masofa noto‘g‘ri", "Неверное местоположение или расстояние"],
+  ["Qidiruv ma’lumotlarini tekshiring", "Проверьте параметры поиска"],
+  ["20 tagacha qidiruv saqlash mumkin", "Можно сохранить до 20 поисков"],
+  ["Qidiruvingizga mos yangi e’lonlar", "Новые объявления по вашему поиску"],
+  ["Joyingiz hali ham bo‘shmi?", "Ваше помещение ещё свободно?"],
+  ["{title}: mavjudligini tasdiqlang yoki ijaraga berilganini belgilang.", "{title}: подтвердите доступность или отметьте, что помещение сдано."],
   ["Email orqali kirish olib tashlangan. Google yoki Telegram orqali kiring.", "Вход по email отключён. Войдите через Google или Telegram."],
   ["Kirish xizmati vaqtincha ishlamayapti. Keyinroq urinib ko'ring.", "Сервис входа временно недоступен. Попробуйте позже."],
   ["Tasdiqlash havolasi noto'g'ri.", "Неверная ссылка подтверждения."],

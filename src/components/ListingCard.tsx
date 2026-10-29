@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { labels, priceLabel, totalLabel, fmtDate } from "@/lib/format";
+import { labels, priceLabel, totalLabel, primaryPrice, fmtDate } from "@/lib/format";
+import { CompareButton } from "./Compare";
+import { formatMinor } from "@/lib/money";
 import { getT } from "@/lib/i18n";
 import { mediaUrl } from "@/lib/storage";
 import { favState } from "@/lib/favorites";
@@ -22,14 +24,17 @@ export default async function ListingCard({ it }: { it: Item }) {
         </div>
         <div className="p-3 space-y-1">
           <h3 className="font-semibold leading-snug line-clamp-2">{it.title}</h3>
-          <p className="text-brand font-bold">{priceLabel(price, locale)}</p>
-          {total && <p className="text-sm text-slate-600">{total}</p>}
+          <p className="text-brand text-lg font-bold">{primaryPrice(price, it.areaM2, locale)}</p>
+          {total && <p className="text-xs text-slate-500">{priceLabel(price, locale)}</p>}
+          <p className="text-xs text-slate-600">{it.commissionType === "none" ? (locale === "ru" ? "Без комиссии" : "Komissiyasiz") : (locale === "ru" ? "Есть комиссия" : "Komissiya bor")}{it.depositAmountMinor != null && ` · ${locale === "ru" ? "Депозит" : "Depozit"}: ${formatMinor(it.depositAmountMinor)} ${it.depositCurrency}`}</p>
           <p className="text-sm text-slate-600">{it.areaM2 ? `${Number(it.areaM2)} ${t("unit.m2")}` : ""}{it.floor != null ? ` · ${t("card.floor", { n: it.floor })}` : ""}</p>
           <p className="text-sm text-slate-600">{[it.districtName, it.regionName].filter(Boolean).join(", ")}</p>
           {it.centerName && <p className="text-sm text-slate-600">{t("card.center", { name: it.centerName })}</p>}
           <p className="text-xs text-slate-500">{L.poster[it.posterType]}{it.availabilityConfirmedAt ? ` · ${t("card.confirmed", { date: fmtDate(it.availabilityConfirmedAt, locale) })}` : ""}</p>
+          <span className="inline-block rounded-full bg-green-50 px-2 py-1 text-[11px] text-green-800">{locale === "ru" ? "Просмотрено администратором" : "Admin ko‘rib chiqqan"}</span>
         </div>
       </Link>
+      <div className="px-3 pb-3"><CompareButton id={it.id}/></div>
     </article>
   );
 }

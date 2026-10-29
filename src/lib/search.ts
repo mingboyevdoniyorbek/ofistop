@@ -2,6 +2,8 @@ import { and, asc, desc, eq, gte, lte, sql, inArray, type SQL } from "drizzle-or
 import { db, schema as s } from "@/db/client";
 import { validDate } from "./validation";
 import { searchKey } from "./text";
+import { parseBounds, inBounds, toPublicPoints, type Bounds } from "./map-clusters";
+import { haversineM } from "./geo";
 
 export const PAGE_SIZE = Number(process.env.PAGE_SIZE ?? 12);
 export type Sort = "new" | "price_asc" | "price_desc" | "area_asc" | "area_desc";
@@ -12,6 +14,7 @@ export interface Filters {
   furnished?: "1" | "0"; poster?: string; commission?: "none" | "any"; availableBy?: string;
   amenities: string[]; sort: Sort; page: number;
   currencyFilter?: boolean; periodFilter?: boolean; basisFilter?: boolean; errors?: string[];
+  bounds?: Bounds; near?: { lat: number; lng: number; radius: number }; priceMode?: "total" | "unit";
 }
 
 const num = (v: string | undefined) => (v && /^\d{1,12}(\.\d{1,2})?$/.test(v) ? v : undefined);
@@ -22,12 +25,19 @@ export function parseFilters(sp: Record<string, string | string[] | undefined>):
   const sort = one(sp.sort);
   const cur = one(sp.currency), per = one(sp.period), bas = one(sp.basis);
   const errors: string[] = [];
+  const bounds = parseBounds(one(sp.bbox));
+  if (one(sp.bbox) && !bounds) errors.push("Xarita hududi noto‘g‘ri");
+  const lat = Number(one(sp.lat)), lng = Number(one(sp.lng)), radius = Number(one(sp.radius) ?? 1000);
+  const hasNear = !!(one(sp.lat) || one(sp.lng));
+  const near = hasNear && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 85 && Math.abs(lng) <= 180 && radius >= 100 && radius <= 50000 ? { lat, lng, radius } : undefined;
+  if (hasNear && !near) errors.push("Joylashuv yoki masofa noto‘g‘ri");
   for (const [a, b] of [["priceMin", "priceMax"], ["areaMin", "areaMax"]]) {
     if ((one(sp[a]) && !num(one(sp[a]))) || (one(sp[b]) && !num(one(sp[b])))) errors.push("Raqamni to‘g‘ri kiriting");
     if (num(one(sp[a])) && num(one(sp[b])) && Number(one(sp[a])) > Number(one(sp[b]))) errors.push("Eng kichik qiymat eng katta qiymatdan oshmasin");
   }
   if (one(sp.availableBy) && !validDate(one(sp.availableBy)!)) errors.push("Sana noto‘g‘ri");
   return {
+    bounds, near, priceMode: one(sp.priceMode) === "total" ? "total" : "unit",
     errors, currencyFilter: cur === "USD" || cur === "UZS", periodFilter: ["month", "day", "hour"].includes(per ?? ""), basisFilter: ["whole", "per_m2", "per_seat"].includes(bas ?? ""),
     q: one(sp.q)?.slice(0, 100) || undefined, region: int(one(sp.region)), district: int(one(sp.district)),
     category: one(sp.category), center: one(sp.center),
@@ -54,7 +64,8 @@ export const publicCond = () => and(
 const APOS = `'ʻʼ‘’\`´′`;
 const stripped = (expr: SQL) => sql`translate(lower(${expr}), ${APOS}, '')`;
 
-function buildWhere(f: Filters) {
+export const rentTotalSql = () => sql`CASE WHEN ${s.listings.priceBasis} = 'whole' THEN ${s.listings.priceAmountMinor}::numeric WHEN ${s.listings.priceBasis} = 'per_m2' AND ${s.listings.areaM2} > 0 THEN round(${s.listings.priceAmountMinor} * ${s.listings.areaM2}) END`;
+export function buildWhere(f: Filters) {
   const L = s.listings;
   const conds: (SQL | undefined)[] = [publicCond()];
   if (f.errors?.length) conds.push(sql`false`);
@@ -64,16 +75,21 @@ function buildWhere(f: Filters) {
   if (f.region) conds.push(eq(L.regionId, f.region));
   if (f.district) conds.push(eq(L.districtId, f.district));
   if (f.category && (s.categoryEnum.enumValues as readonly string[]).includes(f.category)) conds.push(eq(L.category, f.category as never));
-  if (f.center && /^[0-9a-f-]{36}$/.test(f.center)) conds.push(eq(L.centerId, f.center));
+  if (f.center && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(f.center)) conds.push(eq(L.centerId, f.center));
   if (f.q) {
-    const key = searchKey(f.q).replace(/[%_\\]/g, "\\$&");
-    conds.push(sql`${stripped(sql`concat_ws(' ', ${L.title}, ${L.description}, ${L.address}, ${s.businessCenters.name})`)} LIKE ${"%" + key + "%"}`);
+    const aliases = [["oybek", "ойбек"], ["novza", "новза"], ["tashkent city", "toshkent city", "ташкент сити"]];
+    const normalized = searchKey(f.q);
+    const variants = aliases.find(a => a.includes(normalized)) ?? [normalized];
+    const haystack = stripped(sql`concat_ws(' ', ${L.title}, ${L.description}, ${L.address}, ${s.businessCenters.name})`);
+    conds.push(sql`(${sql.join(variants.map(v => sql`${haystack} LIKE ${"%" + v.replace(/[%_\\]/g, "\\$&") + "%"}`), sql` OR `)})`);
   }
   // Narx filtri faqat tanlangan valyuta/davr/birlik doirasida ma'noli
   if (f.priceMin || f.priceMax) {
-    conds.push(eq(L.currency, f.currency), eq(L.pricePeriod, f.period), eq(L.priceBasis, f.basis));
-    if (f.priceMin) conds.push(gte(L.priceAmountMinor, sql`(${f.priceMin}::numeric * 100)::bigint`));
-    if (f.priceMax) conds.push(lte(L.priceAmountMinor, sql`(${f.priceMax}::numeric * 100)::bigint`));
+    conds.push(eq(L.currency, f.currency), eq(L.pricePeriod, f.period));
+    if (f.priceMode !== "total") conds.push(eq(L.priceBasis, f.basis));
+    const amount = f.priceMode === "total" ? rentTotalSql() : sql`${L.priceAmountMinor}`;
+    if (f.priceMin) conds.push(gte(amount, sql`(${f.priceMin}::numeric * 100)::bigint`));
+    if (f.priceMax) conds.push(lte(amount, sql`(${f.priceMax}::numeric * 100)::bigint`));
   }
   if (f.areaMin) conds.push(gte(L.areaM2, f.areaMin));
   if (f.areaMax) conds.push(lte(L.areaM2, f.areaMax));
@@ -88,16 +104,31 @@ function buildWhere(f: Filters) {
   return and(...conds);
 }
 
+/** Geometry is evaluated ONLY on public points, including approximate locations. */
+export async function publicSearchPoints(f: Filters) {
+  const L = s.listings;
+  const rows = await db().select({ id: L.id, lat: L.lat, lng: L.lng, exact: L.exactLocationPublic }).from(L)
+    .leftJoin(s.businessCenters, eq(s.businessCenters.id, L.centerId)).where(and(buildWhere(f), sql`${L.lat} IS NOT NULL AND ${L.lng} IS NOT NULL`));
+  return toPublicPoints(rows).filter(p => (!f.bounds || inBounds(p, f.bounds)) && (!f.near || haversineM(p, f.near) <= f.near.radius));
+}
+
+export async function searchWhere(f: Filters) {
+  if (!f.bounds && !f.near) return buildWhere(f);
+  const ids = (await publicSearchPoints(f)).map(p => p.id);
+  return and(buildWhere(f), ids.length ? inArray(s.listings.id, ids) : sql`false`);
+}
+
 export async function searchListings(f: Filters, locale: "uz" | "ru" = "uz") {
   const L = s.listings;
-  const where = buildWhere(f);
+  const where = await searchWhere(f);
 
   // Narx bo'yicha saralash: tanlangan (valyuta, davr, birlik) doirasidagilar birinchi, qolganlari yangilik tartibida oxirida.
-  const inScope = sql`(${L.currency} = ${f.currency} AND ${L.pricePeriod} = ${f.period} AND ${L.priceBasis} = ${f.basis})`;
+  const amount = f.priceMode === "total" ? rentTotalSql() : L.priceAmountMinor;
+  const inScope = sql`(${L.currency} = ${f.currency} AND ${L.pricePeriod} = ${f.period} AND ${f.priceMode === "total" ? sql`${amount} IS NOT NULL` : eq(L.priceBasis, f.basis)})`;
   const order = {
     new: [desc(L.publishedAt), desc(L.id)],
-    price_asc: [desc(inScope), asc(sql`CASE WHEN ${inScope} THEN ${L.priceAmountMinor} END`), desc(L.publishedAt), desc(L.id)],
-    price_desc: [desc(inScope), sql`CASE WHEN ${inScope} THEN ${L.priceAmountMinor} END DESC NULLS LAST`, desc(L.publishedAt), desc(L.id)],
+    price_asc: [desc(inScope), sql`CASE WHEN ${inScope} THEN ${amount} END ASC NULLS LAST`, desc(L.publishedAt), desc(L.id)],
+    price_desc: [desc(inScope), sql`CASE WHEN ${inScope} THEN ${amount} END DESC NULLS LAST`, desc(L.publishedAt), desc(L.id)],
     area_asc: [asc(L.areaM2), desc(L.publishedAt)],
     area_desc: [desc(L.areaM2), desc(L.publishedAt)],
   }[f.sort];
@@ -107,6 +138,7 @@ export async function searchListings(f: Filters, locale: "uz" | "ru" = "uz") {
     id: L.id, slug: L.slug, title: L.title, category: L.category, areaM2: L.areaM2, floor: L.floor,
     priceAmountMinor: L.priceAmountMinor, currency: L.currency, pricePeriod: L.pricePeriod, priceBasis: L.priceBasis,
     priceNegotiable: L.priceNegotiable, posterType: L.posterType, availabilityConfirmedAt: L.availabilityConfirmedAt,
+    depositAmountMinor: L.depositAmountMinor, depositCurrency: L.depositCurrency, commissionType: L.commissionType, utilities: L.utilities, amenities: L.amenities,
     districtName: locale === "ru" ? s.districts.nameRu : s.districts.nameUz, regionName: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, centerName: s.businessCenters.name,
     imageKey: sql<string | null>`(SELECT COALESCE(thumb_key, storage_key) FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
     isDemo: L.isDemo,
@@ -123,15 +155,3 @@ export async function searchListings(f: Filters, locale: "uz" | "ru" = "uz") {
   return { items, total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
 }
 
-export const MAP_LIMIT = 500;
-/** Xarita markerlari: faqat koordinatali, ommaviy e'lonlar. Koordinata FAQAT publicPoint() orqali chiqadi. */
-export async function searchMarkers(f: Filters) {
-  const L = s.listings;
-  const where = and(buildWhere(f), sql`${L.lat} IS NOT NULL AND ${L.lng} IS NOT NULL`);
-  const rows = await db().select({
-    id: L.id, slug: L.slug, title: L.title, category: L.category, areaM2: L.areaM2, lat: L.lat, lng: L.lng, exact: L.exactLocationPublic,
-    priceAmountMinor: L.priceAmountMinor, currency: L.currency, pricePeriod: L.pricePeriod, priceBasis: L.priceBasis, priceNegotiable: L.priceNegotiable,
-    thumbKey: sql<string | null>`(SELECT thumb_key FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
-  }).from(L).leftJoin(s.businessCenters, eq(s.businessCenters.id, L.centerId)).where(where).orderBy(desc(L.publishedAt)).limit(MAP_LIMIT + 1);
-  return { rows: rows.slice(0, MAP_LIMIT), truncated: rows.length > MAP_LIMIT };
-}
