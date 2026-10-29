@@ -1,7 +1,12 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { putObject, getObject, deleteObject, StorageError } from "../src/lib/storage";
+import { putObject, getObject, deleteObject, StorageError, storageFailureCode } from "../src/lib/storage";
 const key = "img/12345678-1234-1234-1234-123456789abc.webp";
+test("diagnostics expose only known codes, never arbitrary provider text", () => {
+  expect(storageFailureCode({ name: "NoSuchBucket" })).toBe("NoSuchBucket");
+  expect(storageFailureCode({ name: "secret", message: "private URL", code: "password" })).toBe("R2_WRITE_FAILED");
+  expect(storageFailureCode(null)).toBe("R2_WRITE_FAILED");
+});
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 function configure() {
   vi.stubEnv("STORAGE_DRIVER", "r2"); vi.stubEnv("R2_ENDPOINT", "https://example.r2.cloudflarestorage.com");

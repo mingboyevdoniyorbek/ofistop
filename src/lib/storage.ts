@@ -6,6 +6,12 @@ import { randomUUID } from "crypto";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export class StorageError extends Error {}
+// Never log provider messages, request URLs or credentials.
+export function storageFailureCode(error: unknown): string {
+  const e = error as { name?: string; code?: string } | null;
+  const known = ["NoSuchBucket", "AccessDenied", "InvalidAccessKeyId", "SignatureDoesNotMatch", "InvalidArgument", "InvalidRequest", "NotImplemented", "ENOTFOUND", "ETIMEDOUT", "ECONNRESET"];
+  return [e?.name, e?.code].find(v => v && known.includes(v)) ?? "R2_WRITE_FAILED";
+}
 let r2Client: S3Client | undefined;
 function remote() {
   const driver = process.env.STORAGE_DRIVER ?? "local";
@@ -35,7 +41,11 @@ export async function putObject(key: string, buf: Buffer) {
   if (remote()) {
     const { client, Bucket } = r2();
     try { await client.send(new PutObjectCommand({ Bucket, Key: key, Body: buf, ContentType: "image/webp" })); }
-    catch { throw new StorageError("Rasm xotirasiga yozib bo‘lmadi. Keyinroq qayta urinib ko‘ring."); }
+    catch (e) {
+      const code = storageFailureCode(e);
+      console.error(`[storage:put] ${code}`);
+      throw new StorageError(`Rasm xotirasiga yozib bo‘lmadi. Xato kodi: ${code}`);
+    }
     return;
   }
   const p = path.join(root(), key); await fs.mkdir(path.dirname(p), { recursive: true }); await fs.writeFile(p, buf);
