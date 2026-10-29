@@ -69,6 +69,7 @@ export async function consumeChallenge(id: string, code?: string, googleProof?: 
   const result = await db().transaction(async tx => {
     const [row] = await tx.select().from(s.authChallenges).where(and(eq(s.authChallenges.id, id), gt(s.authChallenges.expiresAt, new Date()))).for("update");
     if (!row) throw new HttpError(410, "Tasdiqlash muddati tugagan. Qaytadan boshlang.");
+    if (row.method === "email") throw new HttpError(410, "Email orqali kirish olib tashlangan. Google yoki Telegram orqali kiring.");
     if (row.consumedAt) {
       if (code !== undefined || googleProof || !current || current.blocked || current.id !== row.payload.completedUserId) throw new HttpError(410, "Tasdiqlash muddati tugagan. Qaytadan boshlang.");
       await assertBrowser(row);

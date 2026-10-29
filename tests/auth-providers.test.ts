@@ -43,53 +43,45 @@ beforeEach(async()=>{
   }));
 });
 afterAll(async()=>{await state.client.close();vi.unstubAllGlobals();vi.unstubAllEnvs();});
-async function emailFlow(email='owner@gmail.com') {
-  const res=await emailStart(req({email,next:'/kabinet'}),ctx);expect(res.status).toBe(200);
-  const data=await res.json();const mail=messages.at(-1)!.body;
-  const code=mail.text.match(/\n(\d{6})$/)[1];const token=mail.text.match(/#token=([A-Za-z0-9_-]{43})/)[1];
-  return {...data,code,token};
+async function codeFlow() {
+  await state.db.insert(schema.telegramLinks).values({phone:'+998901112233',telegramUserId:100,chatId:100}).onConflictDoNothing();
+  const res=await telegramStart(req({phone:'+998901112233',next:'/kabinet'}),ctx);expect(res.status).toBe(200);
+  const data=await res.json();const code=messages.at(-1)!.body.text.match(/\n(\d{6})\n/)[1];
+  return {...data,code};
 }
-test('email approval on another device only unlocks the initiating browser, then is single-use',async()=>{
-  const flow=await emailFlow(); const ownerCookies=new Map(state.cookies);
-  expect(messages[0].body.html).toContain('Ofis');expect(flow).not.toHaveProperty('devCode');
-  expect((await status(req({id:flow.id}),ctx)).status).toBe(200);
-  state.cookies.clear();
-  expect((await status(req({id:flow.id,code:flow.code}),ctx)).status).toBe(403);
-  expect((await emailConfirm(req({token:flow.token}),ctx)).status).toBe(200);
-  expect(state.cookies.has('oi_session')).toBe(false);
-  state.cookies=ownerCookies;
-  const complete=await status(req({id:flow.id}),ctx);expect((await complete.json()).status).toBe('complete');
-  expect((await getCurrentUser())?.role).toBe('user');expect(state.cookies.has('oi_admin_session')).toBe(false);
-  expect((await status(req({id:flow.id,code:flow.code}),ctx)).status).toBe(410);
-  expect((await emailConfirm(req({token:flow.token}),ctx)).status).toBe(410);
-  // A same-browser mail tab may finish first: the original tab must still continue.
-  expect((await (await status(req({id:flow.id}),ctx)).json()).status).toBe('complete');
-  expect(await state.db.select().from(schema.sessions)).toHaveLength(1);
-  state.cookies.delete('oi_session');expect((await status(req({id:flow.id}),ctx)).status).toBe(410);
+test('email endpoints and outstanding email challenges are retired even with configured keys',async()=>{
+  expect((await emailStart(req({email:'owner@gmail.com'}),ctx)).status).toBe(410);
+  expect((await emailConfirm(req({token:'a'.repeat(43)}),ctx)).status).toBe(410);
+  const {row,code}=await startChallenge('email','owner@gmail.com');
+  expect((await status(req({id:row.id,code}),ctx)).status).toBe(410);
+  expect(messages).toHaveLength(0);expect(state.cookies.has('oi_session')).toBe(false);
 });
-test('email OTP has an attempt cap, expiration, resend invalidation and CSRF checks',async()=>{
-  const f=await emailFlow();const wrong=f.code==='000000'?'000001':'000000';
+test('Telegram OTP has an attempt cap, expiration, resend invalidation and CSRF checks',async()=>{
+  const f=await codeFlow();const wrong=f.code==='000000'?'000001':'000000';
   for(let n=0;n<5;n++)expect((await status(req({id:f.id,code:wrong}),ctx)).status).toBe(400);
   expect((await status(req({id:f.id,code:f.code}),ctx)).status).toBe(429);
-  const next=await emailFlow();expect((await status(req({id:f.id,code:f.code}),ctx)).status).toBe(410);
+  const next=await codeFlow();expect((await status(req({id:f.id,code:f.code}),ctx)).status).toBe(410);
   await state.db.update(schema.authChallenges).set({expiresAt:new Date(Date.now()-1)}).where(eq(schema.authChallenges.id,next.id));
   expect((await status(req({id:next.id,code:next.code}),ctx)).status).toBe(410);
-  expect((await emailStart(req({email:'x@gmail.com'},'/api','https://evil.example'),ctx)).status).toBe(403);
+  expect((await telegramStart(req({phone:'+998901112233'},'/api','https://evil.example'),ctx)).status).toBe(403);
 });
-test('email delivery failure invalidates its challenge; request limits prevent flooding',async()=>{
-  providerFails=true;expect((await emailStart(req({email:'owner@gmail.com'}),ctx)).status).toBe(502);
+test('Telegram delivery failure invalidates challenge; request limits prevent flooding',async()=>{
+  await state.db.insert(schema.telegramLinks).values({phone:'+998901112233',telegramUserId:100,chatId:100});
+  providerFails=true;expect((await telegramStart(req({phone:'+998901112233'}),ctx)).status).toBe(502);
   const [row]=await state.db.select().from(schema.authChallenges);expect(row.consumedAt).toBeTruthy();
-  providerFails=false;await emailFlow();await emailFlow();
-  expect((await emailStart(req({email:'owner@gmail.com'}),ctx)).status).toBe(429);
+  providerFails=false;await codeFlow();await codeFlow();
+  expect((await telegramStart(req({phone:'+998901112233'}),ctx)).status).toBe(429);
 });
-test('email login keeps guest listings, notifications and favorites; contact fields remain empty',async()=>{
+test('Google login keeps guest listings, notifications and favorites; contact fields remain empty',async()=>{
   const [guest]=await state.db.insert(schema.users).values({phone:'guest:legacy'}).returning();
   await state.db.insert(schema.profiles).values({userId:guest.id,displayName:'Guest owner'});await createSession(guest.id);
   const [region]=await state.db.select().from(schema.regions);
-  const [listing]=await state.db.insert(schema.listings).values({ownerId:guest.id,slug:'guest-office',posterType:'owner',category:'office',title:'My office',regionId:region.id}).returning();
+  await state.db.insert(schema.listings).values({ownerId:guest.id,slug:'guest-office',posterType:'owner',category:'office',title:'My office',regionId:region.id});
+  const [listing]=await state.db.select().from(schema.listings);
   await state.db.insert(schema.notifications).values({userId:guest.id,title:'Saved notification'});
   await state.db.insert(schema.favorites).values({userId:guest.id,listingId:listing.id});
-  const f=await emailFlow();expect((await status(req({id:f.id,code:f.code}),ctx)).status).toBe(200);
+  const url=await googleFlow();await signGoogle(url.searchParams.get('nonce')!);
+  await googleCallback(new Request('http://localhost:3000/api/auth/google/callback?state='+url.searchParams.get('state')+'&code=valid'));
   const owner=await getCurrentUser();expect(owner!.id).not.toBe(guest.id);
   expect((await state.db.select().from(schema.listings))[0].ownerId).toBe(owner!.id);
   expect((await state.db.select().from(schema.notifications))[0].userId).toBe(owner!.id);
@@ -97,10 +89,10 @@ test('email login keeps guest listings, notifications and favorites; contact fie
   const created=await newListing(req({}),ctx);expect(created.status).toBe(201);
   const {id}=await created.json();const [draft]=await state.db.select().from(schema.listings).where(eq(schema.listings.id,id));expect(draft.contactPhone).toBeNull();
 });
-test('blocked accounts cannot obtain sessions or bypass block with Google/email linking',async()=>{
-  const f=await emailFlow();await status(req({id:f.id,code:f.code}),ctx);const user=await getCurrentUser();
+test('blocked Telegram accounts cannot obtain sessions',async()=>{
+  const f=await codeFlow();await status(req({id:f.id,code:f.code}),ctx);const user=await getCurrentUser();
   await state.db.update(schema.users).set({isBlocked:true}).where(eq(schema.users.id,user!.id));state.cookies.clear();
-  const retry=await emailFlow();expect((await status(req({id:retry.id,code:retry.code}),ctx)).status).toBe(403);
+  const retry=await codeFlow();expect((await status(req({id:retry.id,code:retry.code}),ctx)).status).toBe(403);
   expect(state.cookies.has('oi_session')).toBe(false);
 });
 const msg=(uid:number, extra:object)=>({message:{chat:{id:uid,type:'private'},from:{id:uid},...extra}});
@@ -148,12 +140,12 @@ async function signGoogle(nonce:string, overrides:object={}) {
   idToken=await new SignJWT({nonce,email:'owner@gmail.com',email_verified:true,name:'Owner',...overrides}).setProtectedHeader({alg:'RS256'}).setSubject('google-owner').setIssuer('https://accounts.google.com').setAudience('test-google-client').setIssuedAt().setExpirationTime('5m').sign(privateKey);
 }
 test('Google verifies state/browser, signed ID token and nonce; uses same verified Gmail account',async()=>{
-  const f=await emailFlow();await status(req({id:f.id,code:f.code}),ctx);const original=await getCurrentUser();state.cookies.clear();
+  const originalId=await state.db.transaction((tx:any)=>resolveIdentity(tx,{provider:'email',subject:'owner@gmail.com'}));
   const url=await googleFlow();await signGoogle(url.searchParams.get('nonce')!);
   const callback=new Request(`http://localhost:3000/api/auth/google/callback?state=${url.searchParams.get('state')}&code=google-code`);
   const own=new Map(state.cookies);state.cookies.clear();expect((await googleCallback(callback)).headers.get('location')).toContain('error=google');state.cookies=own;
   expect((await googleCallback(callback)).headers.get('location')).toBe('http://localhost:3000/kabinet');
-  expect((await getCurrentUser())!.id).toBe(original!.id);
+  expect((await getCurrentUser())!.id).toBe(originalId);
   expect((await googleCallback(callback)).headers.get('location')).toContain('error=google');
 });
 test('Google rejects wrong nonce and non-verified email; external email is not auto-linked',async()=>{
@@ -166,7 +158,7 @@ test('Google rejects wrong nonce and non-verified email; external email is not a
   expect(googleId).not.toBe(emailId);expect(state.cookies.has('oi_session')).toBe(false);
 });
 test('untrusted redirects cannot escape the site',async()=>{
-  const {row}=await startChallenge('email','owner@gmail.com','//evil.example');expect(row.next).toBe('/');
+  const {row}=await startChallenge('telegram','','//evil.example');expect(row.next).toBe('/');
 });
 
 test('Google rejects expired, wrong-audience and forged tokens',async()=>{
@@ -181,8 +173,28 @@ test('Google rejects expired, wrong-audience and forged tokens',async()=>{
 });
 
 test('concurrent verification consumes one challenge once and creates one session',async()=>{
-  const f=await emailFlow();
+  const f=await codeFlow();
   const responses=await Promise.all([status(req({id:f.id,code:f.code}),ctx),status(req({id:f.id,code:f.code}),ctx)]);
   expect(responses.map(r=>r.status).sort()).toEqual([200,410]);
   expect(await state.db.select().from(schema.sessions)).toHaveLength(1);
+});
+
+test('completed Telegram flow is observable by its browser without issuing another session',async()=>{
+  const f=await codeFlow();await status(req({id:f.id,code:f.code}),ctx);
+  expect((await (await status(req({id:f.id}),ctx)).json()).status).toBe('complete');
+  expect(await state.db.select().from(schema.sessions)).toHaveLength(1);
+  state.cookies.delete('oi_session');expect((await status(req({id:f.id}),ctx)).status).toBe(410);
+});
+test('Google returns JSON authorization URL for UI and diagnoses missing database without leaking secrets',async()=>{
+  const r=await googleStart(new Request('http://localhost:3000/api/auth/google/start',{headers:{accept:'application/json'}}),ctx);
+  expect(r.status).toBe(200);expect(new URL((await r.json()).url).origin).toBe('https://accounts.google.com');
+  const log=vi.spyOn(console,'error').mockImplementation(()=>{});
+  const query=vi.spyOn(state.client,'query').mockRejectedValue(new Error('DATABASE_URL sozlanmagan'));
+  try {
+    const failed=await googleStart(new Request('http://localhost:3000/api/auth/google/start',{headers:{accept:'application/json'}}),ctx);
+    expect(failed.status).toBe(503);expect((await failed.json()).code).toBe('AUTH_DATABASE_URL_MISSING');
+    const direct=await googleStart(new Request('http://localhost:3000/api/auth/google/start'),ctx);
+    expect(direct.headers.get('location')).toBe('http://localhost:3000/kirish?error=google');
+    expect(log).toHaveBeenCalledWith('[auth:google-start] AUTH_DATABASE_URL_MISSING');
+  } finally {query.mockRestore();log.mockRestore();}
 });

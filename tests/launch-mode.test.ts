@@ -15,6 +15,6 @@ test('free publishing never enables SMS; configured identity providers work duri
  vi.stubEnv('APP_URL','https://ofistop.uz');vi.stubEnv('GOOGLE_CLIENT_ID','client');vi.stubEnv('GOOGLE_CLIENT_SECRET','secret');
  vi.stubEnv('RESEND_API_KEY','key');vi.stubEnv('EMAIL_FROM','login@ofistop.uz');
  vi.stubEnv('TELEGRAM_BOT_TOKEN','token');vi.stubEnv('TELEGRAM_BOT_USERNAME','OfisTopBot');vi.stubEnv('TELEGRAM_WEBHOOK_SECRET','secret');
- expect(authMethods()).toMatchObject({google:true,email:true,telegram:true,guest:false,phone:false,test:false});
+ expect(authMethods()).toMatchObject({google:true,email:false,telegram:true,guest:false,phone:false,test:false});
  vi.stubEnv('PROMO_MODE','false');expect(authMethods().phone).toBe(false);
 });

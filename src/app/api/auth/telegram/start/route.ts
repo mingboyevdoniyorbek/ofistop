@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
-import { handle, sameOrigin, HttpError } from "@/lib/guard";
+import { sameOrigin, HttpError } from "@/lib/guard";
+import { handleLogin } from "@/lib/login-errors";
 import { botUsername, telegramEnabled, tgSend } from "@/lib/telegram";
 import { invalidateChallenge, loginLimit, startChallenge } from "@/lib/login-challenge";
 import { normalizePhoneUz } from "@/lib/text";
 
-export const POST = handle(async req => {
+export const POST = handleLogin("telegram-start", async req => {
   sameOrigin(req);
   if (!telegramEnabled()) throw new HttpError(503, "Telegram orqali kirish hozircha sozlanmagan.");
   const b = z.object({ phone: z.string().max(30).optional(), next: z.string().max(2048).optional() }).safeParse(await req.json().catch(() => ({})));

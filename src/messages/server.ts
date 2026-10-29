@@ -4,6 +4,8 @@
 // (masalan, maydon nomi "Qavat" → "Этаж"); foydalanuvchi yozgan matn mos kelmaydi va o'zgarmay qoladi.
 // `tests/server-i18n.test.ts` koddagi har bir o'zbekcha xato matni shu yerda borligini tekshiradi.
 export const SERVER_MSGS: readonly (readonly [string, string])[] = [
+  ["Email orqali kirish olib tashlangan. Google yoki Telegram orqali kiring.", "Вход по email отключён. Войдите через Google или Telegram."],
+  ["Kirish xizmati vaqtincha ishlamayapti. Keyinroq urinib ko'ring.", "Сервис входа временно недоступен. Попробуйте позже."],
   ["Tasdiqlash havolasi noto'g'ri.", "Неверная ссылка подтверждения."],
   ["Tasdiqlash muddati tugagan. Qaytadan boshlang.", "Время подтверждения истекло. Начните заново."],
   ["Email orqali kirish hali sozlanmagan.", "Вход по email пока не настроен."],

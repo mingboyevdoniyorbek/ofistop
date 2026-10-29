@@ -84,7 +84,7 @@ try {
  await ownerPage.waitForLoadState('networkidle');await ownerPage.screenshot({path:'test-results/promo-notification.png',fullPage:true,caret:'initial'});
  await page.getByRole('button',{name:'Admindan chiqish'}).click();await expect(page.getByLabel('Parol',{exact:true})).toBeVisible();
  await visitorPage.setViewportSize({width:390,height:844});await visitorPage.goto('/kirish');
- for(const name of ['Google orqali kirish','Email orqali kirish','Telegram orqali kirish'])await expect(visitorPage.getByRole('button',{name,exact:true})).toBeVisible();
+ for(const name of ['Google orqali kirish','Telegram orqali kirish'])await expect(visitorPage.getByRole('button',{name,exact:true})).toBeVisible();
  await visitorPage.screenshot({path:'test-results/promo-mobile.png',fullPage:true,caret:'initial'});
  assert.deepEqual(errors,[]);
  console.log('PASS: admin removes via UI, owner receives reason, public listing disappears, admin logout and mobile login');

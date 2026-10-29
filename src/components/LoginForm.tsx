@@ -4,15 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "./I18nProvider";
 import { safeNext } from "@/lib/validation";
 
-type Methods = { google: boolean; email: boolean; telegram: boolean; test?: boolean };
-type View = "choose" | "email" | "telegram" | "phone";
-type Pending = { id: string; mode: "email" | "telegram" | "telegram_code"; expiresAt: string; botUrl?: string; email?: string };
+type Methods = { google: boolean; telegram: boolean; test?: boolean };
+type View = "choose" | "telegram" | "phone";
+type Pending = { id: string; mode: "telegram" | "telegram_code"; expiresAt: string; botUrl?: string };
 const input = "mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base outline-none transition focus:border-brand focus:bg-white";
 const primary = "flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-brand px-5 py-4 font-semibold text-white shadow-lg shadow-blue-900/10 transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50";
 const secondary = "flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 font-semibold text-slate-800 transition hover:border-brand hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
-function Icon({ kind }: { kind: "google" | "email" | "telegram" }) {
+function Icon({ kind }: { kind: "google" | "telegram" }) {
   if (kind === "google") return <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-2xl font-bold text-blue-600">G</span>;
-  return <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{kind === "email" ? <><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3 7 9 6 9-6"/></> : <><path d="m21 3-7 18-4-7-7-4 18-7Z"/><path d="m10 14 6-6"/></>}</svg>;
+  return <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{<><path d="m21 3-7 18-4-7-7-4 18-7Z"/><path d="m10 14 6-6"/></>}</svg>;
 }
 const storageKey = "ofistop-login";
 function nextPath() { return safeNext(new URLSearchParams(location.search).get("next") ?? "/kabinet", location.origin); }
@@ -22,13 +22,13 @@ export default function LoginForm({ methods }: { methods: Methods }) {
   const tr = (uz: string, russian: string) => ru ? russian : uz;
   const [view, setView] = useState<View>("choose");
   const [pending, setPending] = useState<Pending | null>(null);
-  const [email, setEmail] = useState(""); const [phone, setPhone] = useState("+998"); const [code, setCode] = useState("");
+  const [phone, setPhone] = useState("+998"); const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [seconds, setSeconds] = useState(600);
   const completed = useRef(false); const busyRef = useRef(false);
   const remember = (value: Pending | null) => { setPending(value); try { if (value) sessionStorage.setItem(storageKey, JSON.stringify(value)); else sessionStorage.removeItem(storageKey); } catch {} };
   useEffect(() => {
     if (new URLSearchParams(location.search).has("error")) setError(ru ? "Не удалось войти через Google. Попробуйте ещё раз." : "Google orqali kirib bo‘lmadi. Qayta urinib ko‘ring.");
-    try { const saved = JSON.parse(sessionStorage.getItem(storageKey) ?? "null"); if (saved && /^[0-9a-f-]{36}$/.test(saved.id) && ["email", "telegram", "telegram_code"].includes(saved.mode) && Date.parse(saved.expiresAt) > Date.now()) { setPending(saved); setEmail(saved.email ?? ""); } } catch {}
+    try { const saved = JSON.parse(sessionStorage.getItem(storageKey) ?? "null"); if (saved && /^[0-9a-f-]{36}$/.test(saved.id) && ["telegram", "telegram_code"].includes(saved.mode) && Date.parse(saved.expiresAt) > Date.now()) { setPending(saved); } } catch {}
   }, []);
   const finish = (path: string) => { completed.current = true; remember(null); location.assign(safeNext(path, location.origin)); };
 
@@ -67,11 +67,27 @@ export default function LoginForm({ methods }: { methods: Methods }) {
     finally { busyRef.current = false; setBusy(false); }
   }
   async function start(mode: Pending["mode"]) {
-    const data = await call(mode === "email" ? "/api/auth/email/start" : "/api/auth/telegram/start", { next: nextPath(), ...(mode === "email" ? { email } : mode === "telegram_code" ? { phone } : {}) });
-    if (data) { setCode(""); remember({ id: data.id, mode, expiresAt: data.expiresAt, botUrl: data.botUrl, email: mode === "email" ? email : undefined }); }
+    const data = await call("/api/auth/telegram/start", { next: nextPath(), ...(mode === "telegram_code" ? { phone } : {}) });
+    if (data) {
+      setCode(""); remember({ id: data.id, mode, expiresAt: data.expiresAt, botUrl: data.botUrl });
+      if (mode === "telegram" && /^https:\/\/t\.me\//.test(data.botUrl)) location.assign(data.botUrl);
+    }
+  }
+  async function startGoogle() {
+    if (busyRef.current) return;
+    busyRef.current = true; setBusy(true); setError("");
+    try {
+      const res = await fetch(`/api/auth/google/start?next=${encodeURIComponent(nextPath())}`, { headers: { Accept: "application/json" }, cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? tr("Kirish vaqtincha ishlamayapti. Qayta urinib ko‘ring.", "Вход временно недоступен. Попробуйте снова.")); return; }
+      const url = new URL(data.url);
+      if (url.origin !== "https://accounts.google.com") throw new Error("Invalid provider URL");
+      location.assign(url.href);
+    } catch { setError(tr("Google bilan ulanish amalga oshmadi. Qayta urinib ko‘ring.", "Не удалось подключиться к Google. Попробуйте снова.")); }
+    finally { busyRef.current = false; setBusy(false); }
   }
   function back() { remember(null); setView("choose"); setError(""); setCode(""); }
-  const title = pending ? pending.mode === "email" ? tr("Pochtangizni tekshiring", "Проверьте почту") : pending.mode === "telegram_code" ? tr("Kodni kiriting", "Введите код") : tr("Telegram’da tasdiqlang", "Подтвердите в Telegram") : view === "email" ? tr("Email orqali kirish", "Вход по email") : view === "phone" ? tr("Telegram’dan kod olish", "Код в Telegram") : view === "telegram" ? tr("Telegram orqali kirish", "Вход через Telegram") : tr("OfisTop platformasiga xush kelibsiz", "Добро пожаловать в OfisTop");
+  const title = pending ? pending.mode === "telegram_code" ? tr("Kodni kiriting", "Введите код") : tr("Telegram’da tasdiqlang", "Подтвердите в Telegram") : view === "phone" ? tr("Telegram’dan kod olish", "Код в Telegram") : view === "telegram" ? tr("Telegram orqali kirish", "Вход через Telegram") : tr("OfisTop platformasiga xush kelibsiz", "Добро пожаловать в OfisTop");
   return <section className="relative mx-auto w-full max-w-md rounded-3xl bg-white px-5 py-8 sm:border sm:border-slate-100 sm:px-9 sm:py-10 sm:shadow-xl sm:shadow-slate-200/40">
     {(view !== "choose" || pending) && <button type="button" onClick={back} disabled={busy} aria-label={tr("Orqaga", "Назад")} className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full text-2xl text-slate-600 hover:bg-slate-100">←</button>}
     <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-brand text-3xl font-bold text-white shadow-lg shadow-blue-900/15" aria-hidden="true">O<span className="text-green-300">T</span></div>
@@ -79,16 +95,10 @@ export default function LoginForm({ methods }: { methods: Methods }) {
     {!pending && view === "choose" && <p className="mt-3 text-center leading-relaxed text-slate-500">{tr("Joyingizni toping yoki e’lon joylang. Kirish usulini tanlang.", "Найдите помещение или разместите объявление. Выберите способ входа.")}</p>}
     <div className="mt-8 space-y-4">
       {!pending && view === "choose" && <>
-        <button className={primary} disabled={!methods.google || busy} onClick={() => location.assign(`/api/auth/google/start?next=${encodeURIComponent(nextPath())}`)}><Icon kind="google"/>{tr("Google orqali kirish", "Войти через Google")}</button>
-        <button className={secondary} disabled={!methods.email || busy} onClick={() => { setView("email"); setError(""); }}><Icon kind="email"/>{tr("Email orqali kirish", "Войти по email")}</button>
+        <button className={primary} disabled={!methods.google || busy} onClick={() => void startGoogle()}><Icon kind="google"/>{tr("Google orqali kirish", "Войти через Google")}</button>
         <button className={secondary} disabled={!methods.telegram || busy} onClick={() => { setView("telegram"); setError(""); }}><span className="text-sky-500"><Icon kind="telegram"/></span>{tr("Telegram orqali kirish", "Войти через Telegram")}</button>
-        {(!methods.google || !methods.email || !methods.telegram) && <p className="text-center text-xs leading-relaxed text-slate-500">{tr("Xira tugmalar hali sozlanmoqda. Faol usul orqali kirishingiz mumkin.", "Неактивные способы пока настраиваются. Выберите доступный способ.")}</p>}
+        {(!methods.google || !methods.telegram) && <p className="text-center text-xs leading-relaxed text-slate-500">{tr("Xira tugmalar hali sozlanmoqda. Faol usul orqali kirishingiz mumkin.", "Неактивные способы пока настраиваются. Выберите доступный способ.")}</p>}
       </>}
-      {!pending && view === "email" && <form className="space-y-5" onSubmit={e => { e.preventDefault(); void start("email"); }}>
-        <p className="text-center text-sm leading-relaxed text-slate-500">{tr("Emailingizga tasdiqlash havolasi va kod yuboramiz. Gmail yoki boshqa emailingizni kiriting.", "Отправим ссылку и код подтверждения. Введите Gmail или другой email.")}</p>
-        <label className="block text-sm font-medium">Email<input type="email" required maxLength={254} autoComplete="email" autoFocus value={email} onChange={e => setEmail(e.target.value)} className={input} placeholder="siz@gmail.com" disabled={busy}/></label>
-        <button className={primary} disabled={busy}>{busy ? tr("Yuborilmoqda…", "Отправляем…") : tr("Tasdiqlash xatini yuborish", "Отправить письмо")}</button>
-      </form>}
       {!pending && view === "telegram" && <>
         <p className="text-center text-sm leading-relaxed text-slate-500">{tr("Botni ochib Start bosing. Kontaktingizni ulashing yoki “Ha, kirish” bilan tasdiqlang — sayt avtomatik davom etadi.", "Откройте бота и нажмите Start. Поделитесь контактом или нажмите «Да, войти» — сайт продолжит автоматически.")}</p>
         <button className={primary} disabled={busy} onClick={() => void start("telegram")}><Icon kind="telegram"/>{busy ? tr("Tayyorlanmoqda…", "Подготовка…") : tr("Telegram orqali kirish", "Войти через Telegram")}</button>
@@ -100,14 +110,14 @@ export default function LoginForm({ methods }: { methods: Methods }) {
         <button className={primary} disabled={busy}>{busy ? tr("Yuborilmoqda…", "Отправляем…") : tr("Kodni yuborish", "Отправить код")}</button>
       </form>}
       {pending && <>
-        <p className="text-center text-sm leading-relaxed text-slate-500">{pending.mode === "email" ? <>{pending.email}<br/>{tr("manziliga xat yuborildi. Xatni ochib tasdiqlang yoki kodni kiriting. Spam papkasini ham tekshiring.", "Письмо отправлено. Подтвердите вход по ссылке или введите код. Проверьте также папку «Спам».")}</> : pending.mode === "telegram_code" ? tr("Raqam botga ulangan bo‘lsa, kod yuborildi. Birinchi marta bo‘lsa botni oching, Start bosing va kontaktni ulashing. Keyin yangi kod so‘rang.", "Если номер подключён к боту, код отправлен. Впервые? Откройте бота, нажмите Start, поделитесь контактом и запросите новый код.") : tr("Botni oching va kirishni tasdiqlang. So‘ng shu oynaga qayting.", "Откройте бота и подтвердите вход. Затем вернитесь в это окно.")}</p>
+        <p className="text-center text-sm leading-relaxed text-slate-500">{pending.mode === "telegram_code" ? tr("Raqam botga ulangan bo‘lsa, kod yuborildi. Birinchi marta bo‘lsa botni oching, Start bosing va kontaktni ulashing. Keyin yangi kod so‘rang.", "Если номер подключён к боту, код отправлен. Впервые? Откройте бота, нажмите Start, поделитесь контактом и запросите новый код.") : tr("Botni oching va kirishni tasdiqlang. So‘ng shu oynaga qayting.", "Откройте бота и подтвердите вход. Затем вернитесь в это окно.")}</p>
         {pending.botUrl && /^https:\/\/t\.me\//.test(pending.botUrl) && <a href={pending.botUrl} target="_blank" rel="noopener noreferrer" className={primary}><Icon kind="telegram"/>{tr("Telegram botni ochish", "Открыть бота")}</a>}
         {pending.mode !== "telegram" && <form className="space-y-4" onSubmit={async e => { e.preventDefault(); const data = await call("/api/auth/status", { id: pending.id, code }); if (data?.status === "complete") finish(data.next); }}>
           <label className="block text-sm font-medium">{tr("Tasdiqlash kodi", "Код подтверждения")}<input value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ""))} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" required maxLength={6} className={`${input} text-center text-2xl tracking-[0.4em]`} placeholder="000000" disabled={busy}/></label>
           <button className={primary} disabled={busy || seconds <= 0}>{busy ? tr("Tekshirilmoqda…", "Проверяем…") : tr("Tasdiqlash va kirish", "Подтвердить и войти")}</button>
         </form>}
         <p role="status" className="text-center text-xs text-slate-500">{tr("Tasdiqlash uchun qolgan vaqt", "Осталось времени")}: {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</p>
-        <button type="button" className="block w-full text-center text-sm font-medium text-brand underline underline-offset-4" disabled={busy} onClick={() => { const mode = pending.mode; remember(null); setError(""); setView(mode === "email" ? "email" : mode === "telegram_code" ? "phone" : "telegram"); }}>{tr("Qayta yuborish yoki o‘zgartirish", "Отправить снова или изменить")}</button>
+        <button type="button" className="block w-full text-center text-sm font-medium text-brand underline underline-offset-4" disabled={busy} onClick={() => { const mode = pending.mode; remember(null); setError(""); setView(mode === "telegram_code" ? "phone" : "telegram"); }}>{tr("Qayta yuborish yoki o‘zgartirish", "Отправить снова или изменить")}</button>
       </>}
       {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     </div>
