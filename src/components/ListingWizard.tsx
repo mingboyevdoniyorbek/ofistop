@@ -224,7 +224,11 @@ export default function ListingWizard(p: Props) {
         {step === 3 && <>
           <section aria-labelledby="img-h"><h2 id="img-h" className="mb-1 font-medium">{t("wiz.images", { n: images.length })}</h2>
             <p className="mb-2 text-xs text-slate-500">{t("wiz.imgHint")}</p>
-            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={busy || !editable || images.length >= 15} onChange={(e) => upload(e.target.files)} aria-label={t("wiz.pickImg")} className="block w-full text-sm" />
+            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={busy || !editable || images.length >= 15} onChange={(e) => upload(e.target.files)} aria-label={t("wiz.pickImg")} className="hidden" />
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={busy || !editable || images.length >= 15} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3 font-semibold text-white shadow-sm transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
+              <span aria-hidden="true" className="text-2xl leading-none">+</span>
+              {images.length >= 15 ? (locale === "ru" ? "Лимит: 15 фотографий" : "15 ta rasm limiti to‘ldi") : busy ? (locale === "ru" ? "Подождите…" : "Kuting…") : (locale === "ru" ? "Добавить фотографии" : "Rasm qo‘shish")}
+            </button>
             {upRes.some((r) => !r.ok) && <ul role="alert" className="mt-2 space-y-0.5 text-sm text-red-700">{upRes.filter((r) => !r.ok).map((r) => <li key={r.name}>{r.name}: {r.error}</li>)}</ul>}
             {upRes.some((r) => r.ok) && <p role="status" className="mt-1 text-sm text-green-700">{t("wiz.uploaded", { n: upRes.filter((r) => r.ok).length })}</p>}
             <E errors={errors} k="images" />
