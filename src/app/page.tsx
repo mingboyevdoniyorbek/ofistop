@@ -7,6 +7,10 @@ import RecentlyViewed from "@/components/RecentlyViewed";
 import NewListingButton from "@/components/NewListingButton";
 import { promoEnabled, guestAccessEnabled } from "@/lib/launch-mode";
 import { getCurrentUser } from "@/lib/auth";
+import { centerStats, listCenters } from "@/lib/centers";
+import { formatMinor } from "@/lib/money";
+import { mediaUrl } from "@/lib/storage";
+import ListingPhoto from "@/components/ListingPhoto";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +19,11 @@ export default async function Home() {
   const promo = promoEnabled();
   const user = await getCurrentUser();
   const latest = await searchListings({ ...parseFilters({}), page: 1 }, locale).catch(() => null);
+  const centers = (await listCenters(locale).catch(() => [])).slice(0, 10);
+  const stats = await centerStats(centers.map((c) => c.id)).catch(() => new Map());
+  // Xarita kartasidagi narx belgilari: eng yangi e'lonlardan ikkitasi.
+  const pins = (latest?.items ?? []).filter((it) => it.priceAmountMinor != null && it.pricePeriod === "month" && it.priceBasis === "whole").slice(0, 2)
+    .map((it) => `${formatMinor(it.priceAmountMinor!)} ${it.currency === "USD" ? "$" : (locale === "ru" ? "сум" : "so‘m")}`);
   return (
     <div>
       <section className="bg-slate-50 border-b border-slate-200">
@@ -27,7 +36,7 @@ export default async function Home() {
               {Object.entries(CAT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
             <button className="rounded bg-brand text-white px-6 py-2.5 font-medium hover:bg-brand-dark">{t("home.search")}</button>
           </form>
-          <div className="mt-4 flex flex-wrap gap-3"><Link href="/joylar?view=map" className="rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-white">⌖ {locale === "ru" ? "Найти на карте" : "Xaritadan joy topish"}</Link><Link href="/markazlar" className="rounded-xl border border-brand px-5 py-3 text-sm font-semibold text-brand">{locale === "ru" ? "Бизнес-центры и свободные помещения →" : "Biznes markazlar va bo‘sh xonalar →"}</Link></div>
+          <MapCard ru={locale === "ru"} pins={pins} />
         </div>
       </section>
       <section className="mx-auto max-w-6xl px-4 py-8">
@@ -36,6 +45,24 @@ export default async function Home() {
           {Object.entries(CAT).map(([k, v]) => <Link key={k} href={`/joylar?category=${k}`} className="rounded-full border border-slate-300 px-3 py-1.5 text-sm hover:border-brand">{v}</Link>)}
         </div>
       </section>
+      {centers.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 pt-8" aria-labelledby="centers-h">
+          <div className="mb-3 flex items-baseline justify-between"><h2 id="centers-h" className="text-lg font-semibold">{locale === "ru" ? "Бизнес-центры" : "Biznes markazlar"}</h2><Link href="/markazlar" className="text-sm text-brand hover:underline">{t("home.all")}</Link></div>
+          <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2">
+            {centers.map((c) => { const st = stats.get(c.id); return (
+              <Link key={c.id} href={`/markazlar/${c.id}-${c.slug}`} className="flex w-[70vw] max-w-[280px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition-shadow hover:shadow-md">
+                <ListingPhoto thumb={mediaUrl(c.cover)} alt={c.name} sizes="280px" className="aspect-[16/10]">
+                  <span className="text-3xl font-bold text-brand" aria-hidden="true">{c.name.slice(0, 2).toUpperCase()}</span>
+                </ListingPhoto>
+                <div className="space-y-1 p-3">
+                  <h3 className="line-clamp-1 font-semibold">{c.name}</h3>
+                  <p className="line-clamp-1 text-xs text-slate-500">{[c.district, c.region].filter(Boolean).join(", ")}</p>
+                  <p className={`text-sm font-medium ${st?.rooms ? "text-accent" : "text-slate-500"}`}>{st?.rooms ? (locale === "ru" ? `Свободно помещений: ${st.rooms}` : `${st.rooms} ta bo‘sh xona`) : (locale === "ru" ? "Нет свободных помещений" : "Bo‘sh xona yo‘q")}</p>
+                </div>
+              </Link>); })}
+          </div>
+        </section>
+      )}
       <RecentlyViewed />
       <section className="mx-auto max-w-6xl px-4 pb-10">
         <div className="flex items-baseline justify-between mb-3"><h2 className="text-lg font-semibold">{t("home.latest")}</h2><Link href="/joylar" className="text-sm text-brand hover:underline">{t("home.all")}</Link></div>
@@ -55,5 +82,28 @@ export default async function Home() {
         <div className="mt-3"><NewListingButton loggedIn={!!user} promo={guestAccessEnabled()} className="rounded bg-accent text-white px-5 py-2.5 font-medium" /></div>
       </section>
     </div>
+  );
+}
+
+/** "Xaritada ko'rish" kartasi: chapda belgi va matn, o'ngda narxlar ko'rsatilgan kichik xarita. */
+function MapCard({ ru, pins }: { ru: boolean; pins: string[] }) {
+  const [a, b] = [pins[0] ?? "400 $", pins[1] ?? "650 $"];
+  return (
+    <Link href="/joylar?view=map" className="group mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-brand to-brand-dark p-3 text-white shadow-md transition hover:shadow-lg sm:max-w-xl sm:p-4">
+      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-white text-brand shadow-sm" aria-hidden="true">
+        <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 3.2 3.6 3V13H13v-2.5h-2V13H8.4V8.2z" /></svg>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-lg font-bold leading-tight">{ru ? "Смотреть на карте" : "Xaritada ko‘rish"}</span>
+        <span className="block text-sm text-blue-100">{ru ? "Цены на карте" : "Narxlar xaritada"}</span>
+      </span>
+      <span className="relative h-[72px] w-36 shrink-0 overflow-hidden rounded-xl bg-slate-100" aria-hidden="true">
+        <svg viewBox="0 0 144 72" className="absolute inset-0 h-full w-full" fill="none" stroke="#cbd5e1" strokeWidth="3">
+          <path d="M-5 50 C40 40 70 62 150 30" /><path d="M30 -5 L52 80" /><path d="M95 -5 C90 30 110 50 104 80" strokeWidth="2" /><path d="M-5 18 L150 12" strokeWidth="2" />
+        </svg>
+        <span className="absolute left-2 top-2 rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-white shadow after:absolute after:left-1/2 after:top-full after:-translate-x-1/2 after:border-x-4 after:border-t-4 after:border-x-transparent after:border-t-accent">{a}</span>
+        <span className="absolute bottom-3 right-2 rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-white shadow after:absolute after:left-1/2 after:top-full after:-translate-x-1/2 after:border-x-4 after:border-t-4 after:border-x-transparent after:border-t-accent">{b}</span>
+      </span>
+    </Link>
   );
 }
