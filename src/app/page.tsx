@@ -94,7 +94,6 @@ function MapCard({ ru, counts }: { ru: boolean; counts: number[] }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-lg font-bold leading-tight">{ru ? "Смотреть на карте" : "Xaritada ko‘rish"}</span>
-        <span className="block text-sm text-blue-100">{ru ? "Объявления по районам" : "Hududlar bo‘yicha e’lonlar"}</span>
       </span>
       <span className="relative h-[76px] w-36 shrink-0 overflow-hidden rounded-xl bg-slate-100" aria-hidden="true">
         <svg viewBox="0 0 144 76" className="absolute inset-0 h-full w-full" fill="none" stroke="#cbd5e1" strokeWidth="3">
