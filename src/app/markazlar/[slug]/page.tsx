@@ -73,7 +73,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
         </form>
         {!!f.errors?.length && <p role="alert" className="mb-4 text-red-700">{ru ? "Проверьте значения фильтров." : "Filtr qiymatlarini tekshiring."}</p>}
         {rooms.items.length === 0 ? <p className="text-slate-600">{t("ctr.noRooms")}</p>
-          : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{rooms.items.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
+          : <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">{rooms.items.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
         {rooms.pages > 1 && <nav aria-label={ru ? "Страницы помещений" : "Xonalar sahifalari"} className="mt-6 flex items-center justify-center gap-4">{f.page > 1 && <Link href={pager(f.page-1)} className="rounded-lg border px-4 py-2">←</Link>}<span>{f.page} / {rooms.pages}</span>{f.page < rooms.pages && <Link href={pager(f.page+1)} className="rounded-lg border px-4 py-2">→</Link>}</nav>}
       </section>
       <p className="mt-6"><Link href="/markazlar" className="text-brand hover:underline">{t("ctr.back")}</Link></p>

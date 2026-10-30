@@ -12,6 +12,7 @@ import PlaceMap from "@/components/PlaceMap";
 import ContactButtons from "@/components/ContactButtons";
 import ListingCard from "@/components/ListingCard";
 import Gallery from "@/components/Gallery";
+import { TrackView } from "@/components/RecentlyViewed";
 import FavoriteButton from "@/components/FavoriteButton";
 import ReportButton from "@/components/ReportButton";
 import { CompareButton } from "@/components/Compare";
@@ -50,7 +51,7 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
   const fav = await favState();
   const amNames = new Map((await db().select().from(s.amenities)).map((a) => [a.code, ru ? a.nameRu : a.nameUz]));
   const pt = visible ? publicPoint({ id: l.id, lat: l.lat, lng: l.lng, exactLocationPublic: l.exactLocationPublic }) : null; // faqat shu nuqta klientga beriladi
-  const similar = (await searchListings({ ...parseFilters({ category: l.category, region: String(l.regionId) }), page: 1 }, locale)).items.filter((x) => x.id !== l.id).slice(0, 3);
+  const similar = (await searchListings({ ...parseFilters({ category: l.category, region: String(l.regionId) }), page: 1 }, locale)).items.filter((x) => x.id !== l.id).slice(0, 4);
   const rows: [string, string | null][] = [
     [t("det.type"), L10.category[l.category]], [t("det.area"), l.areaM2 ? `${Number(l.areaM2)} ${t("unit.m2")}` : null],
     [t("det.floor"), l.floor != null ? `${l.floor}${l.totalFloors ? ` / ${l.totalFloors}` : ""}` : null], [t("det.seats"), l.seats ? String(l.seats) : null],
@@ -73,6 +74,9 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
           <p className="text-sm">{t("det.similarHint")}</p>
         </div>
       )}
+      {visible && <TrackView item={{ id: l.id, href: `/joylar/${l.id}-${l.slug}`, title: l.title, price: primaryPrice(price, l.areaM2, locale),
+        place: [r.district, r.region].filter(Boolean).join(", "), area: l.areaM2 ? `${Number(l.areaM2)} ${t("unit.m2")}` : "",
+        thumb: imgs[0]?.thumb ?? null, full: imgs[0]?.url ?? null, date: fmtDate(l.publishedAt, locale) }} />}
       <div className="grid gap-6 md:grid-cols-[1fr_300px]">
         <div>
           <Gallery images={imgs} alt={l.title} fallback={l.isDemo ? t("det.demoImg") : t("det.noImg")} />
@@ -98,7 +102,7 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
       </div>
       {similar.length > 0 && (
         <section className="mt-10"><h2 className="font-semibold mb-3">{t("det.similar")}</h2>
-          <div className="grid gap-4 sm:grid-cols-3">{similar.map((it) => <ListingCard key={it.id} it={it} />)}</div></section>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{similar.map((it) => <ListingCard key={it.id} it={it} />)}</div></section>
       )}
       {visible && <a href="#aloqa" className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 p-3 backdrop-blur md:hidden"><span className="block rounded bg-brand py-2.5 text-center font-medium text-white">{t("det.contactJump")}</span></a>}
       <p className="mt-6"><Link href="/joylar" className="text-brand hover:underline">{t("det.back")}</Link></p>
