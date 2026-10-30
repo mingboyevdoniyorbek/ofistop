@@ -13,7 +13,7 @@ const Icon = ({ d, active }: { d: string; active: boolean }) => (
 );
 const ICONS = {
   home: "M3.5 10.5 12 4l8.5 6.5V20a1 1 0 0 1-1 1H15v-6h-6v6H4.5a1 1 0 0 1-1-1z",
-  search: "M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15zm5.3-2.2L21 21",
+  building: "M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 9h4a1 1 0 0 1 1 1v11M2.5 21h19M8 8h3M8 12h3M8 16h3",
   heart: "M12 20.5s-7.5-4.6-9.3-9.2C1.5 8 3.6 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.6 0 5.7 3.5 4.5 6.8-1.8 4.6-9.3 9.2-9.3 9.2z",
   user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7.5 8.5c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5",
 };
@@ -44,7 +44,7 @@ export default function BottomNav({ loggedIn, promo }: { loggedIn: boolean; prom
 
   const items = [
     { href: "/", label: ru ? "Главная" : "Asosiy", icon: ICONS.home, active: path === "/" },
-    { href: "/joylar", label: ru ? "Поиск" : "Qidiruv", icon: ICONS.search, active: path === "/joylar" || path.startsWith("/markazlar") },
+    { href: "/markazlar", label: ru ? "Центры" : "Markazlar", icon: ICONS.building, active: path.startsWith("/markazlar") },
     null,
     { href: "/kabinet/sevimlilar", label: ru ? "Избранное" : "Sevimlilar", icon: ICONS.heart, active: path === "/kabinet/sevimlilar" },
     { href: loggedIn ? "/kabinet" : "/kirish", label: ru ? "Профиль" : "Profil", icon: ICONS.user, active: path.startsWith("/kabinet") && path !== "/kabinet/sevimlilar" },
