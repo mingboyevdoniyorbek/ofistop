@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useLocale, useT } from "./I18nProvider";
 import { labels } from "@/lib/format";
+import FormSelect from "./FormSelect";
 export default function ProfileForm({ initial }: { initial: { displayName: string; posterType: string; companyName: string; contactPhone: string; telegramUsername: string } }) {
   const t = useT(); const P = labels(useLocale()).poster;
   const [f, setF] = useState(initial); const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null); const [busy, setBusy] = useState(false);
@@ -12,7 +13,7 @@ export default function ProfileForm({ initial }: { initial: { displayName: strin
       const r = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) }).catch(() => null); const d = await r?.json().catch(() => ({})); setBusy(false);
       setMsg(r?.ok ? { ok: true, t: t("prof.saved") } : { ok: false, t: d?.error ?? t("prof.netErr") }); }}>
       <label className="block text-sm">{t("prof.name")}<input className={inp} value={f.displayName} onChange={set("displayName")} required minLength={2} /></label>
-      <label className="block text-sm">{t("prof.poster")}<select className={inp} value={f.posterType} onChange={set("posterType")}>{Object.entries(P).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
+      <label className="block text-sm">{t("prof.poster")}<FormSelect className={inp} value={f.posterType} onChange={set("posterType")}>{Object.entries(P).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FormSelect></label>
       <p className="text-xs text-slate-500">{t("prof.posterHint")}</p>
       <label className="block text-sm">{t("prof.company")}<input className={inp} value={f.companyName} onChange={set("companyName")} /></label>
       <label className="block text-sm">{t("prof.phone")}<input className={inp} value={f.contactPhone} onChange={set("contactPhone")} inputMode="tel" placeholder="+998 90 123 45 67" /></label>

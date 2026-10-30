@@ -78,6 +78,8 @@ export const SERVER_MSGS: readonly (readonly [string, string])[] = [
   ["Ruxsat yo'q", "Нет доступа"],
   ["Avval tizimga kiring", "Сначала войдите в систему"],
   ["E'lon topilmadi", "Объявление не найдено"],
+  ["Faqat qoralamani o'chirish mumkin", "Удалить можно только черновик"],
+  ["CRON_SECRET sozlanmagan", "CRON_SECRET не настроен"],
   ["Noto'g'ri so'rov", "Некорректный запрос"],
   ["So'rov noto'g'ri", "Некорректный запрос"],
   ["Juda ko'p so'rov", "Слишком много запросов"],

@@ -90,7 +90,7 @@ test("center representatives can edit only their center and create prefilled roo
  expect((await editCenter(request(fields,"PATCH"),ctx(b.id))).status).toBe(403);
  const response=await createListing(request({centerId:a.id}),ctx());expect(response.status).toBe(201);
  const [room]=await state.db.select().from(schema.listings).where(eq(schema.listings.id,(await response.json()).id));
- expect(room).toMatchObject({centerId:a.id,category:"bc_room",posterType:"business_center",moderationStatus:"draft",address:a.address});
+ expect(room).toMatchObject({centerId:a.id,category:"bc_room",posterType:"business_center",moderationStatus:"draft",publishedAt:null,address:a.address});
  expect((await createListing(request({centerId:b.id}),ctx())).status).toBe(403);
  expect((await editCenter(request({...fields,website:"javascript:alert(1)"},"PATCH"),ctx(a.id))).status).toBe(422);
  await state.db.delete(schema.businessCenterMemberships).where(and(eq(schema.businessCenterMemberships.centerId,a.id),eq(schema.businessCenterMemberships.userId,owner.id)));
@@ -124,4 +124,24 @@ test("center totals use full rent, exclude pending rooms, and cover reorder reje
  const [cover]=await state.db.select().from(schema.businessCenterImages).where(eq(schema.businessCenterImages.centerId,center.id)).orderBy(schema.businessCenterImages.position);expect(cover.id).toBe(images[1].id);
  expect((await editCenter(request({action:"reorder_images",order:[images[0].id,images[0].id]},"PATCH"),ctx(center.id))).status).toBe(422);
  expect((await editCenter(request({action:"reorder_images",order:[images[0].id,owner.id]},"PATCH"),ctx(center.id))).status).toBe(422);
+});
+
+import { DELETE as deleteListing } from "../src/app/api/listings/[id]/route";
+import { purgeStaleDrafts } from "../src/lib/drafts";
+test("qoralama: egasi o'chiradi, chop etilgan e'lon o'chmaydi, 7 kundan eski qoralamalar avtomatik o'chadi",async()=>{
+ const old=new Date(Date.now()-8*86400000), fresh=new Date(Date.now()-2*86400000);
+ const [d1,d2,d3,pub,othersDraft]=await state.db.insert(schema.listings).values([
+  {...base("draft-manual"),moderationStatus:"draft",publishedAt:null},
+  {...base("draft-old"),moderationStatus:"draft",publishedAt:null,updatedAt:old},
+  {...base("draft-fresh"),moderationStatus:"draft",publishedAt:null,updatedAt:fresh},
+  {...base("draft-published")},
+  {...base("draft-other-owner"),ownerId:other.id,moderationStatus:"draft",publishedAt:null},
+ ]).returning();
+ expect((await deleteListing(request({},"DELETE"),ctx(d1.id))).status).toBe(200);
+ expect((await deleteListing(request({},"DELETE"),ctx(pub.id))).status).toBe(409);
+ expect((await deleteListing(request({},"DELETE"),ctx(othersDraft.id))).status).toBe(404);
+ expect(await purgeStaleDrafts()).toBe(1);
+ const left=new Set((await state.db.select({id:schema.listings.id}).from(schema.listings)).map((r:any)=>r.id));
+ expect(left.has(d1.id)).toBe(false); expect(left.has(d2.id)).toBe(false);
+ expect(left.has(d3.id)).toBe(true); expect(left.has(pub.id)).toBe(true); expect(left.has(othersDraft.id)).toBe(true);
 });
