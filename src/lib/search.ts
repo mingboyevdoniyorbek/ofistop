@@ -118,6 +118,13 @@ export async function searchWhere(f: Filters) {
   return and(buildWhere(f), ids.length ? inArray(s.listings.id, ids) : sql`false`);
 }
 
+/** Xarita kartasi uchun: e'lonlar eng ko'p bo'lgan tumanlar bo'yicha sonlar. */
+export async function topDistrictCounts(limit = 4) {
+  const rows = await db().select({ n: sql<number>`count(*)::int` }).from(s.listings).where(publicCond())
+    .groupBy(s.listings.districtId).orderBy(desc(sql`count(*)`)).limit(limit);
+  return rows.map((r) => r.n);
+}
+
 /** Karta uchun umumiy select (qidiruv, sevimlilar va boshqalar). */
 function cardQuery(locale: "uz" | "ru") {
   const L = s.listings;
