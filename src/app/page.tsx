@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { labels } from "@/lib/format";
 import { getT } from "@/lib/i18n";
-import { parseFilters, searchListings } from "@/lib/search";
+import { parseFilters, searchListings, topDistrictCounts } from "@/lib/search";
 import ListingCard from "@/components/ListingCard";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import NewListingButton from "@/components/NewListingButton";
 import { promoEnabled, guestAccessEnabled } from "@/lib/launch-mode";
 import { getCurrentUser } from "@/lib/auth";
 import { centerStats, listCenters } from "@/lib/centers";
-import { formatMinor } from "@/lib/money";
 import { mediaUrl } from "@/lib/storage";
 import ListingPhoto from "@/components/ListingPhoto";
 
@@ -21,9 +20,7 @@ export default async function Home() {
   const latest = await searchListings({ ...parseFilters({}), page: 1 }, locale).catch(() => null);
   const centers = (await listCenters(locale).catch(() => [])).slice(0, 10);
   const stats = await centerStats(centers.map((c) => c.id)).catch(() => new Map());
-  // Xarita kartasidagi narx belgilari: eng yangi e'lonlardan ikkitasi.
-  const pins = (latest?.items ?? []).filter((it) => it.priceAmountMinor != null && it.pricePeriod === "month" && it.priceBasis === "whole").slice(0, 2)
-    .map((it) => `${formatMinor(it.priceAmountMinor!)} ${it.currency === "USD" ? "$" : (locale === "ru" ? "сум" : "so‘m")}`);
+  const clusters = await topDistrictCounts().catch(() => []);
   return (
     <div>
       <section className="bg-slate-50 border-b border-slate-200">
@@ -36,7 +33,7 @@ export default async function Home() {
               {Object.entries(CAT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
             <button className="rounded bg-brand text-white px-6 py-2.5 font-medium hover:bg-brand-dark">{t("home.search")}</button>
           </form>
-          <MapCard ru={locale === "ru"} pins={pins} />
+          <MapCard ru={locale === "ru"} counts={clusters} />
         </div>
       </section>
       <section className="mx-auto max-w-6xl px-4 py-8">
@@ -85,24 +82,25 @@ export default async function Home() {
   );
 }
 
-/** "Xaritada ko'rish" kartasi: chapda belgi va matn, o'ngda narxlar ko'rsatilgan kichik xarita. */
-function MapCard({ ru, pins }: { ru: boolean; pins: string[] }) {
-  const [a, b] = [pins[0] ?? "400 $", pins[1] ?? "650 $"];
+/** "Xaritada ko'rish" kartasi: chapda logo va matn, o'ngda hududlardagi e'lonlar soni ko'rsatilgan kichik xarita (haqiqiy xaritadagi klasterlar kabi). */
+function MapCard({ ru, counts }: { ru: boolean; counts: number[] }) {
+  const spots = ["left-3 top-2 h-9 w-9 text-sm", "left-[68px] top-9 h-8 w-8 text-xs", "right-2 top-1.5 h-7 w-7 text-xs", "bottom-1 right-3 h-6 w-6 text-[11px]"];
+  const bubble = "absolute grid place-items-center rounded-full bg-white font-bold text-brand-dark shadow-md ring-2 ring-brand/25";
   return (
     <Link href="/joylar?view=map" className="group mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-brand to-brand-dark p-3 text-white shadow-md transition hover:shadow-lg sm:max-w-xl sm:p-4">
-      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-white text-brand shadow-sm" aria-hidden="true">
-        <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 3.2 3.6 3V13H13v-2.5h-2V13H8.4V8.2z" /></svg>
+      <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-white shadow-sm" aria-hidden="true">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.webp" alt="" width={44} height={44} className="h-11 w-11" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-lg font-bold leading-tight">{ru ? "Смотреть на карте" : "Xaritada ko‘rish"}</span>
-        <span className="block text-sm text-blue-100">{ru ? "Цены на карте" : "Narxlar xaritada"}</span>
+        <span className="block text-sm text-blue-100">{ru ? "Объявления по районам" : "Hududlar bo‘yicha e’lonlar"}</span>
       </span>
-      <span className="relative h-[72px] w-36 shrink-0 overflow-hidden rounded-xl bg-slate-100" aria-hidden="true">
-        <svg viewBox="0 0 144 72" className="absolute inset-0 h-full w-full" fill="none" stroke="#cbd5e1" strokeWidth="3">
-          <path d="M-5 50 C40 40 70 62 150 30" /><path d="M30 -5 L52 80" /><path d="M95 -5 C90 30 110 50 104 80" strokeWidth="2" /><path d="M-5 18 L150 12" strokeWidth="2" />
+      <span className="relative h-[76px] w-36 shrink-0 overflow-hidden rounded-xl bg-slate-100" aria-hidden="true">
+        <svg viewBox="0 0 144 76" className="absolute inset-0 h-full w-full" fill="none" stroke="#cbd5e1" strokeWidth="3">
+          <path d="M-5 52 C40 42 70 64 150 32" /><path d="M30 -5 L52 80" /><path d="M95 -5 C90 30 110 52 104 80" strokeWidth="2" /><path d="M-5 18 L150 12" strokeWidth="2" />
         </svg>
-        <span className="absolute left-2 top-2 rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-white shadow after:absolute after:left-1/2 after:top-full after:-translate-x-1/2 after:border-x-4 after:border-t-4 after:border-x-transparent after:border-t-accent">{a}</span>
-        <span className="absolute bottom-3 right-2 rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-white shadow after:absolute after:left-1/2 after:top-full after:-translate-x-1/2 after:border-x-4 after:border-t-4 after:border-x-transparent after:border-t-accent">{b}</span>
+        {counts.slice(0, 4).map((c, i) => <span key={i} className={`${bubble} ${spots[i]}`}>{c}</span>)}
       </span>
     </Link>
   );

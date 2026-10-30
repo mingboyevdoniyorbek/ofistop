@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <I18nProvider locale={locale}>
         <header className="border-b border-slate-200 bg-white sticky top-0 z-20">
           <nav className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3 md:gap-4 text-sm" aria-label={t("nav.aria")}>
-            <Link href="/" className="font-bold text-lg text-brand">Ofis<span className="text-accent">Top</span></Link>
+            <Link href="/" className="flex items-center gap-1.5 font-bold text-lg text-brand">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/logo.webp" alt="" width={36} height={36} className="h-9 w-9" />Ofis<span className="-ml-1.5 text-accent">Top</span></Link>
             <Link href="/joylar" className="hidden md:inline hover:underline">{t("nav.search")}</Link>
             <Link href="/markazlar" className="hidden md:inline hover:underline">{t("nav.centers")}</Link>
             <span className="flex-1" />
