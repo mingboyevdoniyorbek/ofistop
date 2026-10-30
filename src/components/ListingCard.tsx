@@ -36,7 +36,6 @@ export default async function ListingCard({ it, note }: { it: Item; note?: strin
           {(it.areaM2 || it.floor != null) && <p className="text-xs text-slate-700 sm:text-sm">{it.areaM2 ? `${Number(it.areaM2)} ${t("unit.m2")}` : ""}{it.areaM2 && it.floor != null ? " · " : ""}{it.floor != null ? t("card.floor", { n: it.floor }) : ""}</p>}
           {it.centerName && <p className="hidden text-sm text-slate-600 sm:block">{t("card.center", { name: it.centerName })}</p>}
           <p className="hidden text-xs text-slate-500 sm:block">{L.poster[it.posterType]}{it.availabilityConfirmedAt ? ` · ${t("card.confirmed", { date: fmtDate(it.availabilityConfirmedAt, locale) })}` : ""}</p>
-          <span className="hidden rounded-full bg-green-50 px-2 py-1 text-[11px] text-green-800 sm:inline-block">{locale === "ru" ? "Просмотрено администратором" : "Admin ko‘rib chiqqan"}</span>
         </div>
       </Link>
       <div className="px-2.5 pb-2.5 sm:px-3 sm:pb-3"><CompareButton id={it.id}/></div>

@@ -12,6 +12,10 @@ import PlaceMap from "@/components/PlaceMap";
 import ContactButtons from "@/components/ContactButtons";
 import ListingCard from "@/components/ListingCard";
 import Gallery from "@/components/Gallery";
+import JsonLd from "@/components/JsonLd";
+import ViewPing from "@/components/ViewPing";
+import { pageAlternates, breadcrumbJsonLd, absUrl } from "@/lib/seo";
+import { landingSlugOf } from "@/lib/landing";
 import { TrackView } from "@/components/RecentlyViewed";
 import FavoriteButton from "@/components/FavoriteButton";
 import ReportButton from "@/components/ReportButton";
@@ -34,7 +38,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { locale, t } = await getT(); const id = idOf((await params).slug); const r = id ? await load(id, locale === "ru").catch(() => null) : null;
   if (!r || r.ownerBlocked || r.l.isSuspended || r.l.moderationStatus !== "approved") return { title: t("det.notFound"), robots: { index: false } };
   const pictures = await listImages(r.l.id);
-  return { alternates: { canonical: `/joylar/${r.l.id}-${r.l.slug}` }, openGraph: { title: r.l.title, images: pictures.filter(i => i.url).slice(0, 1).map(i => ({ url: i.url! })) }, title: r.l.title, description: t("det.metaDesc", { cat: labels(locale).category[r.l.category], place: r.district ?? r.region, text: r.l.description.slice(0, 120) }), robots: { index: isPubliclyVisible(r.l) } };
+  const ogImages = pictures.filter(i => i.url).slice(0, 1).map(i => ({ url: i.url! }));
+  return { alternates: await pageAlternates(`/joylar/${r.l.id}-${r.l.slug}`), openGraph: { title: r.l.title, ...(ogImages.length ? { images: ogImages } : {}) }, title: r.l.title, description: t("det.metaDesc", { cat: labels(locale).category[r.l.category], place: r.district ?? r.region, text: r.l.description.slice(0, 120) }), robots: { index: isPubliclyVisible(r.l) } };
 }
 
 export default async function Detail({ params }: { params: Promise<{ slug: string }> }) {
@@ -74,6 +79,18 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
           <p className="text-sm">{t("det.similarHint")}</p>
         </div>
       )}
+      <JsonLd data={breadcrumbJsonLd([["OfisTop", "/"], [L10.category[l.category], landingSlugOf(l.category) ? `/ijara/${landingSlugOf(l.category)}` : "/joylar"], [l.title, `/joylar/${l.id}-${l.slug}`]])} />
+      {visible && <JsonLd data={{
+        "@context": "https://schema.org", "@type": "Offer", url: absUrl(`/joylar/${l.id}-${l.slug}`), name: l.title, description: l.description.slice(0, 500),
+        image: imgs.slice(0, 5).map((i) => absUrl(i.url)), businessFunction: "http://purl.org/goodrelations/v1#LeaseOut", category: L10.category[l.category],
+        availability: "https://schema.org/InStock", ...(l.publishedAt ? { validFrom: new Date(l.publishedAt).toISOString() } : {}),
+        ...(l.priceAmountMinor != null ? { price: (Number(l.priceAmountMinor) / 100).toFixed(2), priceCurrency: l.currency,
+          priceSpecification: { "@type": "UnitPriceSpecification", price: (Number(l.priceAmountMinor) / 100).toFixed(2), priceCurrency: l.currency, unitCode: l.pricePeriod === "month" ? "MON" : l.pricePeriod === "day" ? "DAY" : "HUR" } } : {}),
+        itemOffered: { "@type": "Place", name: l.title, address: { "@type": "PostalAddress", addressLocality: r.district ?? undefined, addressRegion: r.region, addressCountry: "UZ" },
+          ...(l.areaM2 ? { floorSize: { "@type": "QuantitativeValue", value: Number(l.areaM2), unitCode: "MTK" } } : {}),
+          ...(pt && !pt.approx ? { geo: { "@type": "GeoCoordinates", latitude: pt.lat, longitude: pt.lng } } : {}) },
+      }} />}
+      {visible && <ViewPing id={l.id} />}
       {visible && <TrackView item={{ id: l.id, href: `/joylar/${l.id}-${l.slug}`, title: l.title, price: primaryPrice(price, l.areaM2, locale),
         place: [r.district, r.region].filter(Boolean).join(", "), area: l.areaM2 ? `${Number(l.areaM2)} ${t("unit.m2")}` : "",
         thumb: imgs[0]?.thumb ?? null, full: imgs[0]?.url ?? null, date: fmtDate(l.publishedAt, locale) }} />}
@@ -83,7 +100,7 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
           <div className="mt-4 flex items-start justify-between gap-3"><h1 className="text-2xl font-bold">{l.title}</h1><FavoriteButton listingId={l.id} initial={fav.ids.has(l.id)} loggedIn={fav.loggedIn} /></div>
           <p className="text-brand text-2xl font-bold mt-2">{primaryPrice(price, l.areaM2, locale)}</p>
           {total && <p className="text-sm text-slate-600">{priceLabel(price, locale)}</p>}
-          <div className="mt-3 flex flex-wrap items-center gap-2"><span title={ru ? "Администратор проверил объявление. Это не техническая проверка здания." : "Administrator e’lon ma’lumotlarini ko‘rib chiqqan. Bu binoning texnik tekshiruvi emas."} className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-brand">✓ {ru ? "Объявление проверено" : "E’lon tekshirilgan"}</span>{l.availabilityConfirmedAt && visible && <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs text-green-800">{ru ? "Доступность подтверждена" : "Bo‘shligi tasdiqlangan"}: {fmtDate(l.availabilityConfirmedAt, locale)}</span>}{visible && <CompareButton id={l.id} />}</div>
+          <div className="mt-3 flex flex-wrap items-center gap-2"><span title={ru ? "Администратор проверил объявление. Это не техническая проверка здания." : "Administrator e’lon ma’lumotlarini ko‘rib chiqqan. Bu binoning texnik tekshiruvi emas."} className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-brand">✓ {ru ? "Объявление проверено" : "E’lon tekshirilgan"}</span>{l.availabilityConfirmedAt && visible && <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs text-green-800">{ru ? "Доступность подтверждена" : "Bo‘shligi tasdiqlangan"}: {fmtDate(l.availabilityConfirmedAt, locale)}</span>}{visible && <CompareButton id={l.id} />}<span className="text-xs text-slate-500">{ru ? "Просмотры" : "Ko‘rishlar"}: {l.viewCount}</span></div>
           <dl className="mt-4 grid grid-cols-[150px_1fr] gap-y-1.5 text-sm">
             {rows.filter(([, v]) => v).map(([k, v]) => <div key={k} className="contents"><dt className="text-slate-500">{k}</dt><dd>{v}</dd></div>)}
           </dl>

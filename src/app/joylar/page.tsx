@@ -4,6 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { parseFilters, searchListings } from "@/lib/search";
 import ListingCard from "@/components/ListingCard";
+import { pageAlternates } from "@/lib/seo";
 import FilterForm from "@/components/FilterForm";
 import ListingMap from "@/components/ListingMap";
 import { getT } from "@/lib/i18n";
@@ -11,7 +12,14 @@ import SearchTools from "@/components/SearchTools";
 import SearchRestore from "@/components/SearchRestore";
 
 export const dynamic = "force-dynamic";
-export async function generateMetadata() { const { t } = await getT(); return { title: t("cat.title"), robots: { index: true, follow: true } }; }
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { t, locale } = await getT(); const ru = locale === "ru";
+  // Filtr kombinatsiyalari indekslanmaydi (ular uchun /ijara/... sahifalari bor); asosiy katalog — canonical.
+  const filtered = Object.keys(await searchParams).some((k) => k !== "page" && k !== "view");
+  return { title: t("cat.title"),
+    description: ru ? "Каталог офисов, магазинов, складов и других коммерческих помещений в аренду: фильтры по цене, площади, району и карта." : "Ofis, do‘kon, ombor va boshqa tijorat joylari ijarasi katalogi: narx, maydon, tuman bo‘yicha filtrlar va xarita.",
+    robots: { index: !filtered, follow: true }, alternates: await pageAlternates("/joylar") };
+}
 
 export default async function Catalog({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { locale, t } = await getT();

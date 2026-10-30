@@ -8,6 +8,7 @@ import type { MsgKey } from "@/messages/uz";
 import { mediaUrl } from "@/lib/storage";
 import AdminAction from "@/components/AdminAction";
 import { requireStaffPage } from "@/lib/staff";
+import { listingWarnings } from "@/lib/listing-checks";
 
 const TABS = ["pending", "active", "expired", "rejected", "all"] as const;
 const PAGE = 20;
@@ -49,6 +50,7 @@ export default async function AdminListings({ searchParams }: { searchParams: Pr
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-medium">{l.title} {l.isDemo && <span className="rounded bg-amber-100 px-1.5 text-xs text-amber-800">DEMO</span>}</p>
+                  {listingWarnings(l, locale === "ru").map((w) => <p key={w} role="alert" className="mt-1 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900">⚠ {w}</p>)}
                   <p className="text-sm text-slate-600">{lb.category[l.category]} · {region}{center ? ` · ${center}` : ""} · {priceLabel({ ...p, negotiable: l.priceNegotiable }, locale)}{total ? ` · ${total}` : ""}</p>
                   <p className="text-xs text-slate-500">{t("adm.l.meta", { mod: t(`adm.mod.${l.moderationStatus}` as MsgKey), avail: lb.avail[l.availabilityStatus], exp: fmtDate(l.expiresAt, locale) || "—", owner: owner ?? "", type: lb.poster[ownerType ?? "owner"] })}</p>
                   {l.isSuspended && <p className="text-sm text-red-700">{l.suspensionReason}</p>}

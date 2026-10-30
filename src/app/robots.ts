@@ -4,5 +4,7 @@ import type { MetadataRoute } from "next";
 export const dynamic = "force-dynamic";
 export default function robots(): MetadataRoute.Robots {
   const base = publicSiteUrl();
-  return { rules: [{ userAgent: "*", allow: "/", disallow: ["/kabinet", "/admin", "/api", "/kirish", "/media"] }], sitemap: `${base}/sitemap.xml` };
+  const priv = ["/kabinet", "/admin", "/api", "/kirish", "/media", "/sevimlilar", "/taqqoslash"];
+  // E'lon rasmlari (/api/media) Google Rasmlar va havola ko'rinishlari uchun ochiq.
+  return { rules: [{ userAgent: "*", allow: ["/", "/api/media/"], disallow: [...priv, ...priv.map((p) => `/ru${p}`)] }], sitemap: `${base}/sitemap.xml` };
 }

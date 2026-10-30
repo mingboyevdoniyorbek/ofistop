@@ -6,7 +6,7 @@ import { getT } from "@/lib/i18n";
 import { labels, primaryPrice, priceLabel } from "@/lib/format";
 import { formatMinor } from "@/lib/money";
 import { CompareButton } from "@/components/Compare";
-export const metadata = { title: "Taqqoslash — OfisTop", robots: { index: false } };
+export const metadata = { title: "Taqqoslash", robots: { index: false } };
 export default async function Page({ searchParams }: { searchParams: Promise<{ ids?: string | string[] }> }) {
   const { locale } = await getT(), ru = locale === "ru", L = labels(locale);
   const rawIds = (await searchParams).ids;

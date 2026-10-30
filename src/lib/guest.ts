@@ -4,6 +4,7 @@ import { createSession, getCurrentUser, getSessionUser } from "./auth";
 import { HttpError, sameOrigin } from "./guard";
 import { guestAccessEnabled, isGuestPhone } from "./launch-mode";
 import { hit } from "./ratelimit";
+import { clientIp } from "@/lib/client-ip";
 
 export async function getOrCreateGuest(req: Request) {
   sameOrigin(req);
@@ -14,7 +15,7 @@ export async function getOrCreateGuest(req: Request) {
   }
   if (!guestAccessEnabled()) throw new HttpError(401, "Avval tizimga kiring");
   if ((await getSessionUser())?.blocked) throw new HttpError(403, "Akkaunt bloklangan");
-  const ip = (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  const ip = clientIp(req);
   if (!(await hit(`guest:ip:${ip}`, 10, 3600))) throw new HttpError(429, "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring.");
   const guest = await db().transaction(async tx => {
     // A contact number never grants ownership of somebody else's account.

@@ -4,10 +4,11 @@ import { HttpError } from "@/lib/guard";
 import { handleLogin } from "@/lib/login-errors";
 import { googleEnabled, googleCallback } from "@/lib/google-login";
 import { startChallenge, loginLimit } from "@/lib/login-challenge";
+import { clientIp } from "@/lib/client-ip";
 
 const start = handleLogin("google-start", async req => {
   if (!googleEnabled()) throw new HttpError(503, "Google orqali kirish hali sozlanmagan.");
-  await loginLimit(req, `google:${(req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0]}`);
+  await loginLimit(req, `google:${clientIp(req)}`);
   const verifier = randomBytes(32).toString("base64url");
   const nonce = randomBytes(32).toString("base64url");
   const { approvalToken } = await startChallenge("google", "", new URL(req.url).searchParams.get("next") ?? "/kabinet", { verifier, nonce });

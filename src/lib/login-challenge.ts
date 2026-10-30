@@ -9,6 +9,7 @@ import { hit } from "./ratelimit";
 import { safeNext } from "./validation";
 import { isGuestPhone } from "./launch-mode";
 import { resolveIdentity, type IdentityProof } from "./identity-login";
+import { clientIp } from "@/lib/client-ip";
 
 export type Challenge = typeof s.authChallenges.$inferSelect;
 export type LoginMethod = "email" | "telegram" | "telegram_code" | "google";
@@ -22,7 +23,7 @@ export function appOrigin() {
   return url.origin;
 }
 export async function loginLimit(req: Request, key: string) {
-  const ip = (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  const ip = clientIp(req);
   if (!await hit(`login:ip:${ip}`, 30, 3600) || !await hit(`login:target:${tokenHash(key)}`, 3, 600))
     throw new HttpError(429, "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring.");
 }

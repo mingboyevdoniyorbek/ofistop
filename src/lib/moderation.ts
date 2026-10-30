@@ -3,6 +3,7 @@ import { count, eq } from "drizzle-orm";
 import { submitErrors, toForm } from "./listing-input";
 import { db, schema as s } from "@/db/client";
 import { moderationTransition, type Moderation, type Role, canModerate } from "./status";
+import { postListingToChannel } from "./telegram-channel";
 
 type Tx = Parameters<Parameters<ReturnType<typeof db>["transaction"]>[0]>[0];
 export async function recordModeration(tx: Tx, p: { listingId: string; actorId: string | null; from: Moderation | null; to: Moderation; reason?: string | null }) {
@@ -11,7 +12,8 @@ export async function recordModeration(tx: Tx, p: { listingId: string; actorId: 
 
 export async function moderate(listingId: string, actor: { id: string; role: Role }, action: "approve" | "reject", reason: string | undefined, ttlDays: number, expectedUpdatedAt?: string) {
   if (!canModerate(actor.role)) return { ok: false as const, error: "Ruxsat yo'q" };
-  return db().transaction(async (tx) => {
+  let firstPublish = false;
+  const res = await db().transaction(async (tx) => {
     const [l] = await tx.select().from(s.listings).where(eq(s.listings.id, listingId)).for("update");
     if (!l) return { ok: false as const, error: "E'lon topilmadi" };
     if (l.isSuspended || l.availabilityStatus === "archived") return { ok: false as const, error: "Bloklangan yoki arxivlangan e’lon tasdiqlanmaydi" };
@@ -31,6 +33,10 @@ export async function moderate(listingId: string, actor: { id: string; role: Rol
       : { moderationStatus: t.to, rejectionReason: reason!.trim(), updatedAt: now }).where(eq(s.listings.id, listingId));
     await recordModeration(tx, { listingId, actorId: actor.id, from: l.moderationStatus, to: t.to, reason });
     await tx.insert(s.auditLogs).values({ actorId: actor.id, action: `listing.${action}`, entityType: "listing", entityId: listingId, meta: reason ? { reason } : null });
+    firstPublish = action === "approve" && !l.publishedAt && !l.isDemo;
     return { ok: true as const, to: t.to };
   });
+  // Birinchi marta chop etilgan e'lon Telegram kanalga yuboriladi (sozlangan bo'lsa).
+  if (res.ok && firstPublish) await postListingToChannel(listingId);
+  return res;
 }

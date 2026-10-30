@@ -4,6 +4,9 @@ import { getT } from "@/lib/i18n";
 import { parseFilters, searchListings, topDistrictCounts } from "@/lib/search";
 import ListingCard from "@/components/ListingCard";
 import RecentlyViewed from "@/components/RecentlyViewed";
+import { landingSlugOf } from "@/lib/landing";
+import { memo } from "@/lib/memo";
+import { pageAlternates } from "@/lib/seo";
 import NewListingButton from "@/components/NewListingButton";
 import { promoEnabled, guestAccessEnabled } from "@/lib/launch-mode";
 import { getCurrentUser } from "@/lib/auth";
@@ -12,15 +15,17 @@ import { mediaUrl } from "@/lib/storage";
 import ListingPhoto from "@/components/ListingPhoto";
 
 export const dynamic = "force-dynamic";
+export async function generateMetadata() { return { alternates: await pageAlternates("/") }; }
 
 export default async function Home() {
   const { locale, t } = await getT(); const CAT = labels(locale).category;
   const promo = promoEnabled();
   const user = await getCurrentUser();
-  const latest = await searchListings({ ...parseFilters({}), page: 1 }, locale).catch(() => null);
-  const centers = (await listCenters(locale).catch(() => [])).slice(0, 10);
-  const stats = await centerStats(centers.map((c) => c.id)).catch(() => new Map());
-  const clusters = await topDistrictCounts().catch(() => []);
+  // Ommaviy bloklar 30 soniya keshlanadi (har bir tashrifda bazaga borilmaydi).
+  const latest = await memo(`home:latest:${locale}`, 30_000, () => searchListings({ ...parseFilters({}), page: 1 }, locale)).catch(() => null);
+  const centers = (await memo(`home:centers:${locale}`, 60_000, () => listCenters(locale)).catch(() => [])).slice(0, 10);
+  const stats = await memo(`home:centerStats:${centers.map((c) => c.id).join(",")}`, 60_000, () => centerStats(centers.map((c) => c.id))).catch(() => new Map());
+  const clusters = await memo("home:clusters", 60_000, () => topDistrictCounts()).catch(() => []);
   return (
     <div>
       <section className="bg-slate-50 border-b border-slate-200">
@@ -39,7 +44,7 @@ export default async function Home() {
       <section className="mx-auto max-w-6xl px-4 py-8">
         <h2 className="text-lg font-semibold mb-3">{t("home.types")}</h2>
         <div className="flex flex-wrap gap-2">
-          {Object.entries(CAT).map(([k, v]) => <Link key={k} href={`/joylar?category=${k}`} className="rounded-full border border-slate-300 px-3 py-1.5 text-sm hover:border-brand">{v}</Link>)}
+          {Object.entries(CAT).map(([k, v]) => <Link key={k} href={landingSlugOf(k) ? `/ijara/${landingSlugOf(k)}` : `/joylar?category=${k}`} className="rounded-full border border-slate-300 px-3 py-1.5 text-sm hover:border-brand">{v}</Link>)}
         </div>
       </section>
       {centers.length > 0 && (

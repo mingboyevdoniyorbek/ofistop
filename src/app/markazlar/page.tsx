@@ -4,8 +4,9 @@ import CenterStats from "@/components/CenterStats";
 import { getT } from "@/lib/i18n";
 import { mediaUrl } from "@/lib/storage";
 import { searchKey } from "@/lib/text";
+import { pageAlternates } from "@/lib/seo";
 export const dynamic = "force-dynamic";
-export async function generateMetadata() { const { t } = await getT(); return { title: t("ctr.title"), description: t("ctr.desc") }; }
+export async function generateMetadata() { const { t } = await getT(); return { title: t("ctr.title"), description: t("ctr.desc"), alternates: await pageAlternates("/markazlar") }; }
 export default async function Page({ searchParams }: { searchParams: Promise<{q?:string|string[]; vacant?:string|string[]}> }) {
   const { locale, t } = await getT(); const ru = locale === "ru";
   const sp = await searchParams, q = (Array.isArray(sp.q) ? sp.q[0] : sp.q) ?? "", vacant = Array.isArray(sp.vacant) ? sp.vacant[0] : sp.vacant;

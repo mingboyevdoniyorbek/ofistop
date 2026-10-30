@@ -24,7 +24,7 @@ export function CompareButton({ id, onComparePage = false }: { id: string; onCom
 }
 export function CompareBar() {
   const ids = useCompare(), ru = useLocale() === "ru";
-  const path = usePathname();
+  const path = usePathname().replace(/^\/ru(?=\/|$)/, "") || "/"; // /ru/... ham bir xil
   if (!ids.length || ["/kabinet","/admin","/kirish"].some(prefix=>path.startsWith(prefix))) return null;
   return <div className="fixed bottom-20 left-1/2 z-[1100] flex max-w-[94vw] -translate-x-1/2 items-center gap-3 rounded-full bg-brand px-5 py-3 text-sm text-white shadow-xl md:bottom-5">
     <Link href={`/taqqoslash?ids=${ids.join(",")}`} className="whitespace-nowrap font-semibold">⇄ {ru ? "Сравнить" : "Taqqoslash"} ({ids.length}/3)</Link><button aria-label={ru ? "Очистить сравнение" : "Taqqoslashni tozalash"} onClick={() => write([])}>✕</button>

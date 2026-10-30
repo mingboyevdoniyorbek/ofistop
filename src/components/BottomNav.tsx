@@ -20,7 +20,7 @@ const ICONS = {
 
 export default function BottomNav({ loggedIn, promo }: { loggedIn: boolean; promo: boolean }) {
   const ru = useLocale() === "ru";
-  const path = usePathname();
+  const path = usePathname().replace(/^\/ru(?=\/|$)/, "") || "/"; // /ru/... ham bir xil
   const [hidden, setHidden] = useState(false);
   const lastY = useRef(0);
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function BottomNav({ loggedIn, promo }: { loggedIn: boolean; prom
     { href: "/", label: ru ? "Главная" : "Asosiy", icon: ICONS.home, active: path === "/" },
     { href: "/markazlar", label: ru ? "Центры" : "Markazlar", icon: ICONS.building, active: path.startsWith("/markazlar") },
     null,
-    { href: "/kabinet/sevimlilar", label: ru ? "Избранное" : "Sevimlilar", icon: ICONS.heart, active: path === "/kabinet/sevimlilar" },
+    { href: loggedIn ? "/kabinet/sevimlilar" : "/sevimlilar", label: ru ? "Избранное" : "Sevimlilar", icon: ICONS.heart, active: path === "/kabinet/sevimlilar" || path === "/sevimlilar" },
     { href: loggedIn ? "/kabinet" : "/kirish", label: ru ? "Профиль" : "Profil", icon: ICONS.user, active: path.startsWith("/kabinet") && path !== "/kabinet/sevimlilar" },
   ];
   return (

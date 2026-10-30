@@ -6,7 +6,7 @@ import { eq, and } from "drizzle-orm";
 import * as schema from "../src/db/schema";
 const state=vi.hoisted(()=>({db:null as any,client:null as any,user:null as any}));
 vi.mock("../src/db/client",async()=>({db:()=>state.db,queryClient:()=>state.client,schema:await import("../src/db/schema")}));
-vi.mock("next/headers",()=>({cookies:async()=>({get:()=>undefined})}));
+vi.mock("next/headers",()=>({cookies:async()=>({get:()=>undefined}),headers:async()=>new Headers()}));
 vi.mock("../src/lib/auth",()=>({getCurrentUser:async()=>state.user}));
 import { bootstrap } from "../src/db/bootstrap";
 import { parseFilters, searchListings } from "../src/lib/search";

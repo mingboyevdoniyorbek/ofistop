@@ -7,10 +7,12 @@ import { parseFilters, publicSearchPoints, publicCond } from "@/lib/search";
 import { clusterPoints } from "@/lib/map-clusters";
 import { hit } from "@/lib/ratelimit";
 import { handle, HttpError } from "@/lib/guard";
+import { clientIp } from "@/lib/client-ip";
+import { mediaUrl } from "@/lib/storage";
 
 export const GET = handle(async req => {
   const { locale, t } = await getT(); const u = new URL(req.url);
-  const ip = (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  const ip = clientIp(req);
   if (!await hit(`map:${ip}`, 120, 60)) throw new HttpError(429, t("api.map.tooMany"));
   const sp: Record<string, string | string[]> = {};
   for (const k of new Set(u.searchParams.keys())) { const v = u.searchParams.getAll(k); sp[k] = v.length > 1 ? v : v[0]; }
@@ -27,7 +29,7 @@ export const GET = handle(async req => {
   const markers = rows.map(({ l, thumb }) => {
     const p = byId.get(l.id)!; const price = { amount: l.priceAmountMinor, currency: l.currency, period: l.pricePeriod, basis: l.priceBasis, negotiable: l.priceNegotiable };
     return { ...p, radiusM: p.radiusM ?? null, title: l.title, href: `/joylar/${l.id}-${l.slug}`, category: labels(locale).category[l.category], area: l.areaM2 ? Number(l.areaM2) : null,
-      price: primaryPrice(price, l.areaM2, locale), total: l.priceBasis === "per_m2" ? priceLabel(price, locale) : null, thumb: thumb ? `/api/media/${thumb}` : null };
+      price: primaryPrice(price, l.areaM2, locale), total: l.priceBasis === "per_m2" ? priceLabel(price, locale) : null, thumb: mediaUrl(thumb) };
   });
   return NextResponse.json({ total: points.length, clusters: groups.filter(g => g.count > 1).map(({ items, ...g }) => g), markers, groupTotal: group ? selected.length : 0, groupPage: page, truncated: false }, { headers: { "Cache-Control": "no-store" } });
 });

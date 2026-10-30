@@ -2,6 +2,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import sharp from "sharp";
+import { WATERMARK_PNG_BASE64 } from "./watermark-data";
 import { randomUUID } from "crypto";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
@@ -40,7 +41,7 @@ export async function putObject(key: string, buf: Buffer) {
   if (!KEY_RE.test(key)) throw new Error("Noto'g'ri kalit");
   if (remote()) {
     const { client, Bucket } = r2();
-    try { await client.send(new PutObjectCommand({ Bucket, Key: key, Body: buf, ContentType: "image/webp" })); }
+    try { await client.send(new PutObjectCommand({ Bucket, Key: key, Body: buf, ContentType: "image/webp", CacheControl: "public, max-age=31536000, immutable" })); }
     catch (e) {
       const code = storageFailureCode(e);
       console.error(`[storage:put] ${code}`);
@@ -65,6 +66,15 @@ export async function deleteObject(key: string) {
   if (KEY_RE.test(key)) await fs.unlink(path.join(root(), key)).catch(() => {});
 }
 
+let wmBase: Buffer | undefined;
+async function watermarkFor(width: number, height: number) {
+  wmBase ??= Buffer.from(WATERMARK_PNG_BASE64, "base64");
+  const w = Math.round(Math.min(420, Math.max(120, Math.min(width, height * 1.6) * 0.26)));
+  const input = await sharp(wmBase).resize({ width: w }).png().toBuffer({ resolveWithObject: true });
+  const m = Math.round(Math.max(8, width * 0.025));
+  return { input: input.data, left: Math.max(0, width - input.info.width - m), top: Math.max(0, height - input.info.height - m) };
+}
+
 /** Haqiqiy tur sharp orqali aniqlanadi (fayl nomi/Content-Type'ga ishonilmaydi). EXIF/GPS metama'lumot chiqishda yo'q. */
 export async function processImage(input: Buffer) {
   if (input.length === 0 || input.length > MAX_IMAGE_BYTES) throw new ImageError(`Fayl hajmi 8 MB dan oshmasligi kerak`);
@@ -74,7 +84,9 @@ export async function processImage(input: Buffer) {
   if ((meta.width ?? 0) < 200 || (meta.height ?? 0) < 150) throw new ImageError("Rasm juda kichik (kamida 200×150 px)");
   const base = () => sharp(input, { limitInputPixels: 50_000_000 }).rotate(); // EXIF yo'nalishini qo'llaydi; metadata eksport qilinmaydi
   // Store compressed derivatives only; never retain the original 2–5 MB upload.
-  const main = await base().resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).webp({ quality: 80, effort: 5 }).toBuffer({ resolveWithObject: true });
+  const resized = await base().resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).toBuffer({ resolveWithObject: true });
+  // Asosiy rasmga OfisTop belgisi (pastki o'ng burchak): rasmlarni boshqa saytlarga ko'chirishdan himoya.
+  const main = await sharp(resized.data).composite([await watermarkFor(resized.info.width, resized.info.height)]).webp({ quality: 80, effort: 5 }).toBuffer({ resolveWithObject: true });
   // Bound both axes so portrait photos also produce small catalogue thumbnails.
   const thumb = await base().resize({ width: 480, height: 480, fit: "inside", withoutEnlargement: true }).webp({ quality: 72, effort: 5 }).toBuffer();
   return { main: main.data, thumb, width: main.info.width, height: main.info.height };
@@ -87,4 +99,12 @@ export async function storeImage(input: Buffer) {
   catch (e) { await Promise.allSettled([deleteObject(key), deleteObject(thumbKey)]); throw e; }
   return { key, thumbKey, width: p.width, height: p.height };
 }
-export const mediaUrl = (key: string | null | undefined) => (key && KEY_RE.test(key) ? `/api/media/${key}` : null);
+/**
+ * Rasm manzili. MEDIA_PUBLIC_URL berilsa (masalan https://img.ofistop.uz — R2 bucket'ga ulangan ommaviy domen),
+ * rasmlar to'g'ridan-to'g'ri Cloudflare CDN'dan beriladi va serverdan o'tmaydi; aks holda /api/media orqali.
+ */
+export const mediaUrl = (key: string | null | undefined) => {
+  if (!key || !KEY_RE.test(key)) return null;
+  const pub = process.env.MEDIA_PUBLIC_URL?.trim().replace(/\/+$/, "");
+  return pub && /^https:\/\//.test(pub) ? `${pub}/${key}` : `/api/media/${key}`;
+};
