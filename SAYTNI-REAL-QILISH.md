@@ -3,12 +3,11 @@
 Kod tomonidagi barcha tuzatishlar qilingan. Quyidagilar **sizning hisoblaringizda** sozlanadi
 (Vercel → Project → Settings → Environment Variables). Har bir o'zgaruvchidan keyin **Redeploy** qiling.
 
-## 0. ⚠⚠ ENG AVVAL: baza migratsiyasi (aks holda sayt xato beradi)
-Yangi ustun `listings.view_count` qo'shilgan. Yangi kodni ishga tushirishdan **oldin** production bazasida:
-```
-npm run db:migrate
-```
-(`DATABASE_URL` production bazasiga qaratilgan muhitda). Migratsiya faqat ustun qo'shadi, ma'lumot o'chmaydi.
+## 0. Baza migratsiyasi — endi Vercel'da avtomatik
+`package.json`dagi `vercel-build` skripti har deploy'da avval `npm run db:migrate`, keyin `next build` bajaradi.
+Migratsiya muvaffaqiyatsiz bo'lsa deploy to'xtaydi (buzilgan sayt chiqmaydi). Shart: Vercel'da `DATABASE_URL`
+(yoki `DATABASE_URL_UNPOOLED`) **Build** bosqichi uchun ham mavjud bo'lsin (Environment Variables → barcha muhitlar).
+Boshqa hostingda: `npm run db:migrate` ni qo'lda bajaring.
 
 ## 1. ⚠ Deploy'dan OLDIN: admin paroli
 Production'da hujjatdagi namunaviy parol (`ijara`) endi **ishlamaydi** — admin panelga kirish yopiladi.
