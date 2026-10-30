@@ -3,6 +3,7 @@ import { useId, useState } from "react";
 import { useLocale, useT } from "./I18nProvider";
 import { labels } from "@/lib/format";
 import type { Filters } from "@/lib/search";
+import FormSelect from "./FormSelect";
 type Opt = { id: number; name: string; regionId?: number };
 export default function FilterForm({ f, regions, districts, amenities, view }: { view?: string; f: Filters; regions: Opt[]; districts: Opt[]; amenities: { code: string; name: string }[] }) {
   const locale = useLocale(); const t = useT(); const L = labels(locale);
@@ -21,15 +22,15 @@ export default function FilterForm({ f, regions, districts, amenities, view }: {
       {view === "map" && <input type="hidden" name="view" value="map" />}
       <label className="block">{locale === "ru" ? "Метро, ориентир или название" : "Metro, mo‘ljal yoki nom"}<input name="q" defaultValue={f.q} className={inp} placeholder={locale === "ru" ? "Ойбек, Novza, Tashkent City…" : "Oybek, Novza, Tashkent City…"} list={hintId}/><datalist id={hintId}><option value="Oybek"/><option value="Novza"/><option value="Tashkent City"/></datalist></label>
       <label className="block">{t("f.region")}
-        <select name="region" value={region} onChange={e => { setRegion(e.target.value); setDistrict(""); }} className={inp}><option value="">{t("f.all")}</option>{regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></label>
+        <FormSelect name="region" value={region} onChange={e => { setRegion(e.target.value); setDistrict(""); }} className={inp}><option value="">{t("f.all")}</option>{regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</FormSelect></label>
       <label className="block">{t("f.district")}
-        <select name="district" value={district} onChange={e => setDistrict(e.target.value)} className={inp}><option value="">{t("f.all")}</option>{districts.filter(r => !region || r.regionId === Number(region)).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></label>
+        <FormSelect name="district" value={district} onChange={e => setDistrict(e.target.value)} className={inp}><option value="">{t("f.all")}</option>{districts.filter(r => !region || r.regionId === Number(region)).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</FormSelect></label>
       <label className="block">{t("f.type")}
-        <select name="category" value={category} onChange={e => setCategory(e.target.value)} className={inp}><option value="">{t("f.all")}</option>{Object.entries(L.category).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
+        <FormSelect name="category" value={category} onChange={e => setCategory(e.target.value)} className={inp}><option value="">{t("f.all")}</option>{Object.entries(L.category).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FormSelect></label>
       <fieldset className="space-y-2"><legend className="font-medium">{locale === "ru" ? "Бюджет на всё помещение" : "Butun joy uchun budjet"}</legend>
         <div className="grid grid-cols-2 gap-2">
-          <label>{t("f.currency")}<select name="currency" defaultValue={f.currencyFilter ? f.currency : ""} className={inp}><option value="">{t("f.all")}</option><option>UZS</option><option>USD</option></select></label>
-          <label>{t("f.period")}<select name="period" defaultValue={f.periodFilter ? f.period : ""} className={inp}><option value="">{t("f.all")}</option><option value="month">{t("period.month")}</option><option value="day">{t("period.day")}</option><option value="hour">{t("period.hour")}</option></select></label>
+          <label>{t("f.currency")}<FormSelect name="currency" defaultValue={f.currencyFilter ? f.currency : ""} className={inp}><option value="">{t("f.all")}</option><option>UZS</option><option>USD</option></FormSelect></label>
+          <label>{t("f.period")}<FormSelect name="period" defaultValue={f.periodFilter ? f.period : ""} className={inp}><option value="">{t("f.all")}</option><option value="month">{t("period.month")}</option><option value="day">{t("period.day")}</option><option value="hour">{t("period.hour")}</option></FormSelect></label>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <input name="priceMin" defaultValue={f.priceMin} inputMode="decimal" placeholder={t("f.from")} aria-label={t("f.priceFrom")} className={inp} />
@@ -44,9 +45,9 @@ export default function FilterForm({ f, regions, districts, amenities, view }: {
         </div></fieldset>
       <details className="rounded-2xl border border-slate-200 p-3" open={!!(f.furnished || f.poster || f.commission || f.availableBy || f.amenities.length)}><summary className="cursor-pointer font-semibold">{locale === "ru" ? "Дополнительные фильтры" : "Qo‘shimcha filtrlar"}</summary><div className="mt-3 space-y-3">
       <label className="block">{t("f.furnished")}
-        <select name="furnished" defaultValue={f.furnished ?? ""} className={inp}><option value="">{t("f.furnAny")}</option><option value="1">{t("f.furnYes")}</option><option value="0">{t("f.furnNo")}</option></select></label>
+        <FormSelect name="furnished" defaultValue={f.furnished ?? ""} className={inp}><option value="">{t("f.furnAny")}</option><option value="1">{t("f.furnYes")}</option><option value="0">{t("f.furnNo")}</option></FormSelect></label>
       <label className="block">{t("f.poster")}
-        <select name="poster" defaultValue={f.poster ?? ""} className={inp}><option value="">{t("f.all")}</option>{Object.entries(L.poster).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
+        <FormSelect name="poster" defaultValue={f.poster ?? ""} className={inp}><option value="">{t("f.all")}</option>{Object.entries(L.poster).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FormSelect></label>
       <label className="flex items-center gap-2"><input type="checkbox" name="commission" value="none" defaultChecked={f.commission === "none"} /> {t("f.noComm")}</label>
       <label className="block">{locale === "ru" ? "Этаж" : "Qavat"}<input name="floor" inputMode="numeric" defaultValue={f.floor} className={inp}/></label>
       <label className="block">{t("f.availBy")}<input type="date" name="availableBy" defaultValue={f.availableBy} className={inp} /></label>

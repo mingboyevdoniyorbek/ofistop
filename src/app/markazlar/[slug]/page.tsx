@@ -11,6 +11,7 @@ import CenterStats from "@/components/CenterStats";
 import ListingCard from "@/components/ListingCard";
 import { pageAlternates } from "@/lib/seo";
 import { getT } from "@/lib/i18n";
+import FormSelect from "@/components/FormSelect";
 export const dynamic = "force-dynamic";
 
 async function load(id: string, ru = false) {
@@ -65,10 +66,10 @@ export default async function Page({ params, searchParams }: { params: Promise<{
           <label className="text-sm">{ru ? "Площадь от, м²" : "Maydon, m² dan"}<input className={field} name="areaMin" inputMode="decimal" defaultValue={f.areaMin} /></label>
           <label className="text-sm">{ru ? "Площадь до, м²" : "Maydon, m² gacha"}<input className={field} name="areaMax" inputMode="decimal" defaultValue={f.areaMax} /></label>
           <label className="text-sm">{ru ? "Месячный бюджет до" : "Oylik budjet, gacha"}<input className={field} name="priceMax" inputMode="decimal" defaultValue={f.priceMax} /></label>
-          <label className="text-sm">{t("f.currency")}<select className={field} name="currency" defaultValue={f.currency}><option>UZS</option><option>USD</option></select></label>
+          <label className="text-sm">{t("f.currency")}<FormSelect className={field} name="currency" defaultValue={f.currency}><option>UZS</option><option>USD</option></FormSelect></label>
           <input type="hidden" name="period" value="month" />
           <label className="text-sm">{ru ? "Этаж" : "Qavat"}<input className={field} name="floor" inputMode="numeric" defaultValue={f.floor} /></label>
-          <label className="text-sm">{ru ? "Сортировка" : "Saralash"}<select className={field} name="sort" defaultValue={f.sort}><option value="new">{ru ? "Сначала новые" : "Avval yangilari"}</option><option value="price_asc">{ru ? "Дешевле за помещение" : "Jami ijara arzonroq"}</option><option value="area_asc">{ru ? "Меньшая площадь" : "Maydoni kichikroq"}</option><option value="area_desc">{ru ? "Большая площадь" : "Maydoni kattaroq"}</option></select></label>
+          <label className="text-sm">{ru ? "Сортировка" : "Saralash"}<FormSelect className={field} name="sort" defaultValue={f.sort}><option value="new">{ru ? "Сначала новые" : "Avval yangilari"}</option><option value="price_asc">{ru ? "Дешевле за помещение" : "Jami ijara arzonroq"}</option><option value="area_asc">{ru ? "Меньшая площадь" : "Maydoni kichikroq"}</option><option value="area_desc">{ru ? "Большая площадь" : "Maydoni kattaroq"}</option></FormSelect></label>
           <button className="self-end rounded-lg bg-brand px-4 py-2 text-white">{t("home.search")}</button>
           <Link className="self-end px-4 py-2 text-sm text-brand underline" href={`/markazlar/${r.c.id}-${r.c.slug}#xonalar`}>{ru ? "Сбросить" : "Tozalash"}</Link>
         </form>

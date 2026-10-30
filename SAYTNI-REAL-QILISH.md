@@ -40,6 +40,12 @@ Kanal oching → botingizni kanalga **administrator** qilib qo'shing → `TELEGR
 Admin e'lonni birinchi marta tasdiqlaganda rasm, narx va havola bilan kanalga avtomatik chiqadi.
 `SITE_TELEGRAM_CHANNEL` footer'da "Yangi e'lonlar Telegram'da" tugmasini chiqaradi.
 
+## 7. Qoralamalarni avtomatik o'chirish
+Vercel'da `CRON_SECRET` qo'shing (istalgan uzun tasodifiy satr, masalan `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`).
+`vercel.json` har kuni 22:17 UTC'da (Toshkent 03:17) `/api/cron/daily`ni chaqiradi va 7 kundan beri tahrirlanmagan qoralamalarni
+rasmlari bilan o'chiradi. Foydalanuvchi kabinetni ochganda uning eski qoralamalari ham darhol tozalanadi.
+Cron faqat **Production** deploy'da ishlaydi.
+
 ## Yangi sahifalar
 - `/ijara/ofis`, `/ijara/ombor`, `/ijara/dokon`, … va `/ijara/ofis/yunusobod` kabi tuman sahifalari (Google uchun).
 - `/ru/...` — har bir sahifaning ruscha manzili (Google ruscha qidiruvda ham topadi).

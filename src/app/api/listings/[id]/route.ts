@@ -6,6 +6,7 @@ import { formSchema, parseForm, submitErrors, toForm, type ListingRow } from "@/
 import { needsRemoderation } from "@/lib/status";
 import { remoderateIfApproved } from "@/lib/listing-images";
 import { z } from "zod";
+import { deleteDraft } from "@/lib/drafts";
 
 const pgCode = (e: unknown) => (e as { code?: string; cause?: { code?: string } })?.code ?? (e as { cause?: { code?: string } })?.cause?.code;
 
@@ -83,4 +84,14 @@ export const PATCH = handle(async (req, ctx) => {
   const [current] = await locked.select({updatedAt:s.listings.updatedAt}).from(s.listings).where(eq(s.listings.id,l.id));
   return NextResponse.json({ ok: true, remoderation: remod, warnings, updatedAt: current.updatedAt.toISOString() });
   });
+});
+
+/** Qoralamani o'chirish. Chop etilgan yoki moderatsiyaga yuborilgan e'lon o'chirilmaydi (ular arxivlanadi). */
+export const DELETE = handle(async (req, ctx) => {
+  const user = await requireUser(req);
+  const l = await loadEditable((await ctx.params).id, user);
+  if (l.moderationStatus !== "draft" || l.publishedAt) throw new HttpError(409, "Faqat qoralamani o'chirish mumkin");
+  const n = await deleteDraft(l.id, user.role === "admin" ? null : l.ownerId);
+  if (!n) throw new HttpError(404, "E'lon topilmadi");
+  return NextResponse.json({ ok: true });
 });

@@ -13,6 +13,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { centerStats, listCenters } from "@/lib/centers";
 import { mediaUrl } from "@/lib/storage";
 import ListingPhoto from "@/components/ListingPhoto";
+import FormSelect from "@/components/FormSelect";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata() { return { alternates: await pageAlternates("/") }; }
@@ -34,8 +35,8 @@ export default async function Home() {
           <p className="mt-2 text-slate-600">{t("home.sub")}</p>
           <form action="/joylar" method="get" className="mt-5 grid gap-2 sm:grid-cols-[1fr_200px_auto]">
             <input name="q" aria-label={t("home.kw")} placeholder={t("home.kwPh")} className="rounded border border-slate-300 px-3 py-2.5" />
-            <select name="category" aria-label={t("home.type")} className="rounded border border-slate-300 px-3 py-2.5"><option value="">{t("home.allTypes")}</option>
-              {Object.entries(CAT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+            <FormSelect name="category" aria-label={t("home.type")} className="rounded border border-slate-300 px-3 py-2.5"><option value="">{t("home.allTypes")}</option>
+              {Object.entries(CAT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FormSelect>
             <button className="rounded bg-brand text-white px-6 py-2.5 font-medium hover:bg-brand-dark">{t("home.search")}</button>
           </form>
           <MapCard ru={locale === "ru"} counts={clusters} />
