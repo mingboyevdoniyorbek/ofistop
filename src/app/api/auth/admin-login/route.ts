@@ -5,11 +5,12 @@ import { createSession, destroySession } from "@/lib/auth";
 import { adminPasswordConfigured, verifyAdminPassword } from "@/lib/admin-password";
 import { handle, sameOrigin, HttpError } from "@/lib/guard";
 import { hit } from "@/lib/ratelimit";
+import { clientIp } from "@/lib/client-ip";
 
 export const POST = handle(async req => {
   sameOrigin(req);
   if (!adminPasswordConfigured()) throw new HttpError(503, "Admin paroli sozlanmagan. npm run admin:hash orqali hash yarating va ADMIN_PASSWORD_HASH qiymatiga kiriting.");
-  const ip = (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  const ip = clientIp(req);
   if (!(await hit(`admin-login:${ip}`, 10, 900))) throw new HttpError(429, "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring.");
   const body = z.object({ login: z.string().min(1).max(100), password: z.string().min(1).max(200) }).safeParse(await req.json().catch(() => null));
   if (!body.success || !(await verifyAdminPassword(body.data.login, body.data.password))) throw new HttpError(401, "Login yoki parol noto‘g‘ri");

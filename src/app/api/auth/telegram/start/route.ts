@@ -7,6 +7,7 @@ import { handleLogin } from "@/lib/login-errors";
 import { botUsername, telegramEnabled, tgSend } from "@/lib/telegram";
 import { invalidateChallenge, loginLimit, startChallenge } from "@/lib/login-challenge";
 import { normalizePhoneUz } from "@/lib/text";
+import { clientIp } from "@/lib/client-ip";
 
 export const POST = handleLogin("telegram-start", async req => {
   sameOrigin(req);
@@ -15,7 +16,7 @@ export const POST = handleLogin("telegram-start", async req => {
   if (!b.success) throw new HttpError(400, "Telefon raqamini to'g'ri kiriting.");
   const phone = b.data.phone === undefined ? null : normalizePhoneUz(b.data.phone);
   if (b.data.phone !== undefined && !phone) throw new HttpError(400, "Telefon raqami noto'g'ri. Format: +998 90 123 45 67");
-  await loginLimit(req, phone ? `telegram:${phone}` : `telegram:${req.headers.get("x-forwarded-for") ?? "unknown"}`);
+  await loginLimit(req, phone ? `telegram:${phone}` : `telegram:${clientIp(req)}`);
   const { row, approvalToken, code } = await startChallenge(phone ? "telegram_code" : "telegram", phone ?? "", b.data.next);
   if (phone) {
     const [link] = await db().select().from(s.telegramLinks).where(eq(s.telegramLinks.phone, phone));

@@ -1,17 +1,26 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useT } from "./I18nProvider";
+import { readGuestFavs, writeGuestFavs, MAX_GUEST_FAVS } from "@/lib/guest-favs";
 const EVT = "ofistop-fav";
 export default function FavoriteButton({ listingId, initial, loggedIn, variant = "pill" }: { listingId: string; initial: boolean; loggedIn: boolean; variant?: "pill" | "icon" }) {
   const t = useT(); const [fav, setFav] = useState(initial); const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null);
   // Bir sahifadagi bir xil e'lonning barcha tugmalari sinxron bo'ladi.
+  // Mehmon uchun boshlang'ich holat brauzer xotirasidan.
+  useEffect(() => { if (!loggedIn) setFav(readGuestFavs().includes(listingId)); }, [loggedIn, listingId]);
   useEffect(() => {
     const sync = (e: Event) => { const d = (e as CustomEvent<{ id: string; fav: boolean }>).detail; if (d.id === listingId) setFav(d.fav); };
     window.addEventListener(EVT, sync); return () => window.removeEventListener(EVT, sync);
   }, [listingId]);
   async function toggle(e: React.MouseEvent) {
     e.preventDefault(); e.stopPropagation();
-    if (!loggedIn) { location.href = `/kirish?next=${encodeURIComponent(location.pathname + location.search)}`; return; }
+    if (!loggedIn) {
+      const ids = readGuestFavs().filter((x) => x !== listingId);
+      if (!fav && ids.length >= MAX_GUEST_FAVS) { setErr(t("fav.failed")); return; }
+      writeGuestFavs(fav ? ids : [listingId, ...ids]);
+      window.dispatchEvent(new CustomEvent(EVT, { detail: { id: listingId, fav: !fav } }));
+      return;
+    }
     setBusy(true); setErr(null);
     const r = await fetch("/api/favorites", { method: fav ? "DELETE" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ listingId }) }).catch(() => null);
     setBusy(false);

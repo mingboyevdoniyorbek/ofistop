@@ -1,6 +1,7 @@
 import LegalPage from "@/components/LegalPage";
 import { getT } from "@/lib/i18n";
-export async function generateMetadata() { const { t } = await getT(); return { title: t("rules.title") }; }
+import { pageAlternates } from "@/lib/seo";
+export async function generateMetadata() { const { t, locale } = await getT(); return { title: t("rules.title"), description: t("rules.title") + " — OfisTop: " + (locale === "ru" ? "платформа аренды коммерческой недвижимости." : "tijorat joylari ijarasi platformasi."), alternates: await pageAlternates("/qoidalar") }; }
 export const dynamic = "force-dynamic";
 export default async function Page() {
   const { t } = await getT();

@@ -73,3 +73,11 @@ test('real calendar dates and related field validation',()=>{
  expect(validDate('2026-02-31')).toBe(false);expect(validDate('2024-02-29')).toBe(true);expect(validDate('2026-02-29')).toBe(false);
  expect(parseForm({floor:'20',totalFloors:'3'}).errors.floor).toBeTruthy();expect(parseForm({lat:'41',lng:''}).errors.lat).toBeTruthy();
 });
+
+import { listingWarnings } from "../src/lib/listing-checks";
+test("moderator ogohlantirishi: sarlavhadagi m² maydon bilan mos kelmasa", () => {
+  expect(listingWarnings({ title: "Olmazor cityda 20 m2 shinam ofis", areaM2: "25" })).toHaveLength(1);
+  expect(listingWarnings({ title: "Olmazor cityda 20 m2 shinam ofis", areaM2: "20.00" })).toHaveLength(0);
+  expect(listingWarnings({ title: "Ofis 45 m², 3-qavat", areaM2: "45", floor: 2 })).toHaveLength(1);
+  expect(listingWarnings({ title: "Yorug' ofis", areaM2: "45" })).toHaveLength(0);
+});

@@ -6,12 +6,13 @@ import { db, schema as s } from "@/db/client";
 import { hit } from "@/lib/ratelimit";
 import { publicCond } from "@/lib/search";
 import { getT } from "@/lib/i18n";
+import { clientIp } from "@/lib/client-ip";
 
 export async function POST(req: Request) {
   const { t } = await getT();
   const b = z.object({ listingId: z.string().uuid(), kind: z.enum(["phone_reveal", "telegram_click", "call_click"]) }).safeParse(await req.json().catch(() => null));
   if (!b.success) return NextResponse.json({ error: t("api.badRequest") }, { status: 400 });
-  const ip = (req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  const ip = clientIp(req);
   if (!(await hit(`contact:${ip}`, 60, 3600))) return NextResponse.json({ error: t("api.tooMany") }, { status: 429 });
 
   const [l] = await db().select({ phone: s.listings.contactPhone, tg: s.listings.telegramUsername })

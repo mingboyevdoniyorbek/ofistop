@@ -13,6 +13,12 @@ import { CompareBar } from "@/components/Compare";
 import { SearchUpdates } from "@/components/SavedSearch";
 import { getT } from "@/lib/i18n";
 import { guestAccessEnabled, isGuestPhone } from "@/lib/launch-mode";
+import { siteInfo } from "@/lib/site-info";
+import { siteJsonLd } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
+import SiteContacts from "@/components/SiteContacts";
+import Analytics from "@/components/Analytics";
+import FavSync from "@/components/FavSync";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale, t } = await getT();
@@ -21,6 +27,8 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: { siteName: "OfisTop", locale: locale === "ru" ? "ru_RU" : "uz_UZ", type: "website" },
     title: { default: t("site.title"), template: "%s | OfisTop" },
     description: t("site.desc"),
+    // Google Search Console / Yandex Webmaster tasdiqlash kodlari (ixtiyoriy).
+    verification: { google: process.env.GOOGLE_SITE_VERIFICATION || undefined, yandex: process.env.YANDEX_VERIFICATION || undefined },
   };
 }
 
@@ -29,10 +37,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { locale, t } = await getT();
   const promo = guestAccessEnabled();
   const guest = !!user && isGuestPhone(user.phone);
+  const site = siteInfo();
   const loginLabel = promo ? (locale === "ru" ? "Мой кабинет" : "Kabinetim") : t("nav.login");
   return (
     <html lang={locale}>
       <body className="min-h-screen flex flex-col">
+        <JsonLd data={siteJsonLd()} />
+        <Analytics />
         <I18nProvider locale={locale}>
         <header className="border-b border-slate-200 bg-white sticky top-0 z-20">
           <nav className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3 md:gap-4 text-sm" aria-label={t("nav.aria")}>
@@ -42,14 +53,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span className="flex-1" />
             <div className="hidden md:flex items-center gap-4">
               {user && <><Link href="/kabinet/bildirishnomalar" className="hover:underline">{t("nav.notifications")}</Link><Link href="/kabinet/sevimlilar" className="hover:underline">{t("nav.favorites")}</Link><Link href="/kabinet" className="hover:underline">{t("nav.cabinet")}</Link></>}
+              {!user && <Link href="/sevimlilar" className="hover:underline">{t("nav.favorites")}</Link>}
               <LangSwitch />
             </div>
-            <NewListingButton loggedIn={!!user} promo={promo} />
+            <span className="hidden md:inline-flex"><NewListingButton loggedIn={!!user} promo={promo} /></span>
             <span className="hidden md:inline">{user ? (!guest && <LogoutButton />) : <Link href="/kirish" className="hover:underline">{loginLabel}</Link>}</span>
             <MobileMenu label={t("nav.menu")}>
               <Link href="/joylar">{t("nav.search")}</Link>
               <Link href="/markazlar">{t("nav.centers")}</Link>
               {user && <><Link href="/kabinet">{t("nav.cabinet")}</Link><Link href="/kabinet/sevimlilar">{t("nav.favorites")}</Link><Link href="/kabinet/bildirishnomalar">{t("nav.notifications")}</Link></>}
+              {!user && <Link href="/sevimlilar">{t("nav.favorites")}</Link>}
               <div className="flex items-center justify-between border-t border-slate-100 px-3 pt-2 mt-1"><LangSwitch />{user ? (!guest && <LogoutButton />) : <Link href="/kirish" className="text-brand hover:underline">{loginLabel}</Link>}</div>
             </MobileMenu>
           </nav>
@@ -57,9 +70,28 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main className="flex-1">{children}</main>
         <CompareBar/>
         {user && <SearchUpdates/>}
-        <footer className="border-t border-slate-200 text-xs text-slate-500 py-6 text-center">
-          <p>{t("footer.tagline")}</p>
-          <p className="mt-1 space-x-3"><Link href="/qoidalar" className="underline">{t("footer.rules")}</Link><Link href="/maxfiylik" className="underline">{t("footer.privacy")}</Link><Link href="/shartlar" className="underline">{t("footer.terms")}</Link></p>
+        {user && <FavSync />}
+        <footer className="border-t border-slate-200 bg-slate-50 text-sm text-slate-600">
+          <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-3">
+            <div>
+              <Link href="/" className="flex items-center gap-1.5 text-lg font-bold text-brand">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/logo.webp" alt="" width={32} height={32} className="h-8 w-8" />Ofis<span className="-ml-1.5 text-accent">Top</span></Link>
+              <p className="mt-2 text-xs leading-relaxed">{t("footer.tagline")}</p>
+            </div>
+            <nav aria-label={locale === "ru" ? "Разделы" : "Bo‘limlar"} className="grid grid-cols-2 gap-x-4 gap-y-1.5 content-start">
+              <Link href="/joylar" className="hover:underline">{t("nav.search")}</Link>
+              <Link href="/markazlar" className="hover:underline">{t("nav.centers")}</Link>
+              <Link href="/biz-haqimizda" className="hover:underline">{locale === "ru" ? "О нас" : "Biz haqimizda"}</Link>
+              <Link href="/qoidalar" className="hover:underline">{t("footer.rules")}</Link>
+              <Link href="/maxfiylik" className="hover:underline">{t("footer.privacy")}</Link>
+              <Link href="/shartlar" className="hover:underline">{t("footer.terms")}</Link>
+            </nav>
+            <div>
+              {(site.phone || site.email || site.telegram || site.instagram) && <p className="font-semibold text-slate-800">{locale === "ru" ? "Связаться с нами" : "Biz bilan bog‘laning"}</p>}
+              <SiteContacts className="mt-1.5 flex-col !gap-y-1.5 text-brand" />
+              {site.telegramChannel && <a href={`https://t.me/${site.telegramChannel}`} target="_blank" rel="noopener" className="mt-3 inline-block rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white">{locale === "ru" ? "Новые объявления в Telegram" : "Yangi e’lonlar Telegram’da"}</a>}
+            </div>
+          </div>
+          <p className="border-t border-slate-200 py-4 text-center text-xs">© {new Date().getFullYear()} OfisTop{site.company ? ` · ${site.company}` : ""}</p>
         </footer>
         <BottomNav loggedIn={!!user} promo={promo} />
         </I18nProvider>

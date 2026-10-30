@@ -227,6 +227,7 @@ export const listings = pgTable("listings", {
   availableFrom: date("available_from"),
   availabilityConfirmedAt: timestamp("availability_confirmed_at", { withTimezone: true }),
   publishedAt: timestamp("published_at", { withTimezone: true }),
+  viewCount: integer("view_count").notNull().default(0), // e'lon sahifasi ko'rishlari (bir tashrifchi/sutka — bitta)
   expiresAt: timestamp("expires_at", { withTimezone: true }),
 
   isDemo: boolean("is_demo").notNull().default(false),

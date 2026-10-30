@@ -9,6 +9,7 @@ import PlaceMap from "@/components/PlaceMap";
 import { mediaUrl } from "@/lib/storage";
 import CenterStats from "@/components/CenterStats";
 import ListingCard from "@/components/ListingCard";
+import { pageAlternates } from "@/lib/seo";
 import { getT } from "@/lib/i18n";
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { locale, t } = await getT(); const id = centerIdOf((await params).slug); const r = id ? await load(id, locale === "ru").catch(() => null) : null;
   if (!r) return { title: t("ctr.notFound"), robots: { index: false } };
   const desc = `${r.c.name} — ${[r.district, r.region].filter(Boolean).join(", ")}. ${(r.c.description ?? "").slice(0, 120)}`;
-  return { title: r.c.name, description: desc, alternates: { canonical: `/markazlar/${r.c.id}-${r.c.slug}` }, openGraph: { title: r.c.name, description: desc, type: "website" } };
+  return { title: r.c.name, description: desc, alternates: await pageAlternates(`/markazlar/${r.c.id}-${r.c.slug}`), openGraph: { title: r.c.name, description: desc, type: "website" } };
 }
 export default async function Page({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { locale, t } = await getT(); const id = centerIdOf((await params).slug); const r = id ? await load(id, locale === "ru") : null; if (!r) notFound();
