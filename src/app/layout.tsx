@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import LogoutButton from "@/components/LogoutButton";
 import NewListingButton from "@/components/NewListingButton";
 import MobileMenu from "@/components/MobileMenu";
+import BottomNav from "@/components/BottomNav";
 import LangSwitch from "@/components/LangSwitch";
 import { I18nProvider } from "@/components/I18nProvider";
 import { CompareBar } from "@/components/Compare";
@@ -60,6 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <p>{t("footer.tagline")}</p>
           <p className="mt-1 space-x-3"><Link href="/qoidalar" className="underline">{t("footer.rules")}</Link><Link href="/maxfiylik" className="underline">{t("footer.privacy")}</Link><Link href="/shartlar" className="underline">{t("footer.terms")}</Link></p>
         </footer>
+        <BottomNav loggedIn={!!user} promo={promo} />
         </I18nProvider>
       </body>
     </html>

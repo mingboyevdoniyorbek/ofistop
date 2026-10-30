@@ -118,6 +118,35 @@ export async function searchWhere(f: Filters) {
   return and(buildWhere(f), ids.length ? inArray(s.listings.id, ids) : sql`false`);
 }
 
+/** Karta uchun umumiy select (qidiruv, sevimlilar va boshqalar). */
+function cardQuery(locale: "uz" | "ru") {
+  const L = s.listings;
+  return db().select({
+    id: L.id, slug: L.slug, title: L.title, category: L.category, areaM2: L.areaM2, floor: L.floor,
+    priceAmountMinor: L.priceAmountMinor, currency: L.currency, pricePeriod: L.pricePeriod, priceBasis: L.priceBasis,
+    priceNegotiable: L.priceNegotiable, posterType: L.posterType, availabilityConfirmedAt: L.availabilityConfirmedAt,
+    depositAmountMinor: L.depositAmountMinor, depositCurrency: L.depositCurrency, commissionType: L.commissionType, utilities: L.utilities, amenities: L.amenities,
+    districtName: locale === "ru" ? s.districts.nameRu : s.districts.nameUz, regionName: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, centerName: s.businessCenters.name,
+    // Kichik rasm (thumb) va to'liq rasm: kartada srcset orqali ekran zichligiga mosi tanlanadi.
+    imageKey: sql<string | null>`(SELECT COALESCE(thumb_key, storage_key) FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
+    imageFullKey: sql<string | null>`(SELECT storage_key FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
+    isDemo: L.isDemo, publishedAt: L.publishedAt, availabilityStatus: L.availabilityStatus,
+  }).from(L)
+    .innerJoin(s.regions, eq(s.regions.id, L.regionId))
+    .leftJoin(s.districts, eq(s.districts.id, L.districtId))
+    .leftJoin(s.businessCenters, eq(s.businessCenters.id, L.centerId));
+}
+
+/** Berilgan ID'lar bo'yicha kartalar (tartib saqlanadi). Faqat tasdiqlangan, bloklanmagan e'lonlar. */
+export async function listingCardsByIds(ids: string[], locale: "uz" | "ru" = "uz") {
+  if (!ids.length) return [];
+  const L = s.listings;
+  const rows = await cardQuery(locale).where(and(inArray(L.id, ids), eq(L.isSuspended, false), eq(L.moderationStatus, "approved"),
+    sql`EXISTS (SELECT 1 FROM users owner WHERE owner.id = ${L.ownerId} AND NOT owner.is_blocked)`));
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return ids.flatMap((id) => byId.get(id) ?? []);
+}
+
 export async function searchListings(f: Filters, locale: "uz" | "ru" = "uz") {
   const L = s.listings;
   const where = await searchWhere(f);
@@ -134,19 +163,7 @@ export async function searchListings(f: Filters, locale: "uz" | "ru" = "uz") {
   }[f.sort];
 
   const d = db();
-  const base = d.select({
-    id: L.id, slug: L.slug, title: L.title, category: L.category, areaM2: L.areaM2, floor: L.floor,
-    priceAmountMinor: L.priceAmountMinor, currency: L.currency, pricePeriod: L.pricePeriod, priceBasis: L.priceBasis,
-    priceNegotiable: L.priceNegotiable, posterType: L.posterType, availabilityConfirmedAt: L.availabilityConfirmedAt,
-    depositAmountMinor: L.depositAmountMinor, depositCurrency: L.depositCurrency, commissionType: L.commissionType, utilities: L.utilities, amenities: L.amenities,
-    districtName: locale === "ru" ? s.districts.nameRu : s.districts.nameUz, regionName: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, centerName: s.businessCenters.name,
-    imageKey: sql<string | null>`(SELECT COALESCE(thumb_key, storage_key) FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
-    isDemo: L.isDemo,
-  }).from(L)
-    .innerJoin(s.regions, eq(s.regions.id, L.regionId))
-    .leftJoin(s.districts, eq(s.districts.id, L.districtId))
-    .leftJoin(s.businessCenters, eq(s.businessCenters.id, L.centerId))
-    .where(where);
+  const base = cardQuery(locale).where(where);
 
   const [items, [{ total }]] = await Promise.all([
     base.orderBy(...order).limit(PAGE_SIZE).offset((f.page - 1) * PAGE_SIZE),

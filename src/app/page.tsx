@@ -3,6 +3,7 @@ import { labels } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { parseFilters, searchListings } from "@/lib/search";
 import ListingCard from "@/components/ListingCard";
+import RecentlyViewed from "@/components/RecentlyViewed";
 import NewListingButton from "@/components/NewListingButton";
 import { promoEnabled, guestAccessEnabled } from "@/lib/launch-mode";
 import { getCurrentUser } from "@/lib/auth";
@@ -35,10 +36,11 @@ export default async function Home() {
           {Object.entries(CAT).map(([k, v]) => <Link key={k} href={`/joylar?category=${k}`} className="rounded-full border border-slate-300 px-3 py-1.5 text-sm hover:border-brand">{v}</Link>)}
         </div>
       </section>
+      <RecentlyViewed />
       <section className="mx-auto max-w-6xl px-4 pb-10">
         <div className="flex items-baseline justify-between mb-3"><h2 className="text-lg font-semibold">{t("home.latest")}</h2><Link href="/joylar" className="text-sm text-brand hover:underline">{t("home.all")}</Link></div>
         {latest === null ? <p className="text-red-700">{t("home.loadFail")}</p>
-          : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{latest.items.slice(0, 8).map((it) => <ListingCard key={it.id} it={it} />)}</div>}
+          : <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{latest.items.slice(0, 8).map((it) => <ListingCard key={it.id} it={it} />)}</div>}
       </section>
       <section className="mx-auto max-w-6xl px-4 pb-10"><div className="rounded-3xl bg-brand-dark p-6 text-white sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-10"><div><h2 className="text-2xl font-bold">{locale === "ru" ? "Все помещения вашего центра — на одной странице" : "Markazingizdagi barcha xonalar — bitta sahifada"}</h2><p className="mt-3 max-w-2xl text-blue-100">{locale === "ru" ? "Фотографии, удобства, свободные офисы и прямой контакт с представителем. Выбирайте центр и найдите подходящее помещение." : "Rasmlar, qulayliklar, bo‘sh ofislar va vakil bilan to‘g‘ridan-to‘g‘ri aloqa. Markazni tanlang va o‘zingizga mos xonani toping."}</p></div><Link href="/markazlar" className="mt-5 inline-block shrink-0 rounded-xl bg-white px-5 py-3 font-semibold text-brand sm:mt-0">{locale === "ru" ? "Смотреть центры →" : "Markazlarni ko‘rish →"}</Link></div></section>
       <section className="bg-slate-50 border-y border-slate-200">

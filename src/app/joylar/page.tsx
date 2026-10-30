@@ -80,7 +80,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
               <p className="text-sm text-slate-600 mt-1">{t("cat.emptyHint")}</p>
               <Link href="/joylar" className="inline-block mt-3 rounded bg-brand text-white px-4 py-2 text-sm">{t("cat.clear")}</Link>
             </div>
-          ) : <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{data.items.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
+          ) : <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">{data.items.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
           {data.pages > 1 && (
             <nav className="flex justify-center gap-3 mt-6 text-sm" aria-label={t("cat.pages")}>
               {f.page > 1 && <Link href={qs({ page: String(f.page - 1) })} className="rounded border px-3 py-1.5">{t("cat.prev")}</Link>}

@@ -8,7 +8,7 @@ export const uz = {
   "footer.tagline": "OfisTop — joy topish va tomonlarni bog'lash platformasi. Ijara shartnomasi va to'lovlar platforma orqali amalga oshirilmaydi.",
   "footer.rules": "E'lon qoidalari", "footer.privacy": "Maxfiylik", "footer.terms": "Foydalanish shartlari",
   "err.generic": "Xatolik. Qayta urinib ko'ring.",
-  "fav.add": "Sevimlilarga qo'shish", "fav.remove": "Sevimlilardan olib tashlash", "fav.saved": "♥ Saqlangan", "fav.save": "♡ Saqlash", "fav.failed": "Saqlab bo'lmadi",
+  "fav.add": "Sevimlilarga qo'shish", "fav.remove": "Sevimlilardan olib tashlash", "fav.saved": "Saqlangan", "fav.save": "Saqlash", "fav.failed": "Saqlab bo'lmadi",
 
   "home.title": "Tadbirkorligingiz uchun mos joy toping", "home.sub": "Ofis, do'kon, ombor va boshqa tijorat joylari — bo'sh va hozir mavjudlari.",
   "home.kw": "Kalit so'z", "home.kwPh": "Kalit so'z yoki manzil", "home.type": "Joy turi", "home.allTypes": "Barcha turlar", "home.search": "Qidirish",
