@@ -32,8 +32,11 @@ export async function listCenters(locale: "uz" | "ru" = "uz") {
   return db().select({ id: s.businessCenters.id, slug: s.businessCenters.slug, name: s.businessCenters.name, address: s.businessCenters.address,
     tagline: s.businessCenters.tagline, regionId: s.businessCenters.regionId,
     cover: sql<string | null>`(SELECT storage_key FROM business_center_images WHERE center_id = ${s.businessCenters.id} ORDER BY position, id LIMIT 1)`,
-    region: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, district: locale === "ru" ? s.districts.nameRu : s.districts.nameUz, isDemo: s.businessCenters.isDemo })
+    region: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, district: locale === "ru" ? s.districts.nameRu : s.districts.nameUz, isDemo: s.businessCenters.isDemo,
+    verifiedAt: s.businessCenters.verifiedAt, featuredUntil: s.businessCenters.featuredUntil })
     .from(s.businessCenters).innerJoin(s.regions, eq(s.regions.id, s.businessCenters.regionId))
-    .leftJoin(s.districts, eq(s.districts.id, s.businessCenters.districtId)).orderBy(s.businessCenters.name);
+    .leftJoin(s.districts, eq(s.districts.id, s.businessCenters.districtId))
+    // Tavsiya etilganlar (muddati tugamagan) birinchi, keyin tasdiqlanganlar, keyin nom bo'yicha.
+    .orderBy(sql`(${s.businessCenters.featuredUntil} > now()) IS TRUE DESC`, sql`${s.businessCenters.verifiedAt} IS NOT NULL DESC`, s.businessCenters.name);
 }
 export const centerIdOf = (p: string) => (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.test(p) ? p.slice(0, 36) : null);

@@ -80,6 +80,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <nav aria-label={locale === "ru" ? "Разделы" : "Bo‘limlar"} className="grid grid-cols-2 gap-x-4 gap-y-1.5 content-start">
               <Link href="/joylar" className="hover:underline">{t("nav.search")}</Link>
               <Link href="/markazlar" className="hover:underline">{t("nav.centers")}</Link>
+              <Link href="/markazlar/ariza" className="font-semibold text-brand hover:underline">{locale === "ru" ? "Добавить бизнес-центр" : "Biznes markazingizni qo‘shing"}</Link>
               <Link href="/biz-haqimizda" className="hover:underline">{locale === "ru" ? "О нас" : "Biz haqimizda"}</Link>
               <Link href="/qoidalar" className="hover:underline">{t("footer.rules")}</Link>
               <Link href="/maxfiylik" className="hover:underline">{t("footer.privacy")}</Link>

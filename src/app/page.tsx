@@ -14,6 +14,8 @@ import { centerStats, listCenters } from "@/lib/centers";
 import { mediaUrl } from "@/lib/storage";
 import ListingPhoto from "@/components/ListingPhoto";
 import FormSelect from "@/components/FormSelect";
+import CenterCta from "@/components/CenterCta";
+import CenterBadges from "@/components/CenterBadges";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata() { return { alternates: await pageAlternates("/") }; }
@@ -48,10 +50,9 @@ export default async function Home() {
           {Object.entries(CAT).map(([k, v]) => <Link key={k} href={landingSlugOf(k) ? `/ijara/${landingSlugOf(k)}` : `/joylar?category=${k}`} className="rounded-full border border-slate-300 px-3 py-1.5 text-sm hover:border-brand">{v}</Link>)}
         </div>
       </section>
-      {centers.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pt-8" aria-labelledby="centers-h">
+      <section className="mx-auto max-w-6xl px-4 pt-8" aria-labelledby="centers-h">
           <div className="mb-3 flex items-baseline justify-between"><h2 id="centers-h" className="text-lg font-semibold">{locale === "ru" ? "Бизнес-центры" : "Biznes markazlar"}</h2><Link href="/markazlar" className="text-sm text-brand hover:underline">{t("home.all")}</Link></div>
-          <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2">
+          {centers.length > 0 && <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2">
             {centers.map((c) => { const st = stats.get(c.id); return (
               <Link key={c.id} href={`/markazlar/${c.id}-${c.slug}`} className="flex w-[70vw] max-w-[280px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition-shadow hover:shadow-md">
                 <ListingPhoto thumb={mediaUrl(c.cover)} alt={c.name} sizes="280px" className="aspect-[16/10]">
@@ -59,13 +60,14 @@ export default async function Home() {
                 </ListingPhoto>
                 <div className="space-y-1 p-3">
                   <h3 className="line-clamp-1 font-semibold">{c.name}</h3>
+                  <CenterBadges c={c} ru={locale === "ru"} />
                   <p className="line-clamp-1 text-xs text-slate-500">{[c.district, c.region].filter(Boolean).join(", ")}</p>
                   <p className={`text-sm font-medium ${st?.rooms ? "text-accent" : "text-slate-500"}`}>{st?.rooms ? (locale === "ru" ? `Свободно помещений: ${st.rooms}` : `${st.rooms} ta bo‘sh xona`) : (locale === "ru" ? "Нет свободных помещений" : "Bo‘sh xona yo‘q")}</p>
                 </div>
               </Link>); })}
-          </div>
+          </div>}
+          <div className="mt-3"><CenterCta variant="compact" /></div>
         </section>
-      )}
       <RecentlyViewed />
       <section className="mx-auto max-w-6xl px-4 pb-10">
         <div className="flex items-baseline justify-between mb-3"><h2 className="text-lg font-semibold">{t("home.latest")}</h2><Link href="/joylar" className="text-sm text-brand hover:underline">{t("home.all")}</Link></div>

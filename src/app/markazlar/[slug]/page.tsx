@@ -12,6 +12,10 @@ import ListingCard from "@/components/ListingCard";
 import { pageAlternates } from "@/lib/seo";
 import { getT } from "@/lib/i18n";
 import FormSelect from "@/components/FormSelect";
+import ViewPing from "@/components/ViewPing";
+import CenterBadges from "@/components/CenterBadges";
+import { getCurrentUser } from "@/lib/auth";
+import { managedCenterIds } from "@/lib/guard";
 export const dynamic = "force-dynamic";
 
 async function load(id: string, ru = false) {
@@ -34,12 +38,16 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const pictures = await db().select().from(s.businessCenterImages).where(eq(s.businessCenterImages.centerId,r.c.id)).orderBy(s.businessCenterImages.position);
   const names = new Map(amen.map((a) => [a.code, locale === "ru" ? a.nameRu : a.nameUz]));
   const ru = locale === "ru";
+  const viewer = await getCurrentUser().catch(() => null);
+  const isMember = !!viewer && (await managedCenterIds(viewer.id)).includes(r.c.id);
   const pager = (page: number) => { const q = new URLSearchParams(); for (const [key,value] of Object.entries(sp)) { if (typeof value === "string") q.set(key,value); } q.set("page",String(page)); return `?${q}#xonalar`; };
   const field = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2";
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       <Link href="/markazlar" className="mb-4 inline-block text-sm text-brand">{t("ctr.back")}</Link>
+      <ViewPing id={r.c.id} kind="center" />
       <h1 className="text-3xl font-bold">{r.c.name}</h1>
+      <CenterBadges c={r.c} ru={ru} className="mt-2" />
       {r.c.tagline && <p className="mt-2 text-lg text-brand">{r.c.tagline}</p>}
       <p className="text-slate-600">{[r.district, r.region].filter(Boolean).join(", ")} · {r.c.address}</p>
       {r.c.isDemo && <p className="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-300 rounded p-2">{t("ctr.demoLong")}</p>}
@@ -57,6 +65,11 @@ export default async function Page({ params, searchParams }: { params: Promise<{
           {(r.c.contactPhone || r.c.telegramUsername) && <div className="space-y-2 text-sm"><p className="font-medium">{t("ctr.manager")}</p>
             {r.c.contactPhone && <a className="block rounded-xl bg-accent px-4 py-3 text-center font-semibold text-white" href={`tel:${r.c.contactPhone}`}>{r.c.contactPhone}</a>}
             {r.c.telegramUsername && <a className="block rounded-xl border border-brand px-4 py-3 text-center text-brand" href={`https://t.me/${encodeURIComponent(r.c.telegramUsername)}`} target="_blank" rel="noopener noreferrer">Telegram</a>}</div>}
+          {!isMember && !r.c.isDemo && <div className="border-t border-slate-200 pt-4 text-sm">
+            <p className="font-medium">{ru ? "Это ваш центр?" : "Bu markaz sizniki?"}</p>
+            <p className="mt-1 text-slate-600">{ru ? "Получите доступ к управлению страницей и помещениями." : "Sahifa va xonalarni boshqarish huquqini oling."}</p>
+            <Link href={`/markazlar/ariza?markaz=${r.c.id}`} className="mt-2 inline-block font-semibold text-brand underline">{ru ? "Запросить управление →" : "Boshqaruvni so‘rash →"}</Link>
+          </div>}
           {r.c.website && /^https?:\/\//.test(r.c.website) && <a href={r.c.website} target="_blank" rel="noopener noreferrer" className="block text-sm text-brand underline">{ru ? "Сайт центра ↗" : "Markaz veb-sayti ↗"}</a>}
         </aside>
       </div>
