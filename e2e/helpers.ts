@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { execFileSync } from "child_process";
 import { mkdirSync, writeFileSync } from "fs";
@@ -21,36 +21,35 @@ const hook = (req: APIRequestContext, uid: number, extra: object) => req.post("/
   data: { update_id: Math.floor(Math.random() * 1e9), message: { message_id: 1, from: { id: uid, is_bot: false, first_name: "E2E" }, chat: { id: uid, type: "private" }, date: 0, ...extra } },
 });
 
-/** UI orqali Telegram kirish. Telegram tomonini (foydalanuvchi botda /start bosadi va kontakt yuboradi) test o'ynaydi. */
+const callback = (req: APIRequestContext, uid: number, data: string) => req.post("/api/telegram/webhook", {
+  headers: { "x-telegram-bot-api-secret-token": E2E.tgSecret },
+  data: { update_id: Math.floor(Math.random() * 1e9), callback_query: { id: String(Math.random()), from: { id: uid, is_bot: false, first_name: "E2E" }, data, message: { message_id: 1, chat: { id: uid, type: "private" }, date: 0 } } },
+});
+
+/**
+ * UI orqali Telegram kirish (hozirgi jarayon): usul tanlash → "Telegram orqali kirish" → bot havolasi.
+ * Telegram tomonini test o'ynaydi: /start <token>, keyin birinchi marta kontakt, bog'langan hisobda "Ha, kirish" tugmasi.
+ * Sahifa holatni o'zi so'rab turadi va tasdiqlangach `next` ga o'tadi.
+ */
 export async function loginViaTelegram(page: Page, phone: string, uid: number, next = "/kabinet") {
+  await page.route("https://t.me/**", (r) => r.fulfill({ status: 204 })); // t.me ga o'tish sahifani tark ettirmasin
   await page.goto(`/kirish?next=${encodeURIComponent(next)}`);
-  await page.getByRole("button", { name: uz["login.tg.btn"] }).click();
-  const link = page.getByRole("link", { name: uz["login.tg.open"] });
-  const href = (await link.getAttribute("href"))!;
-  expect(href).toMatch(new RegExp(`^https://t\\.me/${E2E.bot}\\?start=`));
-  const token = new URL(href).searchParams.get("start")!;
+  await page.getByRole("button", { name: uz["login.tg.btn"] }).first().click();
+  const [resp] = await Promise.all([
+    page.waitForResponse("**/api/auth/telegram/start"),
+    page.getByRole("button", { name: uz["login.tg.btn"] }).first().click(),
+  ]);
+  const start = await resp.json() as { id: string; botUrl: string };
+  expect(start.botUrl).toMatch(new RegExp(`^https://t\\.me/${E2E.bot}\\?start=`));
+  const token = new URL(start.botUrl).searchParams.get("start")!;
   const before = (await fakeSent()).length;
-  const codeAfter = async (from: number) => {
-    for (let i = 0; i < 20; i++) {
-      const m = (await fakeSent()).slice(from).reverse().find((x) => x.chat_id === uid);
-      const c = /: (\d{6})/.exec(m?.text ?? "")?.[1];
-      if (c) return c;
-      if (m) return undefined; // bot javob berdi, lekin kod emas (masalan, kontakt so'radi)
-      await page.waitForTimeout(150);
-    }
-  };
   expect((await hook(page.request, uid, { text: `/start ${token}` })).status()).toBe(200);
-  // Bog'langan Telegram akkaunti: kod darhol keladi. Birinchi marta: bot kontakt so'raydi.
-  let code = await codeAfter(before);
-  if (!code) {
-    const mid = (await fakeSent()).length;
-    expect((await hook(page.request, uid, { contact: { phone_number: phone.slice(1), first_name: "E2E", user_id: uid } })).status()).toBe(200);
-    code = await codeAfter(mid);
-  }
-  expect(code, "bot kodi yuborilmadi").toBeTruthy();
-  await page.getByLabel(uz["login.code.label"]).fill(code!);
-  await page.getByRole("button", { name: uz["login.submit"], exact: true }).click();
-  await page.waitForURL((u) => u.pathname === next);
+  let reply: Sent | undefined;
+  for (let i = 0; i < 30 && !reply; i++) { reply = (await fakeSent()).slice(before).find((x) => x.chat_id === uid); if (!reply) await page.waitForTimeout(100); }
+  expect(reply, "bot javob bermadi").toBeTruthy();
+  if (/tasdiqlaysizmi/i.test(reply!.text)) expect((await callback(page.request, uid, `confirm:${start.id}`)).status()).toBe(200);
+  else expect((await hook(page.request, uid, { contact: { phone_number: phone.slice(1), first_name: "E2E", user_id: uid } })).status()).toBe(200);
+  await page.waitForURL((u) => u.pathname === next, { timeout: 20_000 });
 }
 
 export function promote(phone: string, role: "moderator" | "admin") {
@@ -70,4 +69,12 @@ export async function noHorizontalScroll(page: Page) {
   const vw = page.viewportSize()!.width;
   const sw = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth));
   expect(sw, `gorizontal skroll: ${page.url()}`).toBeLessThanOrEqual(vw + 1);
+}
+
+/** Saytdagi ochiladigan ro'yxat (Radix, role=combobox): ochib, variantni matni yoki tartib raqami bo'yicha tanlaydi. */
+export async function pick(page: Page, combo: Locator, option: string | RegExp | { index: number }) {
+  await combo.click();
+  if (typeof option === "object" && "index" in option) await page.getByRole("option").nth(option.index).click();
+  else await page.getByRole("option", { name: option, exact: typeof option === "string" }).click();
+  await expect(page.getByRole("listbox")).toHaveCount(0);
 }

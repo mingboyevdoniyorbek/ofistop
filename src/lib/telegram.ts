@@ -8,7 +8,9 @@ export async function tgSend(chatId: number, text: string, replyMarkup?: object)
   return tgCall("sendMessage", { chat_id: chatId, text, reply_markup: replyMarkup });
 }
 export async function tgCall(method: string, body: object) {
-  const base = process.env.NODE_ENV !== "production" && process.env.TELEGRAM_API_BASE || "https://api.telegram.org";
+  // Soxta Bot API (avtomatik testlar): production'da faqat shu kompyuterdagi (loopback) manzilga ruxsat.
+  const test = process.env.TELEGRAM_API_BASE;
+  const base = test && (process.env.NODE_ENV !== "production" || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(test)) ? test : "https://api.telegram.org";
   const r = await fetch(`${base}/bot${process.env.TELEGRAM_BOT_TOKEN}/${method}`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body), signal: AbortSignal.timeout(8000),

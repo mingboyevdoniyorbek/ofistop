@@ -4,7 +4,8 @@ export async function prepareUpload(file: File): Promise<File> {
   if (file.size > 8 * 1024 * 1024) throw new Error("Rasm hajmi 8 MB dan oshmasin.");
   const url = URL.createObjectURL(file);
   try {
-    const img = new Image(); img.src = url; await img.decode();
+    const img = new Image(); img.src = url;
+    try { await img.decode(); } catch { throw new Error("Fayl rasm emas yoki buzilgan"); } // brauzerning inglizcha xabari foydalanuvchiga chiqmasin
     if (img.naturalWidth * img.naturalHeight > 50_000_000) throw new Error("Rasm o‘lchamlari juda katta.");
     const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
     const canvas = document.createElement('canvas'); canvas.width = Math.round(img.naturalWidth * scale); canvas.height = Math.round(img.naturalHeight * scale);

@@ -32,7 +32,7 @@ export default defineConfig({
       NODE_ENV: "production",
       PROMO_MODE: "false",
       ADMIN_LOGIN: "ofis",
-      ADMIN_PASSWORD_HASH: "scrypt:506ea7ac8176637676a752f3002350b6:02d24b2f74c692a152ea8b6f58f3731517836fd1e28f374e6f6efc64f4c7c6bcf337aab0df42dc595b8fcdb331a57577f89927233fb9651bae530ab6ccd8bc97",
+      ADMIN_PASSWORD_HASH: "scrypt:03b3853c2401880790c5942b42a09030:540dbc841b4f6d13305b1fa1a2d1e3a5894f50c9fc6e959818d0e6e26f6863817f1fc160be1f4c8b33977a77e61e58541f5422f912b6ee4b289b711c6495ede8", // parol: e2e-admin-parol (namunaviy "ijara" production'da rad etiladi)
       DATABASE_URL: E2E.db,
       SESSION_SECRET: process.env.SESSION_SECRET ?? "e2e-session-secret-0123456789-abcdefghij",
       APP_URL: E2E.base,
