@@ -247,3 +247,18 @@ test("vakil rasmi tekshiruvgacha ko'rinmaydi; tavsiya muddati eslatmasi bir mart
  const n=(await state.db.select().from(schema.notifications).where(eq(schema.notifications.userId,owner.id))).find((x:any)=>x.title==="«Tavsiya etiladi» muddati tugayapti: Rasm Markazi");
  expect(n).toBeTruthy(); expect(trServer(n.title,"ru")).toBe("Срок «Рекомендуем» заканчивается: Rasm Markazi");
 });
+
+import { matchingRoomsByCenter } from "../src/lib/centers";
+test("markazlar filtri: maydon va oylik budjetga mos bo'sh xonalar soni va eng arzon narx",async()=>{
+ const [c]=await state.db.insert(schema.businessCenters).values({name:"Filtr Markazi",slug:"filtr-markazi",regionId,address:"Filtr ko'chasi 1"}).returning();
+ await state.db.insert(schema.listings).values([
+  {...base("filtr-a"),centerId:c.id,areaM2:"40",priceAmountMinor:60000n},
+  {...base("filtr-b"),centerId:c.id,areaM2:"80",priceAmountMinor:120000n},
+  {...base("filtr-c"),centerId:c.id,areaM2:"20",priceAmountMinor:900n,priceBasis:"per_m2"}, // 9 USD × 20 m² = 180 USD
+ ]);
+ const get=async(q:Record<string,string>)=>(await matchingRoomsByCenter(parseFilters({period:"month",priceMode:"total",currency:"USD",...q}))).get(c.id);
+ expect(await get({})).toEqual({rooms:3,minTotal:18000n});
+ expect((await get({areaMin:"30"}))?.rooms).toBe(2);
+ expect(await get({areaMin:"30",priceMax:"700"})).toEqual({rooms:1,minTotal:60000n});
+ expect(await get({areaMin:"100"})).toBeUndefined();
+});
