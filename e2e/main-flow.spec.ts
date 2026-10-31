@@ -124,7 +124,7 @@ test("5. Admin tasdiqlagach katalogda paydo bo'ladi; egasiga bildirishnoma", asy
   await p.getByLabel("Login", { exact: true }).fill("ofis");
   await p.getByLabel("Parol", { exact: true }).fill("e2e-admin-parol");
   await p.getByRole("button", { name: "Kirish", exact: true }).click();
-  await p.waitForURL("**/admin/elonlar?holat=pending");
+  await expect(p.getByRole("heading", { name: "Boshqaruv paneli", level: 1 })).toBeVisible(); // kirgach boshqaruv paneli (manzil o'zgarmaydi: /admin)
   await p.goto("/admin/elonlar");
   const row = p.getByRole("listitem").filter({ hasText: TITLE }).first();
   await expect(row).toBeVisible();
@@ -252,7 +252,7 @@ test("10. «Ijaraga berildi» — e'lon darhol qidiruvdan chiqadi, eski havola h
 });
 
 test("11. Biznes markaz sahifasidagi xonalar shu markazga bog'langan", async ({ page }) => {
-  await page.goto("/markazlar");
+  await page.goto("/markazlar?vacant=1"); // filtr: faqat bo'sh xonasi bor markazlar
   await page.locator("main a[href^='/markazlar/']:not([href^='/markazlar/ariza'])").first().click(); // CTA (ariza) havolasi emas
   await page.waitForURL(/\/markazlar\/[0-9a-f]{8}-/);
   const name = (await page.getByRole("heading", { level: 1 }).innerText()).trim();
@@ -283,7 +283,7 @@ test("Biznes markaz arizasi → admin tasdig'i → vakil kabineti, qo'ng'iroqcha
   await p.getByLabel("Login", { exact: true }).fill("ofis");
   await p.getByLabel("Parol", { exact: true }).fill("e2e-admin-parol");
   await p.getByRole("button", { name: "Kirish", exact: true }).click();
-  await p.waitForURL("**/admin/elonlar?holat=pending");
+  await expect(p.getByRole("heading", { name: "Boshqaruv paneli", level: 1 })).toBeVisible(); // kirgach boshqaruv paneli (manzil o'zgarmaydi: /admin)
   await p.goto("/admin/arizalar");
   const row = p.getByRole("listitem").filter({ hasText: CENTER });
   await expect(row).toBeVisible();
