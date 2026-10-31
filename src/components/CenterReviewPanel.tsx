@@ -1,11 +1,12 @@
 import AdminAction from "./AdminAction";
 import { isFeatured } from "./CenterBadges";
+import DeleteCenterButton from "./DeleteCenterButton";
 
 type Center = Record<string, unknown> & { id: string; name: string; verifiedAt: Date | null; featuredUntil: Date | null; viewCount: number; pendingChanges: Record<string, unknown> | null; pendingSubmittedAt: Date | null };
 const show = (v: unknown) => (Array.isArray(v) ? v.join(", ") : v == null || v === "" ? "—" : String(v));
 
 /** Admin: markaz bo'yicha qarorlar paneli (vakil o'zgarishlari, ishonch belgisi, tavsiya etilgan joylashuv). */
-export default function CenterReviewPanel({ c, ru, labels }: { c: Center; ru: boolean; labels: Record<string, string> }) {
+export default function CenterReviewPanel({ c, ru, labels, rooms = 0 }: { c: Center; ru: boolean; labels: Record<string, string>; rooms?: number }) {
   const url = `/api/admin/centers/${c.id}/review`;
   const diff = c.pendingChanges ? Object.entries(c.pendingChanges).filter(([k, v]) => show(v) !== show(c[k])) : [];
   const featured = isFeatured(c);
@@ -18,6 +19,7 @@ export default function CenterReviewPanel({ c, ru, labels }: { c: Center; ru: bo
         {featured ? <><span className="rounded bg-amber-100 px-2 py-1 text-amber-900">★ {ru ? "Рекомендуем до" : "Tavsiya etiladi"} {new Date(c.featuredUntil!).toLocaleDateString("ru-RU")}</span>
           <AdminAction url={url} body={{ action: "unfeature" }} label={ru ? "Снять" : "Olib tashlash"} /></>
           : <>{[7, 30, 90].map((d) => <AdminAction key={d} url={url} body={{ action: "feature", days: d }} label={`★ ${d} ${ru ? "дн." : "kun"}`} confirm={ru ? `Показывать центр в рекомендуемых ${d} дней?` : `Markaz ${d} kun «Tavsiya etiladi» bo‘lsinmi?`} />)}</>}
+        <span className="ml-auto"><DeleteCenterButton id={c.id} name={c.name} rooms={rooms} /></span>
       </div>
       {c.pendingChanges && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">

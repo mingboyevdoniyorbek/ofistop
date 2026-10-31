@@ -19,6 +19,9 @@ import JsonLd from "@/components/JsonLd";
 import SiteContacts from "@/components/SiteContacts";
 import Analytics from "@/components/Analytics";
 import FavSync from "@/components/FavSync";
+import NotificationBell from "@/components/NotificationBell";
+import { and, eq, isNull, sql } from "drizzle-orm";
+import { db, schema as s } from "@/db/client";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale, t } = await getT();
@@ -38,6 +41,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const promo = guestAccessEnabled();
   const guest = !!user && isGuestPhone(user.phone);
   const site = siteInfo();
+  const unread = user ? await db().select({ n: sql<number>`count(*)::int` }).from(s.notifications).where(and(eq(s.notifications.userId, user.id), isNull(s.notifications.readAt))).then((r) => r[0].n).catch(() => 0) : 0;
   const loginLabel = promo ? (locale === "ru" ? "Мой кабинет" : "Kabinetim") : t("nav.login");
   return (
     <html lang={locale}>
@@ -52,12 +56,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Link href="/markazlar" className="hidden md:inline hover:underline">{t("nav.centers")}</Link>
             <span className="flex-1" />
             <div className="hidden md:flex items-center gap-4">
-              {user && <><Link href="/kabinet/bildirishnomalar" className="hover:underline">{t("nav.notifications")}</Link><Link href="/kabinet/sevimlilar" className="hover:underline">{t("nav.favorites")}</Link><Link href="/kabinet" className="hover:underline">{t("nav.cabinet")}</Link></>}
+              {user && <><Link href="/kabinet/sevimlilar" className="hover:underline">{t("nav.favorites")}</Link><Link href="/kabinet" className="hover:underline">{t("nav.cabinet")}</Link></>}
               {!user && <Link href="/sevimlilar" className="hover:underline">{t("nav.favorites")}</Link>}
               <LangSwitch />
             </div>
             <span className="hidden md:inline-flex"><NewListingButton loggedIn={!!user} promo={promo} /></span>
             <span className="hidden md:inline">{user ? (!guest && <LogoutButton />) : <Link href="/kirish" className="hover:underline">{loginLabel}</Link>}</span>
+            {user && <NotificationBell initialUnread={unread} />}
             <MobileMenu label={t("nav.menu")}>
               <Link href="/joylar">{t("nav.search")}</Link>
               <Link href="/markazlar">{t("nav.centers")}</Link>

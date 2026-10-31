@@ -7,6 +7,7 @@ import { getT } from "@/lib/i18n";
 import { fmtDate } from "@/lib/format";
 import { telHref } from "@/lib/site-info";
 import AdminAction from "@/components/AdminAction";
+import { searchKey } from "@/lib/text";
 
 export const dynamic = "force-dynamic";
 const TABS = ["pending", "approved", "rejected"] as const;
@@ -22,6 +23,9 @@ export default async function Applications({ searchParams }: { searchParams: Pro
     .from(A).innerJoin(s.regions, eq(s.regions.id, A.regionId)).leftJoin(D, eq(D.id, A.districtId))
     .leftJoin(s.businessCenters, eq(s.businessCenters.id, A.centerId)).innerJoin(s.users, eq(s.users.id, A.userId))
     .where(eq(A.status, tab)).orderBy(tab === "pending" ? A.createdAt : desc(A.reviewedAt)).limit(100);
+  // Takroriy markaz yaratmaslik uchun: shu nomdagi (apostrof/registrdan qat'i nazar) markazlar.
+  const existing = await db().select({ id: s.businessCenters.id, slug: s.businessCenters.slug, name: s.businessCenters.name }).from(s.businessCenters);
+  const same = (name: string) => { const k = searchKey(name); return existing.filter((c) => { const e = searchKey(c.name); return e === k || e.includes(k) || k.includes(e); }); };
   const counts = new Map((await db().select({ st: A.status, n: sql<number>`count(*)::int` }).from(A).groupBy(A.status)).map((r) => [r.st, r.n]));
   const label = { pending: ru ? "Ожидают" : "Kutilmoqda", approved: ru ? "Одобрены" : "Tasdiqlangan", rejected: ru ? "Отклонены" : "Rad etilgan" };
   return (
@@ -37,6 +41,7 @@ export default async function Applications({ searchParams }: { searchParams: Pro
               <strong className="text-base">{a.name}</strong>
               <span className="text-slate-500">· {fmtDate(a.createdAt, locale)}</span>
             </div>
+            {a.kind === "new" && a.status === "pending" && same(a.name).length > 0 && <p role="alert" className="mt-2 rounded bg-amber-50 px-3 py-2 text-xs text-amber-900">⚠ {ru ? "Похожий центр уже есть на сайте — возможно, это запрос управления, а не новый центр:" : "Saytda shunga o‘xshash markaz bor — ehtimol bu yangi markaz emas, boshqaruv so‘rovi:"} {same(a.name).map((c, i) => <span key={c.id}>{i > 0 && ", "}<Link href={`/markazlar/${c.id}-${c.slug}`} className="underline">{c.name}</Link></span>)}</p>}
             <dl className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-[160px_1fr]">
               <dt className="text-slate-500">{ru ? "Адрес" : "Manzil"}</dt><dd>{[district, region].filter(Boolean).join(", ")} · {a.address}</dd>
               <dt className="text-slate-500">{ru ? "Контакт" : "Mas’ul shaxs"}</dt><dd>{a.contactName} · <a href={telHref(a.phone)} className="font-semibold text-brand">{a.phone}</a>{a.telegramUsername && <> · <a href={`https://t.me/${a.telegramUsername}`} target="_blank" rel="noopener" className="text-brand">@{a.telegramUsername}</a></>}</dd>
