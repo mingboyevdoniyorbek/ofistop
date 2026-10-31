@@ -16,6 +16,7 @@ import ViewPing from "@/components/ViewPing";
 import CenterBadges from "@/components/CenterBadges";
 import { getCurrentUser } from "@/lib/auth";
 import { managedCenterIds } from "@/lib/guard";
+import ShareButton from "@/components/ShareButton";
 export const dynamic = "force-dynamic";
 
 async function load(id: string, ru = false) {
@@ -47,7 +48,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       <Link href="/markazlar" className="mb-4 inline-block text-sm text-brand">{t("ctr.back")}</Link>
       <ViewPing id={r.c.id} kind="center" />
       <h1 className="text-3xl font-bold">{r.c.name}</h1>
-      <CenterBadges c={r.c} ru={ru} className="mt-2" />
+      <div className="mt-2 flex flex-wrap items-center gap-3"><CenterBadges c={r.c} ru={ru} /><ShareButton path={`/markazlar/${r.c.id}-${r.c.slug}`} title={r.c.name} text={[r.district, r.region].filter(Boolean).join(", ")} /></div>
       {r.c.tagline && <p className="mt-2 text-lg text-brand">{r.c.tagline}</p>}
       <p className="text-slate-600">{[r.district, r.region].filter(Boolean).join(", ")} · {r.c.address}</p>
       {r.c.isDemo && <p className="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-300 rounded p-2">{t("ctr.demoLong")}</p>}
