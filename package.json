@@ -18,6 +18,7 @@
     "storage:check": "node --import tsx scripts/check-storage.ts",
     "bot:poll": "node --import tsx scripts/run-telegram-bot.ts",
     "bot:render": "node --import tsx scripts/render-bot.ts",
+    "bot:start": "node --import tsx scripts/render-bot.ts",
     "test": "vitest run",
     "expire-listings": "node --import tsx scripts/expire-listings.ts",
     "check-saved-searches": "node --import tsx scripts/check-saved-searches.ts",
