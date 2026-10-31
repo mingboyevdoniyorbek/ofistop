@@ -3,6 +3,7 @@ import { createTelegramServer } from "../src/lib/telegram-server";
 import { handleUpdate } from "../src/lib/telegram-bot";
 import { tgCall, telegramEnabled } from "../src/lib/telegram";
 import { getPool } from "../src/db/client";
+import { flushTelegramNotifications, telegramNotifyEnabled } from "../src/lib/telegram-notify";
 
 async function main() {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET ?? "";
@@ -17,9 +18,16 @@ async function main() {
     await tgCall("setWebhook", { url: `${origin.origin}/telegram/webhook`, secret_token: secret, allowed_updates: ["message", "callback_query"], drop_pending_updates: false });
     await tgCall("setMyCommands", { commands: [{ command: "start", description: "OfisTop - kirish" }] });
     ready = true;
-    console.log("OfisTop bot ready: Render webhook registered; database connected");
+    console.log(`OfisTop bot ready: webhook ${origin.origin}/telegram/webhook registered; database connected`);
   } catch (e) { server.close(); throw e; }
-  const stop = () => { ready = false; server.close(() => { void getPool().end().then(() => process.exit(0)); }); setTimeout(() => process.exit(0), 15000).unref(); };
+  // Zaxira: sayt bildirishnomani darhol yuboradi; bot serveri doim yoniq bo'lgani uchun qolib ketganini har 30 soniyada yuboradi.
+  // Ikkalasi bir vaqtda ishlasa ham xabar ikki marta ketmaydi (qatorlar SKIP LOCKED bilan olinadi).
+  let flushing = false;
+  const notifyTimer = telegramNotifyEnabled() ? setInterval(() => {
+    if (flushing) return; flushing = true;
+    flushTelegramNotifications(50).catch((e) => console.error("Notification flush failed:", e.message)).finally(() => { flushing = false; });
+  }, 30_000) : null;
+  const stop = () => { ready = false; if (notifyTimer) clearInterval(notifyTimer); server.close(() => { void getPool().end().then(() => process.exit(0)); }); setTimeout(() => process.exit(0), 15000).unref(); };
   process.once("SIGTERM", stop); process.once("SIGINT", stop);
 }
 main().catch(() => { console.error("Bot startup failed: check DATABASE_URL, TELEGRAM_* and RENDER_EXTERNAL_URL. Secrets are not logged."); process.exit(1); });
