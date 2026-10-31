@@ -196,3 +196,19 @@ test("markaz arizasi: yangi markaz → tasdiq → vakil; claim; rad etish; vakil
  expect(report.body).toContain("10.2026: markaz sahifasi 7 marta");
  expect(trServer(report.body,"ru")).toContain("страница центра — 7 просмотров");
 });
+
+import { deleteCenter } from "../src/lib/center-review";
+import { GET as notificationsGet } from "../src/app/api/notifications/route";
+test("admin markazni o'chiradi: e'lonlar qoladi (markazsiz), vakil va e'lon egasiga bildirishnoma; qo'ng'iroqcha soni",async()=>{
+ const [c]=await state.db.insert(schema.businessCenters).values({name:"O'chiriladigan Markaz",slug:"ochiriladigan-markaz",regionId,address:"Test ko'chasi 5"}).returning();
+ await state.db.insert(schema.businessCenterMemberships).values({centerId:c.id,userId:other.id});
+ const [l]=await state.db.insert(schema.listings).values({...base("in-deleted-center"),centerId:c.id}).returning();
+ state.user=owner; const before=(await (await notificationsGet(new Request("http://localhost/api/notifications"),ctx())).json()).unread;
+ await deleteCenter(c.id,{id:other.id});
+ expect((await state.db.select().from(schema.businessCenters).where(eq(schema.businessCenters.id,c.id))).length).toBe(0);
+ const [l2]=await state.db.select().from(schema.listings).where(eq(schema.listings.id,l.id)); expect(l2.centerId).toBeNull();
+ expect((await state.db.select().from(schema.businessCenterMemberships).where(eq(schema.businessCenterMemberships.centerId,c.id))).length).toBe(0);
+ const after=await (await notificationsGet(new Request("http://localhost/api/notifications"),ctx())).json();
+ expect(after.unread).toBe(before+1); expect(after.items[0].title).toBe("Biznes markaz saytdan olib tashlandi: O'chiriladigan Markaz");
+ await expect(deleteCenter(c.id,{id:other.id})).rejects.toThrow();
+});
