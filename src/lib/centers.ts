@@ -31,7 +31,7 @@ export async function centerStats(ids: string[]): Promise<Map<string, CenterStat
 export async function listCenters(locale: "uz" | "ru" = "uz") {
   return db().select({ id: s.businessCenters.id, slug: s.businessCenters.slug, name: s.businessCenters.name, address: s.businessCenters.address,
     tagline: s.businessCenters.tagline, regionId: s.businessCenters.regionId,
-    cover: sql<string | null>`(SELECT storage_key FROM business_center_images WHERE center_id = ${s.businessCenters.id} ORDER BY position, id LIMIT 1)`,
+    cover: sql<string | null>`(SELECT storage_key FROM business_center_images WHERE center_id = ${s.businessCenters.id} AND NOT pending ORDER BY position, id LIMIT 1)`,
     region: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, district: locale === "ru" ? s.districts.nameRu : s.districts.nameUz, isDemo: s.businessCenters.isDemo,
     verifiedAt: s.businessCenters.verifiedAt, featuredUntil: s.businessCenters.featuredUntil })
     .from(s.businessCenters).innerJoin(s.regions, eq(s.regions.id, s.businessCenters.regionId))

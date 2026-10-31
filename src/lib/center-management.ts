@@ -61,12 +61,12 @@ const POST = handle(async (req,ctx) => {
   const [{n,last}]=await tx.select({n:count(),last:sql<number>`coalesce(max(${s.businessCenterImages.position}),-1)::int`}).from(s.businessCenterImages).where(eq(s.businessCenterImages.centerId,id));
   if(n>=8) throw new HttpError(422,"Ko‘pi bilan 8 ta rasm");
   stored=await storeImage(Buffer.from(await file.arrayBuffer()));
-  await tx.insert(s.businessCenterImages).values({centerId:id,storageKey:stored.key,position:last+1});
+  await tx.insert(s.businessCenterImages).values({centerId:id,storageKey:stored.key,position:last+1,pending:!!actor.centerMember});
   await writeAudit({actorId:actor.id,action:"center.image_add",entityType:"business_center",entityId:id},tx);
-  return NextResponse.json({ok:true});
+  return NextResponse.json({ok:true,pending:!!actor.centerMember});
  });
- // Vakil qo'shgan rasm darhol chiqadi, admin xabardor qilinadi (kerak bo'lsa o'chiradi).
- if(actor.centerMember) await alertAdmins(`🖼 Vakil markazga rasm qo‘shdi: ${centerName}`,"/admin/markazlar");
+ // Vakil rasmi admin tasdiqlaguncha saytda ko'rinmaydi; admin xabardor qilinadi.
+ if(actor.centerMember) await alertAdmins(`🖼 Vakil markazga rasm yukladi, tekshiruvni kutmoqda: ${centerName}`,"/admin/markazlar?holat=kutilmoqda");
  return res; } catch(e) {if(stored) await Promise.all([deleteObject(stored.key),deleteObject(stored.thumbKey)]);throw e;}
 });
 

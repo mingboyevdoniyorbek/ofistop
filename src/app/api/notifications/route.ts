@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
-import { handle, requireUser } from "@/lib/guard";
+import { handle, requireUser, HttpError } from "@/lib/guard";
 import { getLocale } from "@/lib/i18n";
 import { trServer } from "@/lib/server-i18n";
 
@@ -21,4 +21,13 @@ export const GET = handle(async (req) => {
   ]);
   return NextResponse.json({ unread, items: items.map((n) => ({ id: n.id, title: trServer(n.title, locale), body: n.body ? trServer(n.body, locale) : null, href: n.href, at: n.createdAt, read: !!n.readAt })) },
     { headers: { "Cache-Control": "no-store" } });
+});
+
+/** Telegram'ga yuborishni yoqish/o'chirish. */
+export const PATCH = handle(async (req) => {
+  const u = await requireUser(req);
+  const b = await req.json().catch(() => null) as { telegram?: unknown } | null;
+  if (typeof b?.telegram !== "boolean") throw new HttpError(400, "Noto'g'ri so'rov");
+  await db().update(s.users).set({ telegramNotify: b.telegram }).where(eq(s.users.id, u.id));
+  return NextResponse.json({ ok: true, telegram: b.telegram });
 });

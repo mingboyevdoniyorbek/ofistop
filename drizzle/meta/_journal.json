@@ -50,6 +50,13 @@
       "when": 1793453765999,
       "tag": "0006_center_applications",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793461203029,
+      "tag": "0007_telegram_notify_image_review",
+      "breakpoints": true
     }
   ]
 }

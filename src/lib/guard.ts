@@ -5,6 +5,7 @@ import { getCurrentUser } from "./auth";
 import { canEditListing } from "./status";
 import { getLocale } from "./i18n";
 import { localizeBody } from "./server-i18n";
+import { scheduleTelegramFlush } from "./telegram-notify";
 
 export class HttpError extends Error { constructor(public status: number, msg: string, public extra: object = {}) { super(msg); } }
 type Ctx = { params: Promise<Record<string, string>> };
@@ -19,6 +20,8 @@ export const handle = (fn: (req: Request, ctx: Ctx) => Promise<Response>) => asy
       res = NextResponse.json({ error: "Server xatosi. Keyinroq urinib ko'ring." }, { status: 500 });
     }
   }
+  // O'zgartiruvchi so'rov yangi bildirishnoma yaratgan bo'lishi mumkin — javobdan keyin Telegram'ga yuboriladi.
+  if (req.method !== "GET" && res.status < 400) scheduleTelegramFlush();
   return localizeResponse(res);
 };
 async function localizeResponse(res: Response): Promise<Response> {
