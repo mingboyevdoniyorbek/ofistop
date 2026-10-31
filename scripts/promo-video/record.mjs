@@ -8,6 +8,7 @@
 //   npx playwright install chromium        (bir marta)
 //   node scripts/promo-video/record.mjs --url https://ofistop.uz --lang uz --out video --listing "Olmazor cityda"
 //   node scripts/promo-video/record.mjs --url https://ofistop.uz --lang ru --out video
+//   ... --no-captions   (subtitrsiz, ovozni o'zingiz qo'shasiz)
 //
 // Videoda ovoz yo'q: musiqani Instagram/CapCut'da qo'shing (reklama uchun litsenziyali musiqa).
 import { chromium } from "@playwright/test";
@@ -247,7 +248,9 @@ const frameBg = async (w, h, file) => {
   await cp.screenshot({ path: file });
 };
 const capFiles = [];
-for (const [i, c] of captions.entries()) {
+// --no-captions: videoga yozuvlar qo'yilmaydi (ovozni o'zingiz qo'shganda).
+const NO_CAPTIONS = process.argv.includes("--no-captions");
+for (const [i, c] of (NO_CAPTIONS ? [] : captions).entries()) {
   const wide = path.join(work, `cap16-${i}.png`), tall = path.join(work, `capV-${i}.png`);
   await capPng(c.text, W, 54, wide); await capPng(c.text, 1080, 58, tall);
   capFiles.push({ ...c, wide, tall });
@@ -274,7 +277,7 @@ function compose(out, { bg, vw, vy, capKey, capY }) {
   });
   run([...inputs, "-filter_complex", f, "-map", `[s${capFiles.length}]`, ...enc, "-t", (frame / FPS).toFixed(2), out]);
 }
-const name = (r) => path.join(OUT, `ofistop-${LANG}-${r}.mp4`);
+const name = (r) => path.join(OUT, `ofistop-${LANG}-${r}${NO_CAPTIONS ? "-clean" : ""}.mp4`);
 compose(name("16x9"), { capKey: "wide", capY: "bottom" });
 compose(name("9x16"), { bg: path.join(work, "bg-9x16.png"), vw: 1080, vy: 600, capKey: "tall", capY: 410 });
 compose(name("4x5"), { bg: path.join(work, "bg-4x5.png"), vw: 1080, vy: 360, capKey: "tall", capY: 206 });
