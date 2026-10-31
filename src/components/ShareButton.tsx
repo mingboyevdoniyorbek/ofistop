@@ -30,7 +30,7 @@ export default function ShareButton({ path, title, text, variant = "pill" }: { p
     return () => { document.removeEventListener("click", close); document.removeEventListener("keydown", close); };
   }, [open]);
 
-  const url = () => `${location.origin}${path}`;
+  const url = () => `${typeof location === "undefined" ? "" : location.origin}${path}`;
   const message = [title, text].filter(Boolean).join(" — ");
   const enc = encodeURIComponent;
   const links = [
@@ -48,44 +48,48 @@ export default function ShareButton({ path, title, text, variant = "pill" }: { p
   async function shareNative() { try { await navigator.share({ title, text: message, url: url() }); setOpen(false); } catch { /* foydalanuvchi bekor qildi */ } }
 
   const label = ru ? "Поделиться" : "Ulashish";
+  // Oyna doim <body>ga chiqariladi: karta (overflow-hidden) yoki pastki menyu uni kesmasin/yopmasin.
+  // Telefonda — pastdan chiqadigan oyna; kompyuterda — tugma yonida, ekran chegarasidan chiqmaydigan joyda.
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+  function place() {
+    const r = btn.current?.getBoundingClientRect(); if (!r) return;
+    const W = 288, H = 260, m = 8;
+    const left = Math.min(Math.max(m, r.right - W), innerWidth - W - m);
+    const below = r.bottom + m + H <= innerHeight;
+    setPos({ top: below ? r.bottom + m : Math.max(m, r.top - H - m), left });
+  }
+  useEffect(() => {
+    if (!open || mobile) return;
+    place();
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, { passive: true }); window.addEventListener("resize", close);
+    return () => { window.removeEventListener("scroll", close); window.removeEventListener("resize", close); };
+  }, [open, mobile]);
+  // Faqat oyna ochilganda quriladi (serverda location yo'q).
+  const panel = () => <>
+    <p className="mb-3 font-semibold">{label}</p>
+    <div className="grid grid-cols-4 gap-2 text-center text-xs">
+      {links.map((l) => <a key={l.key} href={l.href()} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="flex flex-col items-center gap-1">
+        <span className={`grid h-12 w-12 place-items-center rounded-full text-white ${l.color}`}><Svg d={ICONS[l.key]} /></span>{l.label}</a>)}
+    </div>
+    <div className="mt-3 grid gap-2">
+      <button type="button" onClick={copy} className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium">
+        <Svg d={ICONS.link} fill={false} />{copied ? (ru ? "Ссылка скопирована ✓" : "Havola nusxalandi ✓") : (ru ? "Скопировать ссылку" : "Havolani nusxalash")}</button>
+      {native && <button type="button" onClick={shareNative} className="rounded-xl bg-brand px-3 py-2.5 text-sm font-semibold text-white">{ru ? "Другие приложения (Instagram, SMS…)" : "Boshqa ilovalar (Instagram, SMS…)"}</button>}
+    </div>
+  </>;
   return (
     <div ref={box} className="relative inline-block">
-      <button type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={label} title={label} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((o) => !o); }}
+      <button ref={btn} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={label} title={label} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((o) => !o); }}
         className={variant === "icon" ? "grid h-9 w-9 place-items-center rounded-full bg-white/95 text-slate-700 shadow-sm ring-1 ring-slate-200" : "inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:border-brand"}>
         <Svg d={ICONS.more} fill={false} />{variant === "pill" && label}
       </button>
-      {/* Telefonda pastdan chiqadigan oyna body'ga chiqariladi: karta/pastki menyu qatlamlari ostida qolmasin */}
-      {open && (mobile ? createPortal(<>
-        <div aria-hidden="true" className="fixed inset-0 z-[1250] bg-black/30 sm:hidden" />
-        <div ref={sheet} role="dialog" aria-label={label} onClick={(e) => e.stopPropagation()}
-          className="fixed inset-x-3 bottom-3 z-[1300] rounded-2xl bg-white p-4 shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-2 sm:w-72 sm:rounded-xl sm:border sm:border-slate-200 sm:p-3">
-          <p className="mb-3 font-semibold">{label}</p>
-          <div className="grid grid-cols-4 gap-2 text-center text-xs">
-            {links.map((l) => <a key={l.key} href={l.href()} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="flex flex-col items-center gap-1">
-              <span className={`grid h-12 w-12 place-items-center rounded-full text-white ${l.color}`}><Svg d={ICONS[l.key]} /></span>{l.label}</a>)}
-          </div>
-          <div className="mt-3 grid gap-2">
-            <button type="button" onClick={copy} className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium">
-              <Svg d={ICONS.link} fill={false} />{copied ? (ru ? "Ссылка скопирована ✓" : "Havola nusxalandi ✓") : (ru ? "Скопировать ссылку" : "Havolani nusxalash")}</button>
-            {native && <button type="button" onClick={shareNative} className="rounded-xl bg-brand px-3 py-2.5 text-sm font-semibold text-white">{ru ? "Другие приложения (Instagram, SMS…)" : "Boshqa ilovalar (Instagram, SMS…)"}</button>}
-          </div>
-        </div>
-      </>, document.body) : <>
-        <div aria-hidden="true" className="fixed inset-0 z-[1250] bg-black/30 sm:hidden" />
-        <div ref={sheet} role="dialog" aria-label={label} onClick={(e) => e.stopPropagation()}
-          className="fixed inset-x-3 bottom-3 z-[1300] rounded-2xl bg-white p-4 shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-2 sm:w-72 sm:rounded-xl sm:border sm:border-slate-200 sm:p-3">
-          <p className="mb-3 font-semibold">{label}</p>
-          <div className="grid grid-cols-4 gap-2 text-center text-xs">
-            {links.map((l) => <a key={l.key} href={l.href()} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className="flex flex-col items-center gap-1">
-              <span className={`grid h-12 w-12 place-items-center rounded-full text-white ${l.color}`}><Svg d={ICONS[l.key]} /></span>{l.label}</a>)}
-          </div>
-          <div className="mt-3 grid gap-2">
-            <button type="button" onClick={copy} className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium">
-              <Svg d={ICONS.link} fill={false} />{copied ? (ru ? "Ссылка скопирована ✓" : "Havola nusxalandi ✓") : (ru ? "Скопировать ссылку" : "Havolani nusxalash")}</button>
-            {native && <button type="button" onClick={shareNative} className="rounded-xl bg-brand px-3 py-2.5 text-sm font-semibold text-white">{ru ? "Другие приложения (Instagram, SMS…)" : "Boshqa ilovalar (Instagram, SMS…)"}</button>}
-          </div>
-        </div>
-      </>)}
+      {open && createPortal(mobile ? <>
+        <div aria-hidden="true" className="fixed inset-0 z-[1250] bg-black/30" />
+        <div ref={sheet} role="dialog" aria-label={label} onClick={(e) => e.stopPropagation()} className="fixed inset-x-3 bottom-3 z-[1300] rounded-2xl bg-white p-4 shadow-2xl">{panel()}</div>
+      </> : pos && <div ref={sheet} role="dialog" aria-label={label} onClick={(e) => e.stopPropagation()} style={{ top: pos.top, left: pos.left }}
+          className="fixed z-[1300] w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-2xl">{panel()}</div>, document.body)}
     </div>
   );
 }
