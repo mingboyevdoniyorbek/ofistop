@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { centerIdOf, centerStats } from "@/lib/centers";
 import { parseFilters, searchListings } from "@/lib/search";
@@ -35,7 +35,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const sp = await searchParams;
   const f = parseFilters({ ...sp, center: r.c.id, priceMode: "total" });
   const [rooms, stats, amen] = await Promise.all([searchListings(f, locale), centerStats([r.c.id]), db().select().from(s.amenities)]);
-  const pictures = await db().select().from(s.businessCenterImages).where(eq(s.businessCenterImages.centerId,r.c.id)).orderBy(s.businessCenterImages.position);
+  const pictures = await db().select().from(s.businessCenterImages).where(and(eq(s.businessCenterImages.centerId,r.c.id),eq(s.businessCenterImages.pending,false))).orderBy(s.businessCenterImages.position);
   const names = new Map(amen.map((a) => [a.code, locale === "ru" ? a.nameRu : a.nameUz]));
   const ru = locale === "ru";
   const viewer = await getCurrentUser().catch(() => null);

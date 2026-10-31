@@ -2,6 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db, schema as s, queryClient } from "@/db/client";
 import { notify } from "./staff";
 import { hit } from "./ratelimit";
+import { alertAdmins } from "./admin-alert";
 
 export type CenterPeriodStats = { centerViews: number; roomViews: number; phone: number; telegram: number; favorites: number; rooms: number };
 
@@ -53,4 +54,24 @@ export async function sendMonthlyCenterReports(now = new Date()) {
     }
   }
   return sent;
+}
+
+/**
+ * "Tavsiya etiladi" muddati 3 kun ichida tugaydigan markazlar: vakillarga bildirishnoma (Telegram'ga ham ketadi)
+ * va adminga xabar — qayta to'lovni eslatish uchun. Har bir muddat uchun bir marta.
+ */
+export async function remindFeaturedExpiry() {
+  const C = s.businessCenters;
+  const soon = await db().select({ id: C.id, name: C.name, until: C.featuredUntil }).from(C)
+    .where(sql`${C.featuredUntil} > now() AND ${C.featuredUntil} <= now() + interval '3 days'`);
+  let n = 0;
+  for (const c of soon) {
+    const date = ymd(c.until!).split("-").reverse().join(".");
+    if (!(await hit(`featured-remind:${c.id}:${ymd(c.until!)}`, 1, 10 * 86400))) continue;
+    const reps = await db().select({ u: s.businessCenterMemberships.userId }).from(s.businessCenterMemberships).where(eq(s.businessCenterMemberships.centerId, c.id));
+    for (const r of reps) await notify(r.u, `«Tavsiya etiladi» muddati tugayapti: ${c.name}`, `Muddat ${date} kuni tugaydi. Uzaytirish uchun biz bilan bog‘laning.`, `/kabinet/markazlar/${c.id}`);
+    await alertAdmins(`★ «Tavsiya etiladi» muddati ${date} kuni tugaydi: ${c.name}`, "/admin/markazlar");
+    n++;
+  }
+  return n;
 }

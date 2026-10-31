@@ -5,17 +5,24 @@ import { db, schema as s } from "@/db/client";
 import { handle, HttpError, isUuid } from "@/lib/guard";
 import { requireStaff, writeAudit, notify } from "@/lib/staff";
 import { normalizePhoneUz } from "@/lib/text";
+import { normalizeEmail } from "@/lib/login-challenge";
 
 // Vakil biriktirishni FAQAT admin qiladi: begona odam o'zini markaz vakili deb e'lon qila olmaydi.
 export const POST = handle(async (req, ctx) => {
   const actor = await requireStaff(req, true);
   const centerId = (await ctx.params).id;
-  const b = z.object({ action: z.enum(["add", "remove"]), phone: z.string().max(30).optional(), userId: z.string().optional() }).safeParse(await req.json().catch(() => null));
+  const b = z.object({ action: z.enum(["add", "remove"]), phone: z.string().max(200).optional(), userId: z.string().optional() }).safeParse(await req.json().catch(() => null));
   if (!isUuid(centerId) || !b.success) throw new HttpError(400, "So'rov noto'g'ri");
   const d = db();
   const [c] = await d.select().from(s.businessCenters).where(eq(s.businessCenters.id, centerId)).limit(1);
   if (!c) throw new HttpError(404, "Biznes markaz topilmadi");
   let userId = b.data.userId;
+  if (!userId && b.data.phone?.includes("@")) {
+    // Google orqali kirganlar email identifikatori bilan topiladi.
+    const [idn] = await d.select({ u: s.authIdentities.userId }).from(s.authIdentities).where(and(eq(s.authIdentities.provider, "email"), eq(s.authIdentities.subject, normalizeEmail(b.data.phone)))).limit(1);
+    if (!idn) throw new HttpError(404, "Bu email bilan foydalanuvchi topilmadi. Avval u Google orqali kirishi kerak.");
+    userId = idn.u;
+  }
   if (!userId) {
     const phone = b.data.phone ? normalizePhoneUz(b.data.phone) : null;
     if (!phone) throw new HttpError(422, "Telefon +998 XX XXX XX XX formatida bo'lsin");

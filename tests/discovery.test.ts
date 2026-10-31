@@ -8,6 +8,8 @@ const state=vi.hoisted(()=>({db:null as any,client:null as any,user:null as any}
 vi.mock("../src/db/client",async()=>({db:()=>state.db,queryClient:()=>state.client,schema:await import("../src/db/schema")}));
 vi.mock("next/headers",()=>({cookies:async()=>({get:()=>undefined}),headers:async()=>new Headers()}));
 vi.mock("../src/lib/auth",()=>({getCurrentUser:async()=>state.user}));
+const tg=vi.hoisted(()=>({calls:[] as any[]}));
+vi.mock("../src/lib/telegram",async(orig)=>({...(await orig() as object),tgCall:async(method:string,body:any)=>{tg.calls.push({method,body});return {};}}));
 import { bootstrap } from "../src/db/bootstrap";
 import { parseFilters, searchListings } from "../src/lib/search";
 import { clusterPoints, parseBounds } from "../src/lib/map-clusters";
@@ -211,4 +213,37 @@ test("admin markazni o'chiradi: e'lonlar qoladi (markazsiz), vakil va e'lon egas
  const after=await (await notificationsGet(new Request("http://localhost/api/notifications"),ctx())).json();
  expect(after.unread).toBe(before+1); expect(after.items[0].title).toBe("Biznes markaz saytdan olib tashlandi: O'chiriladigan Markaz");
  await expect(deleteCenter(c.id,{id:other.id})).rejects.toThrow();
+});
+
+import { flushTelegramNotifications } from "../src/lib/telegram-notify";
+test("bildirishnoma Telegram'ga bir marta yuboriladi; o'chirgan yoki bog'lanmagan foydalanuvchiga yuborilmaydi",async()=>{
+ vi.stubEnv("TELEGRAM_BOT_TOKEN","test-token");
+ await flushTelegramNotifications(500); tg.calls.length=0; // avvalgi testlardan qolganlar
+ await state.db.insert(schema.telegramLinks).values({telegramUserId:777,chatId:777,phone:owner.phone}).onConflictDoNothing();
+ await state.db.insert(schema.notifications).values([{userId:owner.id,title:"E'loningiz tasdiqlandi",body:"<b>Test</b>",href:"/kabinet"},{userId:other.id,title:"Bog'lanmagan"}]);
+ expect(await flushTelegramNotifications()).toBe(2);
+ expect(tg.calls).toHaveLength(1); expect(tg.calls[0].body.chat_id).toBe(777);
+ expect(tg.calls[0].body.text).toContain("&lt;b&gt;Test"); // HTML qochiriladi
+ expect(await flushTelegramNotifications()).toBe(0); expect(tg.calls).toHaveLength(1); // takror yuborilmaydi
+ await state.db.update(schema.users).set({telegramNotify:false}).where(eq(schema.users.id,owner.id));
+ await state.db.insert(schema.notifications).values({userId:owner.id,title:"O'chirilgan"});
+ await flushTelegramNotifications(); expect(tg.calls).toHaveLength(1);
+ await state.db.update(schema.users).set({telegramNotify:true}).where(eq(schema.users.id,owner.id));
+ vi.unstubAllEnvs(); vi.stubEnv("SESSION_SECRET","discovery-tests-only-secret-at-least-32-chars");
+});
+
+import { remindFeaturedExpiry } from "../src/lib/center-report";
+import { listCenters } from "../src/lib/centers";
+test("vakil rasmi tekshiruvgacha ko'rinmaydi; tavsiya muddati eslatmasi bir marta",async()=>{
+ const [c]=await state.db.insert(schema.businessCenters).values({name:"Rasm Markazi",slug:"rasm-markazi",regionId,address:"Rasm ko'chasi 1",featuredUntil:new Date(Date.now()+2*864e5)}).returning();
+ await state.db.insert(schema.businessCenterMemberships).values({centerId:c.id,userId:owner.id});
+ const [im]=await state.db.insert(schema.businessCenterImages).values({centerId:c.id,storageKey:"img/00000000-0000-4000-8000-000000000001.webp",pending:true}).returning();
+ const cover=async()=> (await listCenters()).find((x:any)=>x.id===c.id)!.cover;
+ expect(await cover()).toBeNull();
+ await reviewCenter(c.id,{id:other.id},{action:"approve_image",imageId:im.id});
+ expect(await cover()).toBe(im.storageKey);
+ expect(await remindFeaturedExpiry()).toBe(1);
+ expect(await remindFeaturedExpiry()).toBe(0);
+ const n=(await state.db.select().from(schema.notifications).where(eq(schema.notifications.userId,owner.id))).find((x:any)=>x.title==="«Tavsiya etiladi» muddati tugayapti: Rasm Markazi");
+ expect(n).toBeTruthy(); expect(trServer(n.title,"ru")).toBe("Срок «Рекомендуем» заканчивается: Rasm Markazi");
 });

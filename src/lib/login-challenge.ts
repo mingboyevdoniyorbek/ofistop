@@ -19,7 +19,9 @@ export function appOrigin() {
   const value = process.env.APP_URL;
   if (!value) throw new HttpError(503, "APP_URL sozlanmagan");
   const url = new URL(value);
-  if (process.env.NODE_ENV === "production" && url.protocol !== "https:") throw new HttpError(503, "APP_URL HTTPS bo'lishi kerak");
+  // Internetdagi sayt faqat HTTPS bilan; o'z kompyuterdagi (localhost) production sinovi bundan mustasno.
+  const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  if (process.env.NODE_ENV === "production" && url.protocol !== "https:" && !loopback) throw new HttpError(503, "APP_URL HTTPS bo'lishi kerak");
   return url.origin;
 }
 export async function loginLimit(req: Request, key: string) {

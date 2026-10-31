@@ -33,6 +33,8 @@ export const users = pgTable("users", {
   role: roleEnum("role").notNull().default("user"),
   isBlocked: boolean("is_blocked").notNull().default(false),
   isDemo: boolean("is_demo").notNull().default(false),
+  // Bildirishnomalar Telegram bot orqali ham yuborilsinmi (Telegram bilan bog'langan hisoblar uchun).
+  telegramNotify: boolean("telegram_notify").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -164,6 +166,8 @@ export const businessCenterImages = pgTable("business_center_images", {
   centerId: uuid("center_id").notNull().references(() => businessCenters.id, { onDelete: "cascade" }),
   storageKey: text("storage_key").notNull(),
   position: integer("position").notNull().default(0),
+  // Vakil yuklagan rasm admin tasdiqlaguncha saytda ko'rinmaydi (admin yuklagani darhol).
+  pending: boolean("pending").notNull().default(false),
 });
 
 // Vakilni admin biriktiradi (qo'lda yoki markaz arizasini tasdiqlaganda). Egalik o'z-o'zidan e'lon qilinmaydi.
@@ -382,6 +386,7 @@ export const notifications = pgTable("notifications", {
   body: text("body"),
   href: text("href"),
   readAt: timestamp("read_at", { withTimezone: true }),
+  telegramSentAt: timestamp("telegram_sent_at", { withTimezone: true }), // Telegram'ga yuborilgan (yoki yuborilmasligi aniqlangan) vaqt
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("notifications_user_idx").on(t.userId, t.createdAt)]);
 

@@ -1,11 +1,11 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { HttpError } from "./guard";
 import { notify, writeAudit } from "./staff";
 import { validateCenterForm } from "./center-management";
 import { deleteObject } from "./storage";
 
-type Action = { action: "approve_changes" } | { action: "reject_changes"; reason: string } | { action: "verify" } | { action: "unverify" } | { action: "feature"; days: number } | { action: "unfeature" };
+type Action = { action: "approve_image"; imageId: string } | { action: "approve_changes" } | { action: "reject_changes"; reason: string } | { action: "verify" } | { action: "unverify" } | { action: "feature"; days: number } | { action: "unfeature" };
 
 /** Admin: markaz bo'yicha qaror (vakil o'zgarishlari, ishonch belgisi, tavsiya etilgan muddat). */
 export async function reviewCenter(id: string, actor: { id: string }, a: Action) {
@@ -26,6 +26,9 @@ export async function reviewCenter(id: string, actor: { id: string }, a: Action)
         await tx.update(C).set(clearPending).where(eq(C.id, id));
         if (c.pendingSubmittedBy) await notify(c.pendingSubmittedBy, `Markaz o‘zgarishlari rad etildi: ${c.name}`, a.reason, `/kabinet/markazlar/${c.id}`, tx);
       }
+    } else if (a.action === "approve_image") {
+      const [im] = await tx.update(s.businessCenterImages).set({ pending: false }).where(and(eq(s.businessCenterImages.id, a.imageId), eq(s.businessCenterImages.centerId, id))).returning();
+      if (!im) throw new HttpError(404, "Rasm topilmadi");
     } else if (a.action === "verify" || a.action === "unverify") {
       await tx.update(C).set({ verifiedAt: a.action === "verify" ? new Date() : null }).where(eq(C.id, id));
     } else {

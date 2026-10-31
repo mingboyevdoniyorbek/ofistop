@@ -12,6 +12,7 @@ const body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("verify") }), z.object({ action: z.literal("unverify") }),
   z.object({ action: z.literal("feature"), days: z.coerce.number().int().min(1).max(366) }), z.object({ action: z.literal("unfeature") }),
   z.object({ action: z.literal("delete"), confirmName: z.string() }),
+  z.object({ action: z.literal("approve_image"), imageId: z.string().uuid() }),
 ]);
 /** Admin: vakil o'zgarishlarini tasdiqlash/rad etish, "Tasdiqlangan" belgisi, "Tavsiya etilgan" muddati. */
 export const POST = handle(async (req, ctx) => {
