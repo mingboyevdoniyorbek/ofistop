@@ -8,6 +8,7 @@ import { favState } from "@/lib/favorites";
 import FavoriteButton from "./FavoriteButton";
 import ListingPhoto from "./ListingPhoto";
 import type { searchListings } from "@/lib/search";
+import ShareButton from "@/components/ShareButton";
 type Item = Awaited<ReturnType<typeof searchListings>>["items"][number];
 
 /** Telefonda 2 ustunli ixcham karta; katta ekranda qo'shimcha ma'lumotlar ham ko'rinadi. */
@@ -19,7 +20,7 @@ export default async function ListingCard({ it, note }: { it: Item; note?: strin
   const place = [it.districtName, it.regionName].filter(Boolean).join(", ");
   return (
     <article className="relative flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white transition-shadow hover:shadow-md">
-      <div className="absolute right-2 top-2 z-10"><FavoriteButton variant="icon" listingId={it.id} initial={fav.ids.has(it.id)} loggedIn={fav.loggedIn} /></div>
+      <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1.5"><FavoriteButton variant="icon" listingId={it.id} initial={fav.ids.has(it.id)} loggedIn={fav.loggedIn} /><ShareButton variant="icon" path={`/joylar/${it.id}-${it.slug}`} title={it.title} text={`${primaryPrice(price, it.areaM2, locale)} · ${place}`} /></div>
       <Link href={`/joylar/${it.id}-${it.slug}`} className="flex flex-1 flex-col">
         <ListingPhoto thumb={mediaUrl(it.imageKey)} full={mediaUrl(it.imageFullKey)} alt={it.title} className="aspect-[4/3]"
           sizes="(max-width: 1024px) 50vw, 25vw">
