@@ -9,7 +9,7 @@ export default function CenterEditor({center,regions,districts,amenities,images,
  const [f,setF]=useState({...center,tagline:center.tagline??"",workingHours:center.workingHours??"",website:center.website??"",description:center.description??"",lat:center.lat??"",lng:center.lng??"",contactPhone:center.contactPhone??"",telegramUsername:center.telegramUsername??""});
  const [busy,setBusy]=useState(false),[msg,setMsg]=useState("");
  const inp="block w-full rounded border px-2 py-2";
- async function call(init:RequestInit){setBusy(true);setMsg("");try{const r=await fetch(endpoint ?? `/api/admin/centers/${center.id}`,init);const d=await r.json();if(!r.ok)throw new Error(d.error);setMsg(ru?"Сохранено":"Saqlandi");router.refresh();}catch(e){setMsg(e instanceof Error?e.message:"Xato");}finally{setBusy(false);}}
+ async function call(init:RequestInit){setBusy(true);setMsg("");try{const r=await fetch(endpoint ?? `/api/admin/centers/${center.id}`,init);const d=await r.json();if(!r.ok)throw new Error(d.error);setMsg(d.pending?(ru?"Изменения отправлены на проверку. После одобрения они появятся на сайте.":"O‘zgarishlar tekshiruvga yuborildi. Tasdiqlangach saytda ko‘rinadi."):(ru?"Сохранено":"Saqlandi"));router.refresh();}catch(e){setMsg(e instanceof Error?e.message:"Xato");}finally{setBusy(false);}}
  const patch=(body:object)=>call({method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
  return <details open={expanded} className="mt-3 border-t pt-3"><summary className="cursor-pointer text-brand">{ru?"Редактировать центр и фотографии":"Markaz va rasmlarni tahrirlash"}</summary>
  <form onSubmit={e=>{e.preventDefault();patch(f);}} className="mt-3"><fieldset disabled={busy} className="grid gap-3 sm:grid-cols-2">

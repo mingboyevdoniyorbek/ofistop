@@ -6,6 +6,7 @@ import CenterEditor from "@/components/CenterEditor";
 import { mediaUrl } from "@/lib/storage";
 import AdminForm from "@/components/AdminForm";
 import AdminAction from "@/components/AdminAction";
+import CenterReviewPanel from "@/components/CenterReviewPanel";
 
 export default async function Centers() {
   await requireStaffPage(true);
@@ -19,6 +20,12 @@ export default async function Centers() {
   const amenities = await db().select().from(s.amenities);
   const accounts = await d.select({ id:s.users.id,phone:s.users.phone,name:s.profiles.displayName,contact:s.profiles.contactPhone }).from(s.users).leftJoin(s.profiles,eq(s.profiles.userId,s.users.id)).where(eq(s.users.isBlocked,false)).orderBy(desc(s.users.createdAt)).limit(500);
   const images = await db().select().from(s.businessCenterImages).orderBy(s.businessCenterImages.position);
+  const ru = locale === "ru";
+  const fieldLabels: Record<string, string> = { name: ru ? "Название" : "Nomi", tagline: ru ? "Слоган" : "Qisqa shior", description: ru ? "Описание" : "Tavsif", address: ru ? "Адрес" : "Manzil",
+    regionId: ru ? "Регион (ID)" : "Hudud (ID)", districtId: ru ? "Район (ID)" : "Tuman (ID)", lat: "Lat", lng: "Lng", contactPhone: ru ? "Телефон" : "Telefon", telegramUsername: "Telegram",
+    amenities: ru ? "Удобства" : "Qulayliklar", workingHours: ru ? "Часы работы" : "Ish vaqti", website: ru ? "Сайт" : "Sayt" };
+  // Kutilayotgan o'zgarishli markazlar ro'yxat boshida.
+  centers.sort((a, b) => Number(!!b.c.pendingChanges) - Number(!!a.c.pendingChanges));
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold">{t("adm.nav.centers")}</h1>
@@ -33,6 +40,7 @@ export default async function Centers() {
         <li key={c.id} className="rounded border border-slate-200 p-3 text-sm">
           <p className="font-medium">{c.name} {c.isDemo && <span className="rounded bg-amber-100 px-1.5 text-xs text-amber-800">DEMO</span>}</p>
           <p className="text-slate-600">{region} · {c.address}</p>
+          <CenterReviewPanel c={c} ru={locale === "ru"} labels={fieldLabels} />
           <CenterEditor center={c} regions={regions.map(r=>({id:r.id,name:nm(r)}))} districts={districts.map(r=>({id:r.id,regionId:r.regionId,name:nm(r)}))} amenities={amenities.map(a=>({code:a.code,name:locale === "ru"?a.nameRu:a.nameUz}))} images={images.filter(i=>i.centerId===c.id).map(i=>({id:i.id,url:mediaUrl(i.storageKey)}))}/>
           <p className="mt-2 text-slate-500">{t("adm.c.reps")}</p>
           <ul className="mb-2">{ms.length === 0 && <li className="text-slate-400">{t("adm.c.none")}</li>}{ms.map((m) => <li key={m.userId} className="flex items-center gap-2 py-0.5">{m.name} · {m.phone}<AdminAction url={`/api/admin/centers/${c.id}/members`} body={{ action: "remove", userId: m.userId }} label={t("adm.c.remove")} tone="danger" confirm={t("adm.c.confirmRemove")} /></li>)}</ul>

@@ -145,3 +145,54 @@ test("qoralama: egasi o'chiradi, chop etilgan e'lon o'chmaydi, 7 kundan eski qor
  expect(left.has(d1.id)).toBe(false); expect(left.has(d2.id)).toBe(false);
  expect(left.has(d3.id)).toBe(true); expect(left.has(pub.id)).toBe(true); expect(left.has(othersDraft.id)).toBe(true);
 });
+
+import { POST as applyCenter } from "../src/app/api/center-applications/route";
+import { approveApplication, rejectApplication } from "../src/lib/center-applications";
+import { reviewCenter } from "../src/lib/center-review";
+import { centerPeriodStats, sendMonthlyCenterReports } from "../src/lib/center-report";
+import { trServer } from "../src/lib/server-i18n";
+test("markaz arizasi: yangi markaz → tasdiq → vakil; claim; rad etish; vakil o'zgarishlari moderatsiyada",async()=>{
+ const admin={id:other.id};
+ const form={name:"Ariza Plaza",regionId,address:"Amir Temur ko'chasi 1",contactName:"Ali Valiyev",phone:"90 123 45 67",telegramUsername:"@ariza_plaza",floors:"9",freeRooms:"12"};
+ // noto'g'ri telefon — maydon xatosi
+ const bad=await applyCenter(request({...form,phone:"123"}),ctx()); expect(bad.status).toBe(422); expect((await bad.json()).errors.phone).toBeTruthy();
+ const r=await applyCenter(request(form),ctx()); expect(r.status).toBe(201); const {id}=await r.json();
+ const [app]=await state.db.select().from(schema.centerApplications).where(eq(schema.centerApplications.id,id));
+ expect(app.phone).toBe("+998901234567"); expect(app.telegramUsername).toBe("ariza_plaza"); expect(app.kind).toBe("new");
+ const {centerId}=await approveApplication(id,admin,true);
+ const [c]=await state.db.select().from(schema.businessCenters).where(eq(schema.businessCenters.id,centerId));
+ expect(c.name).toBe("Ariza Plaza"); expect(c.verifiedAt).toBeTruthy(); expect(c.contactPhone).toBe("+998901234567");
+ expect((await state.db.select().from(schema.businessCenterMemberships).where(and(eq(schema.businessCenterMemberships.centerId,centerId),eq(schema.businessCenterMemberships.userId,owner.id)))).length).toBe(1);
+ const notes=await state.db.select().from(schema.notifications).where(eq(schema.notifications.userId,owner.id));
+ expect(notes.some((n:any)=>n.title==="Markazingiz tasdiqlandi: Ariza Plaza")).toBe(true);
+ expect(trServer("Markazingiz tasdiqlandi: Ariza Plaza","ru")).toBe("Ваш центр одобрен: Ariza Plaza");
+ await expect(approveApplication(id,admin,true)).rejects.toThrow(); // ikkinchi marta tasdiqlanmaydi
+ // vakil endi o'z markaziga claim qila olmaydi
+ expect((await applyCenter(request({...form,centerId}),ctx())).status).toBe(409);
+ // boshqa foydalanuvchi claim qiladi va rad etiladi
+ state.user=other;
+ const claim=await applyCenter(request({...form,centerId,contactName:"Boshqa odam"}),ctx()); expect(claim.status).toBe(201);
+ expect((await applyCenter(request({...form,centerId}),ctx())).status).toBe(409); // takroriy so'rov
+ await rejectApplication((await claim.json()).id,admin,"Hujjat yo'q");
+ state.user=owner;
+ // vakil tahriri: saytda o'zgarmaydi, admin tasdiqlagach qo'llanadi
+ const edit={name:"Ariza Plaza Premium",description:"Yangi tavsif",address:c.address,regionId,districtId:null,lat:"",lng:"",contactPhone:"+998901234567",telegramUsername:"",amenities:[],tagline:"",workingHours:"",website:""};
+ const pr=await editCenter(request(edit,"PATCH"),ctx(centerId)); expect(pr.status).toBe(200); expect((await pr.json()).pending).toBe(true);
+ let [c2]=await state.db.select().from(schema.businessCenters).where(eq(schema.businessCenters.id,centerId));
+ expect(c2.name).toBe("Ariza Plaza"); expect(c2.pendingChanges.name).toBe("Ariza Plaza Premium");
+ await reviewCenter(centerId,admin,{action:"approve_changes"});
+ [c2]=await state.db.select().from(schema.businessCenters).where(eq(schema.businessCenters.id,centerId));
+ expect(c2.name).toBe("Ariza Plaza Premium"); expect(c2.pendingChanges).toBeNull();
+ await reviewCenter(centerId,admin,{action:"feature",days:30});
+ [c2]=await state.db.select().from(schema.businessCenters).where(eq(schema.businessCenters.id,centerId));
+ expect(c2.featuredUntil.getTime()).toBeGreaterThan(Date.now()+29*864e5);
+ // statistika va oylik hisobot (oyning 1-kuni, bir marta)
+ await state.db.insert(schema.viewDays).values({kind:"center",entityId:centerId,day:"2026-10-15",n:7});
+ expect((await centerPeriodStats(centerId,"2026-10-01","2026-11-01")).centerViews).toBe(7);
+ expect(await sendMonthlyCenterReports(new Date("2026-11-01T00:00:00Z"))).toBeGreaterThan(0);
+ expect(await sendMonthlyCenterReports(new Date("2026-11-01T01:00:00Z"))).toBe(0);
+ expect(await sendMonthlyCenterReports(new Date("2026-11-02T00:00:00Z"))).toBe(0);
+ const report=(await state.db.select().from(schema.notifications).where(eq(schema.notifications.userId,owner.id))).find((n:any)=>n.title==="Oylik hisobot: Ariza Plaza Premium");
+ expect(report.body).toContain("10.2026: markaz sahifasi 7 marta");
+ expect(trServer(report.body,"ru")).toContain("страница центра — 7 просмотров");
+});

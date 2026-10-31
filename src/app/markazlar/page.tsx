@@ -5,6 +5,8 @@ import { getT } from "@/lib/i18n";
 import { mediaUrl } from "@/lib/storage";
 import { searchKey } from "@/lib/text";
 import { pageAlternates } from "@/lib/seo";
+import CenterCta from "@/components/CenterCta";
+import CenterBadges from "@/components/CenterBadges";
 export const dynamic = "force-dynamic";
 export async function generateMetadata() { const { t } = await getT(); return { title: t("ctr.title"), description: t("ctr.desc"), alternates: await pageAlternates("/markazlar") }; }
 export default async function Page({ searchParams }: { searchParams: Promise<{q?:string|string[]; vacant?:string|string[]}> }) {
@@ -15,6 +17,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{q?
   const stats = await centerStats(centers.map(c => c.id));
   const shown = centers.filter(c => (!q || searchKey([c.name,c.address,c.region,c.district].join(" ")).includes(searchKey(q))) && (vacant !== "1" || (stats.get(c.id)?.rooms ?? 0) > 0));
   return <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mb-5"><CenterCta variant="compact" /></div>
     <header className="rounded-3xl bg-brand-dark p-6 text-white sm:p-10">
       <p className="mb-2 text-sm text-blue-200">OfisTop · {ru ? "Бизнес-центры" : "Biznes markazlar"}</p>
       <h1 className="text-3xl font-bold">{ru ? "Ваш следующий офис — здесь" : "Keyingi ofisingiz shu yerda"}</h1>
@@ -29,7 +32,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{q?
     {!shown.length ? <div className="rounded-2xl border border-dashed p-8"><p>{centers.length ? (ru ? "По этим условиям центров нет." : "Bu shartlarga mos markaz topilmadi.") : t("ctr.empty")}</p>{(q || vacant) && <Link href="/markazlar" className="mt-3 inline-block text-brand underline">{ru ? "Сбросить фильтры" : "Filtrlarni tozalash"}</Link>}</div> :
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{shown.map(c => { const cover = mediaUrl(c.cover); return <Link key={c.id} href={`/markazlar/${c.id}-${c.slug}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition-shadow hover:shadow-lg">
         {cover ? <img src={cover} alt={c.name} loading="lazy" className="aspect-[16/9] w-full object-cover" /> : <div className="grid aspect-[16/9] place-items-center bg-blue-50 text-4xl font-bold text-brand" aria-hidden="true">{c.name.slice(0,2).toUpperCase()}</div>}
-        <div className="space-y-2 p-5"><h3 className="text-xl font-bold">{c.name}</h3>{c.tagline && <p className="line-clamp-2 text-sm">{c.tagline}</p>}<p className="text-sm text-slate-500">{[c.district,c.region,c.address].filter(Boolean).join(" · ")}</p><CenterStats st={stats.get(c.id)} />{c.isDemo && <p className="text-xs text-amber-800">{t("ctr.demo")}</p>}<p className="pt-2 text-sm font-semibold text-brand">{ru ? "Посмотреть центр и помещения →" : "Markaz va xonalarni ko‘rish →"}</p></div>
+        <div className="space-y-2 p-5"><h3 className="text-xl font-bold">{c.name}</h3><CenterBadges c={c} ru={ru} />{c.tagline && <p className="line-clamp-2 text-sm">{c.tagline}</p>}<p className="text-sm text-slate-500">{[c.district,c.region,c.address].filter(Boolean).join(" · ")}</p><CenterStats st={stats.get(c.id)} />{c.isDemo && <p className="text-xs text-amber-800">{t("ctr.demo")}</p>}<p className="pt-2 text-sm font-semibold text-brand">{ru ? "Посмотреть центр и помещения →" : "Markaz va xonalarni ko‘rish →"}</p></div>
       </Link>; })}</div>}
   </div>;
 }

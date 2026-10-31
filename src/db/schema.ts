@@ -147,6 +147,15 @@ export const businessCenters = pgTable("business_centers", {
   contactPhone: text("contact_phone"),
   telegramUsername: text("telegram_username"),
   isDemo: boolean("is_demo").notNull().default(false),
+  // Admin telefon/joyida tekshirgan markaz: saytda "✓ Tasdiqlangan markaz" belgisi.
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  // "Tavsiya etilgan markaz" (pullik joylashuv) shu sanagacha bosh sahifa va ro'yxat boshida.
+  featuredUntil: timestamp("featured_until", { withTimezone: true }),
+  viewCount: integer("view_count").notNull().default(0),
+  // Vakil kiritgan, admin tasdig'ini kutayotgan o'zgarishlar (tasdiqlangunga qadar saytda eski ma'lumot).
+  pendingChanges: jsonb("pending_changes").$type<Record<string, unknown>>(),
+  pendingSubmittedAt: timestamp("pending_submitted_at", { withTimezone: true }),
+  pendingSubmittedBy: uuid("pending_submitted_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("bc_slug_uq").on(t.slug)]);
 
@@ -157,7 +166,7 @@ export const businessCenterImages = pgTable("business_center_images", {
   position: integer("position").notNull().default(0),
 });
 
-// Vakil biriktirishni FAQAT admin qiladi (MVP). Egalik o'z-o'zidan e'lon qilinmaydi.
+// Vakilni admin biriktiradi (qo'lda yoki markaz arizasini tasdiqlaganda). Egalik o'z-o'zidan e'lon qilinmaydi.
 export const businessCenterMemberships = pgTable("business_center_memberships", {
   centerId: uuid("center_id").notNull().references(() => businessCenters.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -330,6 +339,41 @@ export const settings = pgTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
 });
+
+// ---------- Biznes markaz arizalari ----------
+export const centerApplicationKindEnum = pgEnum("center_application_kind", ["new", "claim"]);
+export const centerApplicationStatusEnum = pgEnum("center_application_status", ["pending", "approved", "rejected"]);
+/** Markaz egasining arizasi: yangi markaz qo'shish ("new") yoki mavjud markaz boshqaruvini so'rash ("claim"). */
+export const centerApplications = pgTable("center_applications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: centerApplicationKindEnum("kind").notNull().default("new"),
+  centerId: uuid("center_id").references(() => businessCenters.id, { onDelete: "set null" }), // claim: qaysi markaz; new: tasdiqlangach yaratilgani
+  name: text("name").notNull(),
+  regionId: integer("region_id").notNull().references(() => regions.id),
+  districtId: integer("district_id").references(() => districts.id),
+  address: text("address").notNull(),
+  contactName: text("contact_name").notNull(),
+  phone: text("phone").notNull(),
+  telegramUsername: text("telegram_username"),
+  floors: integer("floors"),
+  freeRooms: integer("free_rooms"),
+  website: text("website"),
+  comment: text("comment"),
+  status: centerApplicationStatusEnum("status").notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
+  reviewedBy: uuid("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("center_app_status_idx").on(t.status, t.createdAt), index("center_app_user_idx").on(t.userId)]);
+
+/** Kunlik ko'rishlar (oylik hisobot uchun): kind = "listing" | "center". */
+export const viewDays = pgTable("view_days", {
+  kind: text("kind").notNull(),
+  entityId: uuid("entity_id").notNull(),
+  day: date("day").notNull().default(sql`CURRENT_DATE`),
+  n: integer("n").notNull().default(0),
+}, (t) => [primaryKey({ columns: [t.kind, t.entityId, t.day] })]);
 
 export const notifications = pgTable("notifications", {
   id: uuid("id").primaryKey().defaultRandom(),

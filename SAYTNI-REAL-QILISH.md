@@ -46,6 +46,15 @@ Vercel'da `CRON_SECRET` qo'shing (istalgan uzun tasodifiy satr, masalan `node -e
 rasmlari bilan o'chiradi. Foydalanuvchi kabinetni ochganda uning eski qoralamalari ham darhol tozalanadi.
 Cron faqat **Production** deploy'da ishlaydi.
 
+## 8. Biznes markaz arizalari
+- Markaz egasi `/markazlar/ariza` orqali ariza qoldiradi (yoki markaz sahifasida "Bu markaz sizniki?" → boshqaruvni so'raydi).
+- Admin `Admin → Markaz arizalari` bo'limida ko'radi: avval ariza beruvchiga qo'ng'iroq qiling, keyin bir tugma bilan tasdiqlang —
+  markaz yaratiladi, ariza beruvchi vakil bo'ladi, unga bildirishnoma boradi.
+- Adminning Telegramiga darhol xabar kelishi uchun Vercel'da `ADMIN_TELEGRAM_CHAT_IDS` kiriting (botga avval /start yozing).
+- Vakil markaz matni/kontaktini o'zgartirsa, o'zgarish `Admin → Biznes markazlar`da "eski → yangi" ko'rinishida tasdiq kutadi.
+- "★ Tavsiya etiladi" (7/30/90 kun) — pullik joylashuv uchun: markaz bosh sahifa va ro'yxat boshida chiqadi.
+- Vakillarga har oyning 1-kuni oylik hisobot bildirishnomasi boradi (kunlik cron, `CRON_SECRET` kerak).
+
 ## Yangi sahifalar
 - `/ijara/ofis`, `/ijara/ombor`, `/ijara/dokon`, … va `/ijara/ofis/yunusobod` kabi tuman sahifalari (Google uchun).
 - `/ru/...` — har bir sahifaning ruscha manzili (Google ruscha qidiruvda ham topadi).
