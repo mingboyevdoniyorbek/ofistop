@@ -17,7 +17,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   // Filtr kombinatsiyalari indekslanmaydi (ular uchun /ijara/... sahifalari bor); asosiy katalog — canonical.
   const filtered = Object.keys(await searchParams).some((k) => k !== "page" && k !== "view");
   return { title: t("cat.title"),
-    description: ru ? "Каталог офисов, магазинов, складов и других коммерческих помещений в аренду: фильтры по цене, площади, району и карта." : "Ofis, do‘kon, ombor va boshqa tijorat joylari ijarasi katalogi: narx, maydon, tuman bo‘yicha filtrlar va xarita.",
+    description: ru ? "Каталог офисов, магазинов, складов, зданий и других коммерческих помещений в аренду и на продажу: фильтры по цене, площади, району и карта." : "Ofis, do‘kon, ombor, bino va boshqa tijorat joylari ijarasi va sotuvi katalogi: narx, maydon, tuman bo‘yicha filtrlar va xarita.",
     robots: { index: !filtered, follow: true }, alternates: await pageAlternates("/joylar") };
 }
 
@@ -51,6 +51,14 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
     for (const [k, v] of Object.entries(over)) u.set(k, v);
     return `/joylar?${u}`;
   };
+  // Ijara / sotuv tanlovi: narx filtrlari turga bog'liq bo'lgani uchun almashganda narx/davr/sahifa tozalanadi.
+  const dealHref = (deal: "" | "rent" | "sale") => {
+    const u = new URLSearchParams();
+    for (const [k, v] of Object.entries(sp)) { if (["deal", "page", "priceMin", "priceMax", "period", "sort"].includes(k)) continue; for (const x of Array.isArray(v) ? v : v ? [v] : []) u.append(k, x); }
+    if (deal) u.set("deal", deal);
+    const q = u.toString(); return q ? `/joylar?${q}` : "/joylar";
+  };
+  const deals = [["", ru ? "Все" : "Hammasi"], ["rent", ru ? "Аренда" : "Ijara"], ["sale", ru ? "Продажа" : "Sotuv"]] as const;
   const sorts = (["new", "price_asc", "price_desc", "area_asc", "area_desc"] as const).map((k) => [k, t(`sort.${k}`)] as [string, string]);
 
   return (
@@ -64,7 +72,11 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
         {view !== "map" && <div className="hidden rounded-2xl border border-slate-200 bg-white p-4 lg:block"><FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} /></div>}
       </aside>
       <section className="min-w-0">
-        <h1 className="mb-4 text-2xl font-bold text-brand-dark">{locale === "ru" ? "Найдите место для бизнеса" : "Biznesingizga mos joyni toping"}</h1>
+        <h1 className="mb-3 text-2xl font-bold text-brand-dark">{locale === "ru" ? "Найдите место для бизнеса" : "Biznesingizga mos joyni toping"}</h1>
+        <nav aria-label={ru ? "Тип сделки" : "Bitim turi"} className="mb-4 inline-flex rounded-xl bg-slate-100 p-1 text-sm font-semibold">
+          {deals.map(([k, v]) => <Link key={k} href={dealHref(k)} aria-current={(f.deal ?? "") === k ? "page" : undefined}
+            className={`rounded-lg px-4 py-1.5 ${(f.deal ?? "") === k ? "bg-white text-brand shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>{v}</Link>)}
+        </nav>
         <SearchTools key={mapQuery} query={`${mapQuery}&view=${view}`} regions={regions} districts={districts} amenities={amenities}/>
         {!!f.errors?.length && <p role="alert" className="mb-3 rounded bg-red-50 p-3 text-red-800">{locale === "ru" ? "Проверьте диапазоны чисел и дату" : f.errors.join(". ")}</p>}
         {data === null ? (
@@ -81,7 +93,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
               {sorts.map(([k, v]) => <Link key={k} href={qs({ sort: k, page: "1" })} aria-current={f.sort === k} className={`rounded-full border px-2.5 py-1 ${f.sort === k ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{v}</Link>)}
             </div>
           </div>
-          {(f.sort === "price_asc" || f.sort === "price_desc") && <p className="text-xs text-slate-500 mb-2">{locale === "ru" ? "Сначала общая аренда в выбранной валюте и периоде; другие цены ниже." : "Avval tanlangan valyuta va davrdagi jami ijara; boshqa narxlar keyin."} {f.currency} / {t(`period.${f.period}`)}</p>}
+          {(f.sort === "price_asc" || f.sort === "price_desc") && <p className="text-xs text-slate-500 mb-2">{f.deal === "sale" ? (ru ? "Сначала цены в выбранной валюте; другие ниже." : "Avval tanlangan valyutadagi narxlar; boshqalari keyin.") : ru ? "Сначала общая аренда в выбранной валюте и периоде; другие цены ниже." : "Avval tanlangan valyuta va davrdagi jami ijara; boshqa narxlar keyin."} {f.currency}{f.deal === "sale" ? "" : ` / ${t(`period.${f.period}`)}`}</p>}
           {data.items.length === 0 ? (
             <div className="rounded border border-slate-200 p-6 text-center">
               <p className="font-medium">{t("cat.empty")}</p>

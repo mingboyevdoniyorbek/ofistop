@@ -10,13 +10,14 @@ export const posterTypeEnum = pgEnum("poster_type", ["owner", "business_center",
 export const moderationEnum = pgEnum("moderation_status", ["draft", "pending", "approved", "rejected"]);
 export const availabilityEnum = pgEnum("availability_status", ["available", "reserved", "rented", "paused", "expired", "archived"]);
 export const currencyEnum = pgEnum("currency", ["UZS", "USD"]);
-export const periodEnum = pgEnum("price_period", ["month", "day", "hour"]);
+export const periodEnum = pgEnum("price_period", ["month", "day", "hour", "once"]); // once — sotuv narxi (bir martalik)
+export const dealTypeEnum = pgEnum("deal_type", ["rent", "sale"]);
 export const basisEnum = pgEnum("price_basis", ["whole", "per_m2", "per_seat"]);
 export const commissionEnum = pgEnum("commission_type", ["none", "fixed", "percent"]);
-export const percentBaseEnum = pgEnum("commission_percent_base", ["monthly_rent", "annual_rent"]);
+export const percentBaseEnum = pgEnum("commission_percent_base", ["monthly_rent", "annual_rent", "sale_price"]);
 export const utilitiesEnum = pgEnum("utilities", ["included", "separate", "partly"]);
 export const categoryEnum = pgEnum("category", [
-  "office", "bc_room", "coworking", "retail", "service_room", "warehouse", "production", "other",
+  "office", "bc_room", "coworking", "retail", "service_room", "warehouse", "production", "other", "building",
 ]);
 export const reportReasonEnum = pgEnum("report_reason", [
   "already_rented", "wrong_price", "false_info", "duplicate", "fraud_suspected", "other",
@@ -187,6 +188,8 @@ export const listings = pgTable("listings", {
   centerId: uuid("center_id").references(() => businessCenters.id),
   posterType: posterTypeEnum("poster_type").notNull(),
   category: categoryEnum("category").notNull(),
+  /** Ijara yoki sotuv. Sotuvda narx bir martalik (price_period = 'once'). */
+  dealType: dealTypeEnum("deal_type").notNull().default("rent"),
 
   title: text("title").notNull(),
   description: text("description").notNull().default(""),
@@ -206,6 +209,10 @@ export const listings = pgTable("listings", {
   furnished: boolean("furnished"),
   unitCode: text("unit_code"),     // xona raqami / ichki kod
   unitCodePublic: boolean("unit_code_public").notNull().default(false),
+  // Sotuv uchun qo'shimcha ma'lumotlar
+  landAreaSotix: numeric("land_area_sotix", { precision: 10, scale: 2 }), // yer maydoni (1 sotix = 100 m²)
+  documentsReady: boolean("documents_ready"),   // kadastr / mulk hujjatlari tayyor
+  installment: boolean("installment"),          // bo'lib to'lash mumkin
 
   // Narx: float EMAS. Minor-unit (UZS: so'm, USD: sent) butun son.
   priceAmountMinor: bigint("price_amount_minor", { mode: "bigint" }),
@@ -251,6 +258,7 @@ export const listings = pgTable("listings", {
   index("listings_public_idx").on(t.moderationStatus, t.availabilityStatus, t.expiresAt),
   index("listings_region_district_idx").on(t.regionId, t.districtId),
   index("listings_category_idx").on(t.category),
+  index("listings_deal_idx").on(t.dealType),
   index("listings_center_idx").on(t.centerId),
   index("listings_owner_idx").on(t.ownerId),
   index("listings_price_idx").on(t.currency, t.pricePeriod, t.priceBasis, t.priceAmountMinor),

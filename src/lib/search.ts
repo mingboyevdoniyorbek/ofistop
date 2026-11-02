@@ -9,7 +9,9 @@ export const PAGE_SIZE = Number(process.env.PAGE_SIZE ?? 12);
 export type Sort = "new" | "price_asc" | "price_desc" | "area_asc" | "area_desc";
 export interface Filters {
   q?: string; region?: number; district?: number; category?: string; center?: string;
-  currency: "UZS" | "USD"; period: "month" | "day" | "hour"; basis: "whole" | "per_m2" | "per_seat";
+  /** Ijara yoki sotuv; berilmasa — hammasi. Narx filtri/saralashi esa doim bitta turda (berilmasa — ijara). */
+  deal?: "rent" | "sale";
+  currency: "UZS" | "USD"; period: "month" | "day" | "hour" | "once"; basis: "whole" | "per_m2" | "per_seat";
   priceMin?: string; priceMax?: string; areaMin?: string; areaMax?: string; floor?: number;
   furnished?: "1" | "0"; poster?: string; commission?: "none" | "any"; availableBy?: string;
   amenities: string[]; sort: Sort; page: number;
@@ -23,6 +25,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export function parseFilters(sp: Record<string, string | string[] | undefined>): Filters {
   const sort = one(sp.sort);
+  const deal = one(sp.deal) === "sale" ? "sale" as const : one(sp.deal) === "rent" ? "rent" as const : undefined;
   const cur = one(sp.currency), per = one(sp.period), bas = one(sp.basis);
   const errors: string[] = [];
   const bounds = parseBounds(one(sp.bbox));
@@ -38,10 +41,10 @@ export function parseFilters(sp: Record<string, string | string[] | undefined>):
   if (one(sp.availableBy) && !validDate(one(sp.availableBy)!)) errors.push("Sana noto‘g‘ri");
   return {
     bounds, near, priceMode: one(sp.priceMode) === "total" ? "total" : "unit",
-    errors, currencyFilter: cur === "USD" || cur === "UZS", periodFilter: ["month", "day", "hour"].includes(per ?? ""), basisFilter: ["whole", "per_m2", "per_seat"].includes(bas ?? ""),
+    errors, currencyFilter: cur === "USD" || cur === "UZS", periodFilter: deal !== "sale" && ["month", "day", "hour"].includes(per ?? ""), basisFilter: ["whole", "per_m2", "per_seat"].includes(bas ?? ""),
     q: one(sp.q)?.slice(0, 100) || undefined, region: int(one(sp.region)), district: int(one(sp.district)),
-    category: one(sp.category), center: one(sp.center),
-    currency: cur === "USD" ? "USD" : "UZS", period: per === "day" || per === "hour" ? per : "month",
+    category: one(sp.category), center: one(sp.center), deal,
+    currency: cur === "USD" ? "USD" : "UZS", period: deal === "sale" ? "once" : per === "day" || per === "hour" ? per : "month",
     basis: bas === "per_m2" || bas === "per_seat" ? bas : "whole",
     priceMin: num(one(sp.priceMin)), priceMax: num(one(sp.priceMax)), areaMin: num(one(sp.areaMin)), areaMax: num(one(sp.areaMax)),
     floor: int(one(sp.floor)), furnished: one(sp.furnished) === "1" ? "1" : one(sp.furnished) === "0" ? "0" : undefined,
@@ -69,6 +72,7 @@ export function buildWhere(f: Filters) {
   const L = s.listings;
   const conds: (SQL | undefined)[] = [publicCond()];
   if (f.errors?.length) conds.push(sql`false`);
+  if (f.deal) conds.push(eq(L.dealType, f.deal));
   if (f.currencyFilter) conds.push(eq(L.currency, f.currency));
   if (f.periodFilter) conds.push(eq(L.pricePeriod, f.period));
   if (f.basisFilter) conds.push(eq(L.priceBasis, f.basis));
@@ -131,7 +135,7 @@ function cardQuery(locale: "uz" | "ru") {
   return db().select({
     id: L.id, slug: L.slug, title: L.title, category: L.category, areaM2: L.areaM2, floor: L.floor,
     priceAmountMinor: L.priceAmountMinor, currency: L.currency, pricePeriod: L.pricePeriod, priceBasis: L.priceBasis,
-    priceNegotiable: L.priceNegotiable, posterType: L.posterType, availabilityConfirmedAt: L.availabilityConfirmedAt,
+    priceNegotiable: L.priceNegotiable, dealType: L.dealType, posterType: L.posterType, availabilityConfirmedAt: L.availabilityConfirmedAt,
     depositAmountMinor: L.depositAmountMinor, depositCurrency: L.depositCurrency, commissionType: L.commissionType, utilities: L.utilities, amenities: L.amenities,
     districtName: locale === "ru" ? s.districts.nameRu : s.districts.nameUz, regionName: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, centerName: s.businessCenters.name,
     // Kichik rasm (thumb) va to'liq rasm: kartada srcset orqali ekran zichligiga mosi tanlanadi.

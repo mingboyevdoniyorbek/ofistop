@@ -1,6 +1,6 @@
 // Pul butun son (minor-unit) sifatida saqlanadi. Float ishlatilmaydi.
 export type Currency = "UZS" | "USD";
-export type Period = "month" | "day" | "hour";
+export type Period = "month" | "day" | "hour" | "once"; // once — sotuv narxi
 export type Basis = "whole" | "per_m2" | "per_seat";
 
 export interface Price {
@@ -48,7 +48,7 @@ export function isComparable(a: Pick<Price, "currency" | "period" | "basis">, b:
 }
 
 /** Foiz komissiya: qaysi bazadan hisoblanishi MAJBURIY. Natija minor-unit. */
-export function percentCommission(monthlyRentMinor: bigint, percent: string, base: "monthly_rent" | "annual_rent"): bigint | null {
+export function percentCommission(monthlyRentMinor: bigint, percent: string, base: "monthly_rent" | "annual_rent" | "sale_price"): bigint | null {
   const m = /^(\d{1,3})(?:\.(\d{1,2}))?$/.exec(percent);
   if (!m) return null;
   const basisAmount = base === "annual_rent" ? monthlyRentMinor * 12n : monthlyRentMinor;

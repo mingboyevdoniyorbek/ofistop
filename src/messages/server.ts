@@ -153,6 +153,7 @@ export const SERVER_MSGS: readonly (readonly [string, string])[] = [
   ["{label}: musbat son kiriting (ko'pi bilan 2 ta kasr)", "{label}: введите положительное число (не более 2 знаков после запятой)"],
   ["Qavat", "Этаж"], ["Jami qavatlar", "Всего этажей"], ["Ish o'rinlari", "Рабочие места"], ["Xonalar soni", "Количество комнат"],
   ["Minimal muddat (oy)", "Минимальный срок (мес.)"], ["Narx", "Цена"], ["Depozit", "Депозит"], ["Komissiya", "Комиссия"], ["Xizmat to'lovi", "Плата за обслуживание"],
+  ["Yer maydoni: musbat son (sotix)", "Площадь участка: положительное число (соток)"],
   ["Maydon: musbat son (m²), ko'pi bilan 2 ta kasr", "Площадь: положительное число (м²), не более 2 знаков после запятой"],
   ["Kenglik -90 dan 90 gacha bo'lishi kerak", "Широта должна быть от -90 до 90"],
   ["Uzunlik -180 dan 180 gacha bo'lishi kerak", "Долгота должна быть от -180 до 180"],

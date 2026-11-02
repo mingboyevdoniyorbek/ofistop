@@ -8,25 +8,29 @@ import { normalizePhoneUz } from "./text";
 export type ListingRow = typeof listings.$inferSelect;
 export type ListingInsert = typeof listings.$inferInsert;
 
-export const CATEGORIES = ["office", "bc_room", "coworking", "retail", "service_room", "warehouse", "production", "other"] as const;
+export const CATEGORIES = ["office", "bc_room", "coworking", "retail", "service_room", "warehouse", "production", "building", "other"] as const;
+export const DEALS = ["rent", "sale"] as const;
 export const POSTERS = ["owner", "business_center", "agency"] as const;
 /** Kategoriyaga mos maydonlar: mos bo'lmaganlari forma'da ko'rsatilmaydi va majburiy emas. */
 export const USES_SEATS: readonly string[] = ["coworking"];
 export const USES_FLOOR: readonly string[] = ["office", "bc_room", "coworking", "retail", "service_room", "other"];
+/** Butun bino: qavat emas, jami qavatlar soni va yer maydoni so'raladi. */
+export const USES_TOTAL_FLOORS: readonly string[] = [...USES_FLOOR, "building"];
 
 const cur = z.enum(["UZS", "USD"]);
 export const formSchema = z.object({
-  category: z.enum(CATEGORIES), posterType: z.enum(POSTERS),
+  category: z.enum(CATEGORIES), posterType: z.enum(POSTERS), dealType: z.enum(DEALS),
+  landAreaSotix: z.string().max(14), documentsReady: z.enum(["", "1", "0"]), installment: z.enum(["", "1", "0"]),
   title: z.string().max(120), description: z.string().max(5000),
   centerId: z.string().uuid().nullable(), unitCode: z.string().max(40), unitCodePublic: z.boolean(),
   regionId: z.number().int().positive(), districtId: z.number().int().positive().nullable(),
   address: z.string().max(200), lat: z.string().max(20), lng: z.string().max(20), exactLocationPublic: z.boolean(),
   areaM2: z.string().max(14), floor: z.string().max(5), totalFloors: z.string().max(5), seats: z.string().max(6), roomsCount: z.string().max(6),
   furnished: z.enum(["", "1", "0"]),
-  priceAmount: z.string().max(24), currency: cur, pricePeriod: z.enum(["month", "day", "hour"]), priceBasis: z.enum(["whole", "per_m2", "per_seat"]), priceNegotiable: z.boolean(),
+  priceAmount: z.string().max(24), currency: cur, pricePeriod: z.enum(["month", "day", "hour", "once"]), priceBasis: z.enum(["whole", "per_m2", "per_seat"]), priceNegotiable: z.boolean(),
   depositAmount: z.string().max(24), depositCurrency: cur,
   commissionType: z.enum(["none", "fixed", "percent"]), commissionFixed: z.string().max(24), commissionCurrency: cur,
-  commissionPercent: z.string().max(7), commissionPercentBase: z.enum(["monthly_rent", "annual_rent"]),
+  commissionPercent: z.string().max(7), commissionPercentBase: z.enum(["monthly_rent", "annual_rent", "sale_price"]),
   utilities: z.enum(["", "included", "separate", "partly"]),
   serviceFee: z.string().max(24), serviceFeeCurrency: cur, serviceFeePeriod: z.enum(["month", "once"]),
   minTermMonths: z.string().max(4), availableFrom: z.string().max(10),
@@ -54,6 +58,9 @@ export function parseForm(f: Form): { values: Partial<ListingInsert>; errors: Re
   if (has("regionId")) v.regionId = f.regionId; if (has("districtId")) v.districtId = f.districtId;
   if (has("exactLocationPublic")) v.exactLocationPublic = f.exactLocationPublic;
   if (has("furnished")) v.furnished = f.furnished === "" ? null : f.furnished === "1";
+  if (has("documentsReady")) v.documentsReady = f.documentsReady === "" ? null : f.documentsReady === "1";
+  if (has("installment")) v.installment = f.installment === "" ? null : f.installment === "1";
+  if (has("dealType")) v.dealType = f.dealType;
   if (has("currency")) v.currency = f.currency; if (has("pricePeriod")) v.pricePeriod = f.pricePeriod; if (has("priceBasis")) v.priceBasis = f.priceBasis;
   if (has("priceNegotiable")) v.priceNegotiable = f.priceNegotiable;
   if (has("depositCurrency")) v.depositCurrency = f.depositCurrency;
@@ -73,6 +80,7 @@ export function parseForm(f: Form): { values: Partial<ListingInsert>; errors: Re
   int("floor", -3, 200, "Qavat"); int("totalFloors", 1, 200, "Jami qavatlar"); int("seats", 1, 10000, "Ish o'rinlari");
   int("roomsCount", 1, 1000, "Xonalar soni"); int("minTermMonths", 1, 120, "Minimal muddat (oy)");
 
+  if (has("landAreaSotix")) { const s = norm(f.landAreaSotix!); if (!s) v.landAreaSotix = null; else if (/^\d{1,8}(\.\d{1,2})?$/.test(s) && Number(s) > 0) v.landAreaSotix = s; else e.landAreaSotix = "Yer maydoni: musbat son (sotix)"; }
   if (has("areaM2")) { const s = norm(f.areaM2!); if (!s) v.areaM2 = null; else if (/^\d{1,8}(\.\d{1,2})?$/.test(s) && Number(s) > 0) v.areaM2 = s; else e.areaM2 = "Maydon: musbat son (m²), ko'pi bilan 2 ta kasr"; }
   for (const k of ["lat", "lng"] as const) if (has(k)) {
     const s = norm(f[k]!); const lim = k === "lat" ? 90 : 180;
@@ -109,6 +117,17 @@ export function parseForm(f: Form): { values: Partial<ListingInsert>; errors: Re
     const s = f.telegramUsername!.trim();
     if (!s) v.telegramUsername = null; else { const t = normalizeTelegram(s); if (t) v.telegramUsername = t; else e.telegramUsername = "Telegram username 5–32 belgi (harf, raqam, _)"; }
   }
+  // Sotuv narxi bir martalik: davr doim "once"; ijarada "once" bo'lmaydi. Ijaraga oid maydonlar sotuvda tozalanadi.
+  if (v.dealType === "sale") {
+    v.pricePeriod = "once";
+    Object.assign(v, { depositAmountMinor: null, depositCurrency: null, utilities: null, serviceFeeMinor: null, serviceFeeCurrency: null, minTermMonths: null });
+    if (v.commissionPercentBase && v.commissionPercentBase !== "sale_price") v.commissionPercentBase = "sale_price";
+    if (v.priceBasis === "per_seat") v.priceBasis = "whole";
+  } else if (v.dealType === "rent") {
+    if (v.pricePeriod === "once") v.pricePeriod = "month";
+    if (v.commissionPercentBase === "sale_price") v.commissionPercentBase = "monthly_rent";
+    Object.assign(v, { landAreaSotix: null, documentsReady: null, installment: null });
+  }
   if (v.floor != null && v.totalFloors != null && v.floor > v.totalFloors) e.floor = "Qavat jami qavatlar sonidan oshmasin";
   if (has("lat") && has("lng") && ((v.lat == null) !== (v.lng == null))) e.lat = "Kenglik va uzunlikni birga kiriting";
   return { values: v, errors: e };
@@ -120,7 +139,8 @@ const major = (b: bigint | null) => (b == null ? "" : `${b / 100n}${b % 100n ? "
 /** DB qatori -> forma (matn). */
 export function toForm(r: ListingRow, amenities: string[] = r.amenities): Required<Form> {
   return {
-    category: r.category, posterType: r.posterType, title: r.title, description: r.description, centerId: r.centerId,
+    category: r.category, posterType: r.posterType, dealType: r.dealType,
+    landAreaSotix: trimNum(r.landAreaSotix), documentsReady: r.documentsReady == null ? "" : r.documentsReady ? "1" : "0", installment: r.installment == null ? "" : r.installment ? "1" : "0", title: r.title, description: r.description, centerId: r.centerId,
     unitCode: r.unitCode ?? "", unitCodePublic: r.unitCodePublic, regionId: r.regionId, districtId: r.districtId,
     address: r.address, lat: trimNum(r.lat), lng: trimNum(r.lng), exactLocationPublic: r.exactLocationPublic,
     areaM2: trimNum(r.areaM2), floor: r.floor?.toString() ?? "", totalFloors: r.totalFloors?.toString() ?? "",
@@ -129,7 +149,7 @@ export function toForm(r: ListingRow, amenities: string[] = r.amenities): Requir
     priceAmount: major(r.priceAmountMinor), currency: r.currency, pricePeriod: r.pricePeriod, priceBasis: r.priceBasis, priceNegotiable: r.priceNegotiable,
     depositAmount: major(r.depositAmountMinor), depositCurrency: r.depositCurrency ?? r.currency,
     commissionType: r.commissionType, commissionFixed: major(r.commissionFixedMinor), commissionCurrency: r.commissionCurrency ?? r.currency,
-    commissionPercent: trimNum(r.commissionPercent), commissionPercentBase: r.commissionPercentBase ?? "monthly_rent",
+    commissionPercent: trimNum(r.commissionPercent), commissionPercentBase: r.commissionPercentBase ?? (r.dealType === "sale" ? "sale_price" : "monthly_rent"),
     utilities: r.utilities ?? "", serviceFee: major(r.serviceFeeMinor), serviceFeeCurrency: r.serviceFeeCurrency ?? r.currency, serviceFeePeriod: r.serviceFeePeriod === "once" ? "once" : "month",
     minTermMonths: r.minTermMonths?.toString() ?? "", availableFrom: r.availableFrom ?? "",
     amenities, contactPhone: r.contactPhone ?? "", telegramUsername: r.telegramUsername ?? "",
@@ -160,6 +180,6 @@ export function submitErrors(form: Form, imagesCount: number): Record<string, st
 export const STEP_OF: Record<string, number> = {
   category: 1, posterType: 1, title: 1, description: 1, centerId: 1, unitCode: 1,
   regionId: 2, districtId: 2, address: 2, lat: 2, lng: 2,
-  areaM2: 3, floor: 3, totalFloors: 3, seats: 3, roomsCount: 3, priceAmount: 3, priceBasis: 3, depositAmount: 3, commissionFixed: 3,
+  dealType: 1, landAreaSotix: 3, areaM2: 3, floor: 3, totalFloors: 3, seats: 3, roomsCount: 3, priceAmount: 3, priceBasis: 3, depositAmount: 3, commissionFixed: 3,
   commissionPercent: 3, commissionPercentBase: 3, minTermMonths: 3, availableFrom: 3, serviceFee: 3, images: 4, contactPhone: 5, telegramUsername: 5,
 };

@@ -1,7 +1,7 @@
 import { and, eq, gt, lte, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { parseFilters, searchWhere } from "./search";
-const keys = new Set(["q", "region", "district", "category", "center", "currency", "period", "basis", "priceMode", "priceMin", "priceMax", "areaMin", "areaMax", "floor", "furnished", "poster", "commission", "availableBy", "amenities", "lat", "lng", "radius", "bbox"]);
+const keys = new Set(["q", "deal", "region", "district", "category", "center", "currency", "period", "basis", "priceMode", "priceMin", "priceMax", "areaMin", "areaMax", "floor", "furnished", "poster", "commission", "availableBy", "amenities", "lat", "lng", "radius", "bbox"]);
 export function canonicalSearch(query: string) {
   const out = new URLSearchParams();
   const input = new URLSearchParams(query);
