@@ -5,6 +5,7 @@ import { labels, priceLabel, totalLabel, primaryPrice } from "@/lib/format";
 import type { MsgKey } from "@/messages/uz";
 import { useLocale, useT } from "./I18nProvider";
 import PickMap from "./PickMap";
+import { placeCenter } from "@/lib/geo-centroids";
 import InlineSelect from "./InlineSelect";
 import { prepareUpload } from "@/lib/prepare-upload";
 import { parseMajorToMinor } from "@/lib/money";
@@ -13,7 +14,7 @@ import { STEP_OF as ORIGINAL_STEPS, USES_FLOOR, USES_SEATS, type Form } from "@/
 type F = Required<Form>;
 type Img = { id: string; url: string | null; thumbUrl: string | null; isPrimary: boolean };
 interface Props { promo?: boolean; updatedAt: string; id: string; slug: string; initial: F; images: Img[]; moderation: "draft" | "pending" | "approved" | "rejected"; rejectionReason: string | null; archived: boolean;
-  regions: { id: number; name: string }[]; districts: { id: number; regionId: number; name: string }[]; amenities: { code: string; name: string }[]; centers: { id: string; name: string }[] }
+  regions: { id: number; name: string; slug?: string }[]; districts: { id: number; regionId: number; name: string; slug?: string }[]; amenities: { code: string; name: string }[]; centers: { id: string; name: string }[] }
 
 const STEP_OF = Object.fromEntries(Object.entries(ORIGINAL_STEPS).map(([key, step]) => [key, step <= 3 ? step : step === 4 ? 3 : 4]));
 /** Xatolar ro'yxatidagi maydon nomlari (forma yorliqlari bilan bir xil kalitlar). */
@@ -186,7 +187,7 @@ export default function ListingWizard(p: Props) {
           <L errors={errors} k="address" label={t("wiz.f.address")}><input className={inp} maxLength={200} {...bind("address")} /></L>
           <fieldset className="rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("wiz.coords")}</legend>
             <p className="mb-2 text-xs text-slate-500">{t("wiz.coordsHint")}</p>
-            <PickMap lat={f.lat} lng={f.lng} disabled={!editable} onPick={(la, ln) => setF((x) => ({ ...x, lat: la, lng: ln }))} />
+            <PickMap lat={f.lat} lng={f.lng} disabled={!editable} focus={placeCenter(p.regions.find((x) => x.id === f.regionId)?.slug, p.districts.find((x) => x.id === f.districtId)?.slug)} onPick={(la, ln) => setF((x) => ({ ...x, lat: la, lng: ln }))} />
             <div className="mt-3 grid grid-cols-2 gap-3"><L errors={errors} k="lat" label={t("wiz.lat")}><input className={inp} inputMode="decimal" placeholder="41.311081" {...bind("lat")} /></L><L errors={errors} k="lng" label={t("wiz.lng")}><input className={inp} inputMode="decimal" placeholder="69.240562" {...bind("lng")} /></L></div>
             <label className="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={f.exactLocationPublic} onChange={(e) => set("exactLocationPublic", e.target.checked)} />{t("wiz.exactPublic")}</label>
             {(f.lat || f.lng) && editable && <button type="button" onClick={() => setF((x) => ({ ...x, lat: "", lng: "" }))} className="mt-2 text-sm text-brand underline">{t("wiz.clearCoords")}</button>}</fieldset>
@@ -224,7 +225,7 @@ export default function ListingWizard(p: Props) {
         {step === 3 && <>
           <section aria-labelledby="img-h"><h2 id="img-h" className="mb-1 font-medium">{t("wiz.images", { n: images.length })}</h2>
             <p className="mb-2 text-xs text-slate-500">{t("wiz.imgHint")}</p>
-            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={busy || !editable || images.length >= 15} onChange={(e) => upload(e.target.files)} aria-label={t("wiz.pickImg")} className="hidden" />
+            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={busy || !editable || images.length >= 15} onChange={(e) => upload(e.target.files)} aria-label={t("wiz.pickImg")} className="hidden" />
             <button type="button" onClick={() => fileRef.current?.click()} disabled={busy || !editable || images.length >= 15} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3 font-semibold text-white shadow-sm transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
               <span aria-hidden="true" className="text-2xl leading-none">+</span>
               {images.length >= 15 ? (locale === "ru" ? "Лимит: 15 фотографий" : "15 ta rasm limiti to‘ldi") : busy ? (locale === "ru" ? "Подождите…" : "Kuting…") : (locale === "ru" ? "Добавить фотографии" : "Rasm qo‘shish")}
