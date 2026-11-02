@@ -44,39 +44,50 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
   if (sort === "price") shown.sort((a, b) => { const x = minPrice(a.id), y = minPrice(b.id); return x == null ? 1 : y == null ? -1 : x < y ? -1 : x > y ? 1 : 0; });
   if (sort === "name") shown.sort((a, b) => a.name.localeCompare(b.name, ru ? "ru" : "uz"));
   const active = !!(q || region || district || vacant || verified || roomFilter || sort !== "recommended");
+  const filterCount = [region || district, areaMin || areaMax, priceMax, vacant, verified, sort !== "recommended"].filter(Boolean).length;
   const field = "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2";
   const nm = (x: { nameUz: string; nameRu: string }) => (ru ? x.nameRu : x.nameUz);
   return <div className="mx-auto max-w-6xl px-4 py-8">
     <div className="mb-5"><CenterCta variant="compact" /></div>
-    <header className="rounded-3xl bg-brand-dark p-6 text-white sm:p-10">
+    <header className="rounded-3xl bg-brand-dark p-5 text-white sm:p-10">
       <p className="mb-2 text-sm text-blue-200">OfisTop · {ru ? "Бизнес-центры" : "Biznes markazlar"}</p>
-      <h1 className="text-3xl font-bold">{ru ? "Ваш следующий офис — здесь" : "Keyingi ofisingiz shu yerda"}</h1>
+      <h1 className="text-2xl font-bold sm:text-3xl">{ru ? "Ваш следующий офис — здесь" : "Keyingi ofisingiz shu yerda"}</h1>
       <p className="mt-3 max-w-2xl text-blue-100">{ru ? "Познакомьтесь с центром, сравните свободные помещения и свяжитесь с представителем напрямую." : "Markaz bilan tanishing, bo‘sh xonalarni solishtiring va vakili bilan to‘g‘ridan-to‘g‘ri bog‘laning."}</p>
     </header>
     <section aria-labelledby="ctr-filter-h" className="mt-6">
       <h2 id="ctr-filter-h" className="sr-only">{ru ? "Фильтр" : "Filtr"}</h2>
-      <form action="/markazlar" className="grid gap-3 rounded-2xl bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="text-sm sm:col-span-2">{ru ? "Название, район или ориентир" : "Markaz nomi, tuman yoki mo‘ljal"}<input name="q" defaultValue={q} className={field} placeholder={ru ? "Например: Ташкент Сити" : "Masalan: Tashkent City"} /></label>
-        <RegionDistrictFields regions={regions.map(r => ({ id: r.id, name: nm(r) }))} districts={districts.map(d => ({ id: d.id, regionId: d.regionId, name: nm(d) }))} region={region} district={district} className={field}
-          labels={{ region: ru ? "Регион" : "Hudud", district: ru ? "Район" : "Tuman", all: ru ? "Все" : "Hammasi" }} />
-        <label className="text-sm">{ru ? "Площадь от, м²" : "Maydon, m² dan"}<input className={field} name="areaMin" inputMode="decimal" defaultValue={areaMin} /></label>
-        <label className="text-sm">{ru ? "Площадь до, м²" : "Maydon, m² gacha"}<input className={field} name="areaMax" inputMode="decimal" defaultValue={areaMax} /></label>
-        <label className="text-sm">{ru ? "Бюджет в месяц, до" : "Oylik budjet, gacha"}<input className={field} name="priceMax" inputMode="decimal" defaultValue={priceMax} /></label>
-        <label className="text-sm">{ru ? "Валюта" : "Valyuta"}<FormSelect className={field} name="currency" defaultValue={currency}><option>UZS</option><option>USD</option></FormSelect></label>
-        <label className="text-sm">{ru ? "Сортировка" : "Saralash"}<FormSelect className={field} name="sort" defaultValue={sort}>
-          <option value="recommended">{ru ? "Рекомендуемые" : "Tavsiya etilganlar"}</option>
-          <option value="rooms">{ru ? "Больше свободных помещений" : "Bo‘sh xonalar ko‘p"}</option>
-          <option value="price">{ru ? "Сначала дешевле" : "Avval arzonlari"}</option>
-          <option value="name">{ru ? "По названию" : "Nomi bo‘yicha"}</option></FormSelect></label>
-        <div className="flex flex-col justify-center gap-1.5 text-sm sm:col-span-2 lg:col-span-1">
-          <label className="flex items-center gap-2"><input type="checkbox" name="vacant" value="1" defaultChecked={vacant} />{ru ? "Только со свободными помещениями" : "Faqat bo‘sh xonasi bor"}</label>
-          <label className="flex items-center gap-2"><input type="checkbox" name="verified" value="1" defaultChecked={verified} />{ru ? "Только проверенные" : "Faqat tasdiqlanganlar"}</label>
+      {/* Tez qidiruv doim ko'rinadi; qolgan filtrlar yig'iladigan "Filtrlar" ichida (faol filtr bo'lsa ochiq) */}
+      <form action="/markazlar" className="space-y-3">
+        <div className="flex gap-2">
+          <input name="q" defaultValue={q} aria-label={ru ? "Название, район или ориентир" : "Markaz nomi, tuman yoki mo‘ljal"} className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5" placeholder={ru ? "Название центра, район…" : "Markaz nomi, tuman…"} />
+          <button className="shrink-0 rounded-xl bg-brand px-5 py-2.5 font-semibold text-white hover:bg-brand-dark">{t("home.search")}</button>
         </div>
-        <div className="flex items-end gap-3 sm:col-span-2 lg:col-span-2">
-          <button className="flex-1 rounded-xl bg-brand px-6 py-2.5 font-semibold text-white hover:bg-brand-dark">{t("home.search")}</button>
-          {active && <Link href="/markazlar" className="py-2.5 text-sm text-brand-dark underline">{ru ? "Сбросить" : "Tozalash"}</Link>}
-        </div>
-        {f.errors?.length ? <p role="alert" className="text-sm text-red-700 sm:col-span-2 lg:col-span-4">{f.errors.join(". ")}</p> : null}
+        <details className="group rounded-2xl border border-slate-200 bg-white" open={filterCount > 0}>
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 font-semibold [&::-webkit-details-marker]:hidden">
+            <span aria-hidden="true" className="transition group-open:rotate-90">▶</span>{ru ? "Фильтры" : "Filtrlar"}
+            {filterCount > 0 && <span className="rounded-full bg-brand px-2 py-0.5 text-xs text-white">{filterCount}</span>}
+            {active && <Link href="/markazlar" className="ml-auto text-sm font-normal text-brand-dark underline">{ru ? "Сбросить" : "Tozalash"}</Link>}
+          </summary>
+          <div className="grid gap-3 border-t border-slate-100 p-4 sm:grid-cols-2 lg:grid-cols-4">
+            <RegionDistrictFields regions={regions.map(r => ({ id: r.id, name: nm(r) }))} districts={districts.map(d => ({ id: d.id, regionId: d.regionId, name: nm(d) }))} region={region} district={district} className={field}
+              labels={{ region: ru ? "Регион" : "Hudud", district: ru ? "Район" : "Tuman", all: ru ? "Все" : "Hammasi" }} />
+            <label className="text-sm">{ru ? "Площадь от, м²" : "Maydon, m² dan"}<input className={field} name="areaMin" inputMode="decimal" defaultValue={areaMin} /></label>
+            <label className="text-sm">{ru ? "Площадь до, м²" : "Maydon, m² gacha"}<input className={field} name="areaMax" inputMode="decimal" defaultValue={areaMax} /></label>
+            <label className="text-sm">{ru ? "Бюджет в месяц, до" : "Oylik budjet, gacha"}<input className={field} name="priceMax" inputMode="decimal" defaultValue={priceMax} /></label>
+            <label className="text-sm">{ru ? "Валюта" : "Valyuta"}<FormSelect className={field} name="currency" defaultValue={currency}><option>UZS</option><option>USD</option></FormSelect></label>
+            <label className="text-sm">{ru ? "Сортировка" : "Saralash"}<FormSelect className={field} name="sort" defaultValue={sort}>
+              <option value="recommended">{ru ? "Рекомендуемые" : "Tavsiya etilganlar"}</option>
+              <option value="rooms">{ru ? "Больше свободных помещений" : "Bo‘sh xonalar ko‘p"}</option>
+              <option value="price">{ru ? "Сначала дешевле" : "Avval arzonlari"}</option>
+              <option value="name">{ru ? "По названию" : "Nomi bo‘yicha"}</option></FormSelect></label>
+            <div className="flex flex-col justify-center gap-1.5 text-sm">
+              <label className="flex items-center gap-2"><input type="checkbox" name="vacant" value="1" defaultChecked={vacant} />{ru ? "Только со свободными помещениями" : "Faqat bo‘sh xonasi bor"}</label>
+              <label className="flex items-center gap-2"><input type="checkbox" name="verified" value="1" defaultChecked={verified} />{ru ? "Только проверенные" : "Faqat tasdiqlanganlar"}</label>
+            </div>
+            <button className="self-end rounded-xl bg-brand px-6 py-2.5 font-semibold text-white hover:bg-brand-dark sm:col-span-2 lg:col-span-1">{ru ? "Применить" : "Qo‘llash"}</button>
+          </div>
+        </details>
+        {f.errors?.length ? <p role="alert" className="text-sm text-red-700">{f.errors.join(". ")}</p> : null}
       </form>
     </section>
     <div className="my-6 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{t("ctr.title")} · {shown.length}</h2><Link href="/kabinet/markazlar" className="text-sm text-brand underline">{ru ? "Кабинет представителя" : "Markaz vakili kabineti"}</Link></div>
