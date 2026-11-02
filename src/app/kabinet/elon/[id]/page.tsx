@@ -28,7 +28,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   ]);
   return (
     <ListingWizard promo={promoEnabled()} updatedAt={l.updatedAt.toISOString()} id={l.id} slug={l.slug} initial={toForm(l, await listingAmenities(l.id))} images={await listImages(l.id)} moderation={l.moderationStatus} rejectionReason={l.rejectionReason} archived={l.availabilityStatus === "archived"}
-      regions={regions.map((r) => ({ id: r.id, name: ru ? r.nameRu : r.nameUz }))} districts={districts.map((x) => ({ id: x.id, regionId: x.regionId, name: ru ? x.nameRu : x.nameUz })).sort((a, b) => a.name.localeCompare(b.name, locale))}
+      regions={regions.map((r) => ({ id: r.id, slug: r.slug, name: ru ? r.nameRu : r.nameUz }))} districts={districts.map((x) => ({ id: x.id, regionId: x.regionId, slug: x.slug, name: ru ? x.nameRu : x.nameUz })).sort((a, b) => a.name.localeCompare(b.name, locale))}
       amenities={amenities.map((a) => ({ code: a.code, name: ru ? a.nameRu : a.nameUz }))} centers={centers} />
   );
 }
