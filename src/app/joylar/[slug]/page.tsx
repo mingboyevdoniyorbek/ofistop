@@ -23,22 +23,26 @@ import { CompareButton } from "@/components/Compare";
 import { listImages } from "@/lib/listing-images";
 import { favState } from "@/lib/favorites";
 import ShareButton from "@/components/ShareButton";
+import { cache } from "react";
+import { memo } from "@/lib/memo";
+const listImagesCached = cache((id: string) => listImages(id));
 
 export const dynamic = "force-dynamic";
 const idOf = (p: string) => (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.test(p) ? p.slice(0, 36) : null);
 
-async function load(id: string, ru = false) {
+// generateMetadata va sahifa bir so'rovda ikki marta chaqiradi — React cache bitta bazaga murojaatga qisqartiradi.
+const load = cache(async function load(id: string, ru = false) {
   const L = s.listings;
   const [l] = await db().select({ ownerBlocked: s.users.isBlocked, l: L, region: ru ? s.regions.nameRu : s.regions.nameUz, district: ru ? s.districts.nameRu : s.districts.nameUz, centerName: s.businessCenters.name })
     .from(L).innerJoin(s.users, eq(s.users.id, L.ownerId)).innerJoin(s.regions, eq(s.regions.id, L.regionId)).leftJoin(s.districts, eq(s.districts.id, L.districtId))
     .leftJoin(s.businessCenters, eq(s.businessCenters.id, L.centerId)).where(eq(L.id, id)).limit(1);
   return l;
-}
+});
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { locale, t } = await getT(); const id = idOf((await params).slug); const r = id ? await load(id, locale === "ru").catch(() => null) : null;
   if (!r || r.ownerBlocked || r.l.isSuspended || r.l.moderationStatus !== "approved") return { title: t("det.notFound"), robots: { index: false } };
-  const pictures = await listImages(r.l.id);
+  const pictures = await listImagesCached(r.l.id);
   const ogImages = pictures.filter(i => i.url).slice(0, 1).map(i => ({ url: i.url! }));
   return { alternates: await pageAlternates(`/joylar/${r.l.id}-${r.l.slug}`), openGraph: { title: r.l.title, ...(ogImages.length ? { images: ogImages } : {}) }, title: r.l.title, description: t("det.metaDesc", { cat: labels(locale).category[r.l.category], place: r.district ?? r.region, text: r.l.description.slice(0, 120) }), robots: { index: isPubliclyVisible(r.l) } };
 }
@@ -53,11 +57,15 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
   const visible = isPubliclyVisible(l);
   const price = { amount: l.priceAmountMinor, currency: l.currency, period: l.pricePeriod, basis: l.priceBasis, negotiable: l.priceNegotiable };
   const total = totalLabel(price, l.areaM2, locale);
-  const imgs = (await listImages(l.id)).filter((i) => i.url).map((i) => ({ url: i.url!, thumb: i.thumbUrl ?? i.url! }));
-  const fav = await favState();
-  const amNames = new Map((await db().select().from(s.amenities)).map((a) => [a.code, ru ? a.nameRu : a.nameUz]));
+  // Bir-biriga bog'liq bo'lmagan so'rovlar parallel (ketma-ket emas) bajariladi.
+  const [pics, fav, amenityRows, similarRes] = await Promise.all([
+    listImagesCached(l.id), favState(), memo("amenities", 600_000, () => db().select().from(s.amenities)),
+    searchListings({ ...parseFilters({ category: l.category, region: String(l.regionId) }), page: 1 }, locale),
+  ]);
+  const imgs = pics.filter((i) => i.url).map((i) => ({ url: i.url!, thumb: i.thumbUrl ?? i.url! }));
+  const amNames = new Map(amenityRows.map((a) => [a.code, ru ? a.nameRu : a.nameUz]));
   const pt = visible ? publicPoint({ id: l.id, lat: l.lat, lng: l.lng, exactLocationPublic: l.exactLocationPublic }) : null; // faqat shu nuqta klientga beriladi
-  const similar = (await searchListings({ ...parseFilters({ category: l.category, region: String(l.regionId) }), page: 1 }, locale)).items.filter((x) => x.id !== l.id).slice(0, 4);
+  const similar = similarRes.items.filter((x) => x.id !== l.id).slice(0, 4);
   const rows: [string, string | null][] = [
     [t("det.type"), L10.category[l.category]], [t("det.area"), l.areaM2 ? `${Number(l.areaM2)} ${t("unit.m2")}` : null],
     [t("det.floor"), l.floor != null ? `${l.floor}${l.totalFloors ? ` / ${l.totalFloors}` : ""}` : null], [t("det.seats"), l.seats ? String(l.seats) : null],

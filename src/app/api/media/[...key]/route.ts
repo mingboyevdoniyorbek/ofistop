@@ -7,5 +7,7 @@ export async function GET(_: Request, ctx: { params: Promise<{ key: string[] }> 
   try { buf = await getObject(key); }
   catch { return new Response("Rasm xotirasi vaqtincha ishlamayapti", { status: 503, headers: { "Cache-Control": "no-store" } }); }
   if (!buf) return new Response("Topilmadi", { status: 404 });
-  return new Response(new Uint8Array(buf), { headers: { "Content-Type": "image/webp", "Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" } });
+  return new Response(new Uint8Array(buf), { headers: { "Content-Type": "image/webp", "Cache-Control": "public, max-age=31536000, immutable", // brauzer
+    // Vercel CDN ham saqlaydi: har bir tashrifchi uchun rasm qayta R2'dan o'qilmaydi (kalitlar o'zgarmas — uuid)
+    "CDN-Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" } });
 }
