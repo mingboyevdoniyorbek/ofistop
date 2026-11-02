@@ -11,6 +11,7 @@ export default function FilterForm({ f, regions, districts, amenities, view }: {
   const [district, setDistrict] = useState(String(f.district ?? ""));
   const [category, setCategory] = useState(f.category ?? "");
   const hintId = useId();
+  const sale = f.deal === "sale";
   const inp = "w-full rounded border border-slate-300 px-2 py-1.5 text-sm";
   return (
     <form method="get" action="/joylar" className="space-y-3 text-sm">
@@ -18,6 +19,7 @@ export default function FilterForm({ f, regions, districts, amenities, view }: {
       {f.bounds && <input type="hidden" name="bbox" value={f.bounds.join(",")} />}
       {f.near && <><input type="hidden" name="lat" value={f.near.lat}/><input type="hidden" name="lng" value={f.near.lng}/><input type="hidden" name="radius" value={f.near.radius}/></>}
       {f.center && <input type="hidden" name="center" value={f.center} />}
+      {f.deal && <input type="hidden" name="deal" value={f.deal} />}
       <input type="hidden" name="sort" value={f.sort} />
       {view === "map" && <input type="hidden" name="view" value="map" />}
       <label className="block">{locale === "ru" ? "Метро, ориентир или название" : "Metro, mo‘ljal yoki nom"}<input name="q" defaultValue={f.q} className={inp} placeholder={locale === "ru" ? "Ойбек, Novza, Tashkent City…" : "Oybek, Novza, Tashkent City…"} list={hintId}/><datalist id={hintId}><option value="Oybek"/><option value="Novza"/><option value="Tashkent City"/></datalist></label>
@@ -27,16 +29,16 @@ export default function FilterForm({ f, regions, districts, amenities, view }: {
         <FormSelect name="district" value={district} onChange={e => setDistrict(e.target.value)} className={inp}><option value="">{t("f.all")}</option>{districts.filter(r => !region || r.regionId === Number(region)).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</FormSelect></label>
       <label className="block">{t("f.type")}
         <FormSelect name="category" value={category} onChange={e => setCategory(e.target.value)} className={inp}><option value="">{t("f.all")}</option>{Object.entries(L.category).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FormSelect></label>
-      <fieldset className="space-y-2"><legend className="font-medium">{locale === "ru" ? "Бюджет на всё помещение" : "Butun joy uchun budjet"}</legend>
+      <fieldset className="space-y-2"><legend className="font-medium">{sale ? (locale === "ru" ? "Цена покупки" : "Sotib olish narxi") : locale === "ru" ? "Бюджет на всё помещение" : "Butun joy uchun budjet"}</legend>
         <div className="grid grid-cols-2 gap-2">
           <label>{t("f.currency")}<FormSelect name="currency" defaultValue={f.currencyFilter ? f.currency : ""} className={inp}><option value="">{t("f.all")}</option><option>UZS</option><option>USD</option></FormSelect></label>
-          <label>{t("f.period")}<FormSelect name="period" defaultValue={f.periodFilter ? f.period : ""} className={inp}><option value="">{t("f.all")}</option><option value="month">{t("period.month")}</option><option value="day">{t("period.day")}</option><option value="hour">{t("period.hour")}</option></FormSelect></label>
+          {!sale && <label>{t("f.period")}<FormSelect name="period" defaultValue={f.periodFilter ? f.period : ""} className={inp}><option value="">{t("f.all")}</option><option value="month">{t("period.month")}</option><option value="day">{t("period.day")}</option><option value="hour">{t("period.hour")}</option></FormSelect></label>}
         </div>
         <div className="grid grid-cols-2 gap-2">
           <input name="priceMin" defaultValue={f.priceMin} inputMode="decimal" placeholder={t("f.from")} aria-label={t("f.priceFrom")} className={inp} />
           <input name="priceMax" defaultValue={f.priceMax} inputMode="decimal" placeholder={t("f.to")} aria-label={t("f.priceTo")} className={inp} />
         </div>
-        <p className="text-xs text-slate-500">{locale === "ru" ? "Цена за м² умножается на площадь. По умолчанию: UZS за месяц. Доплаты отдельно; цены за место не входят в бюджет целого помещения." : "m² narxi maydonga ko‘paytiriladi. Standart: UZS, oyiga. Qo‘shimcha to‘lovlar alohida; ish o‘rni narxi butun joy budjetiga kirmaydi."}</p>
+        <p className="text-xs text-slate-500">{sale ? (locale === "ru" ? "Цена за м² умножается на площадь. По умолчанию: UZS." : "m² narxi maydonga ko‘paytiriladi. Standart: UZS.") : locale === "ru" ? "Цена за м² умножается на площадь. По умолчанию: UZS за месяц. Доплаты отдельно; цены за место не входят в бюджет целого помещения." : "m² narxi maydonga ko‘paytiriladi. Standart: UZS, oyiga. Qo‘shimcha to‘lovlar alohida; ish o‘rni narxi butun joy budjetiga kirmaydi."}</p>
       </fieldset>
       <fieldset><legend className="font-medium">{t("f.area")}</legend>
         <div className="grid grid-cols-2 gap-2">
@@ -50,7 +52,7 @@ export default function FilterForm({ f, regions, districts, amenities, view }: {
         <FormSelect name="poster" defaultValue={f.poster ?? ""} className={inp}><option value="">{t("f.all")}</option>{Object.entries(L.poster).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FormSelect></label>
       <label className="flex items-center gap-2"><input type="checkbox" name="commission" value="none" defaultChecked={f.commission === "none"} /> {t("f.noComm")}</label>
       <label className="block">{locale === "ru" ? "Этаж" : "Qavat"}<input name="floor" inputMode="numeric" defaultValue={f.floor} className={inp}/></label>
-      <label className="block">{t("f.availBy")}<input type="date" name="availableBy" defaultValue={f.availableBy} className={inp} /></label>
+      {!sale && <label className="block">{t("f.availBy")}<input type="date" name="availableBy" defaultValue={f.availableBy} className={inp} /></label>}
       <AmenityBox f={f} amenities={amenities.filter(a => f.amenities.includes(a.code) || !category || !["three_phase", "truck_access"].includes(a.code) || ["warehouse", "production", "retail"].includes(category))} legend={t("f.amenities")} />
       </div></details>
       <div className="flex gap-2 pt-1">

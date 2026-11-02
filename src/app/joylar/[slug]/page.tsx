@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { and, eq, ne } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
-import { labels, fmtDate, priceLabel, totalLabel, primaryPrice } from "@/lib/format";
+import { labels, fmtDate, priceLabel, totalLabel, primaryPrice, availLabel } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { formatMinor } from "@/lib/money";
 import { parseFilters, publicCond, searchListings } from "@/lib/search";
@@ -60,18 +60,25 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
   // Bir-biriga bog'liq bo'lmagan so'rovlar parallel (ketma-ket emas) bajariladi.
   const [pics, fav, amenityRows, similarRes] = await Promise.all([
     listImagesCached(l.id), favState(), memo("amenities", 600_000, () => db().select().from(s.amenities)),
-    searchListings({ ...parseFilters({ category: l.category, region: String(l.regionId) }), page: 1 }, locale),
+    searchListings({ ...parseFilters({ category: l.category, region: String(l.regionId), deal: l.dealType }), page: 1 }, locale),
   ]);
   const imgs = pics.filter((i) => i.url).map((i) => ({ url: i.url!, thumb: i.thumbUrl ?? i.url! }));
   const amNames = new Map(amenityRows.map((a) => [a.code, ru ? a.nameRu : a.nameUz]));
   const pt = visible ? publicPoint({ id: l.id, lat: l.lat, lng: l.lng, exactLocationPublic: l.exactLocationPublic }) : null; // faqat shu nuqta klientga beriladi
   const similar = similarRes.items.filter((x) => x.id !== l.id).slice(0, 4);
+  const sale = l.dealType === "sale";
+  const yesNo = (b: boolean | null) => (b == null ? null : b ? t("det.yes") : t("det.no"));
   const rows: [string, string | null][] = [
+    [ru ? "Сделка" : "Bitim turi", sale ? (ru ? "Продажа" : "Sotuv") : (ru ? "Аренда" : "Ijara")],
     [t("det.type"), L10.category[l.category]], [t("det.area"), l.areaM2 ? `${Number(l.areaM2)} ${t("unit.m2")}` : null],
+    [ru ? "Площадь участка" : "Yer maydoni", l.landAreaSotix ? `${Number(l.landAreaSotix)} ${ru ? "сот." : "sotix"}` : null],
+    [ru ? "Этажей в здании" : "Binodagi qavatlar", l.floor == null && l.totalFloors ? String(l.totalFloors) : null],
+    [ru ? "Документы (кадастр)" : "Hujjatlar (kadastr)", sale ? (l.documentsReady == null ? null : l.documentsReady ? (ru ? "Готовы" : "Tayyor") : (ru ? "Оформляются" : "Rasmiylashtirilmoqda")) : null],
+    [ru ? "Рассрочка" : "Bo‘lib to‘lash", sale ? (l.installment ? (ru ? "Возможна" : "Mumkin") : yesNo(l.installment)) : null],
     [t("det.floor"), l.floor != null ? `${l.floor}${l.totalFloors ? ` / ${l.totalFloors}` : ""}` : null], [t("det.seats"), l.seats ? String(l.seats) : null],
     [t("det.furnished"), l.furnished == null ? null : l.furnished ? t("det.yes") : t("det.no")],
     [t("det.deposit"), l.depositAmountMinor != null ? t("det.depositNote", { amt: formatMinor(l.depositAmountMinor), cur: l.depositCurrency ?? "" }) : null],
-    [t("det.commission"), l.commissionType === "none" ? t("det.no") : l.commissionType === "percent" ? t("det.commPercent", { p: Number(l.commissionPercent), base: l.commissionPercentBase === "annual_rent" ? t("det.commAnnual") : t("det.commMonthly") }) : l.commissionFixedMinor != null ? `${formatMinor(l.commissionFixedMinor)} ${l.commissionCurrency}` : null],
+    [t("det.commission"), l.commissionType === "none" ? t("det.no") : l.commissionType === "percent" ? t("det.commPercent", { p: Number(l.commissionPercent), base: l.commissionPercentBase === "sale_price" ? (ru ? "цены продажи" : "sotuv narxidan") : l.commissionPercentBase === "annual_rent" ? t("det.commAnnual") : t("det.commMonthly") }) : l.commissionFixedMinor != null ? `${formatMinor(l.commissionFixedMinor)} ${l.commissionCurrency}` : null],
     [t("det.utilities"), l.utilities === "included" ? t("det.utilIncluded") : l.utilities === "separate" ? t("det.utilSeparate") : l.utilities === "partly" ? t("det.utilPartly") : null],
     [locale === "ru" ? "Количество комнат" : "Xonalar soni", l.roomsCount ? String(l.roomsCount) : null],
     [locale === "ru" ? "Обслуживание" : "Xizmat to‘lovi", l.serviceFeeMinor != null ? `${formatMinor(l.serviceFeeMinor)} ${l.serviceFeeCurrency} / ${l.serviceFeePeriod === "once" ? (ru ? "однократно" : "bir martalik") : (ru ? "месяц" : "oy")}` : null],
@@ -84,17 +91,17 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
     <div className={`mx-auto max-w-5xl px-4 py-6 ${visible ? "pb-24 md:pb-6" : ""}`}>
       {!visible && (
         <div role="status" className="mb-4 rounded border border-amber-400 bg-amber-50 p-4">
-          <p className="font-semibold">{t("det.unavailable", { status: L10.avail[effectiveAvailability(l)] ?? t("det.unavailableFallback") })}</p>
+          <p className="font-semibold">{t("det.unavailable", { status: availLabel(effectiveAvailability(l), l.dealType, locale) })}</p>
           <p className="text-sm">{t("det.similarHint")}</p>
         </div>
       )}
       <JsonLd data={breadcrumbJsonLd([["OfisTop", "/"], [L10.category[l.category], landingSlugOf(l.category) ? `/ijara/${landingSlugOf(l.category)}` : "/joylar"], [l.title, `/joylar/${l.id}-${l.slug}`]])} />
       {visible && <JsonLd data={{
         "@context": "https://schema.org", "@type": "Offer", url: absUrl(`/joylar/${l.id}-${l.slug}`), name: l.title, description: l.description.slice(0, 500),
-        image: imgs.slice(0, 5).map((i) => absUrl(i.url)), businessFunction: "http://purl.org/goodrelations/v1#LeaseOut", category: L10.category[l.category],
+        image: imgs.slice(0, 5).map((i) => absUrl(i.url)), businessFunction: sale ? "http://purl.org/goodrelations/v1#Sell" : "http://purl.org/goodrelations/v1#LeaseOut", category: L10.category[l.category],
         availability: "https://schema.org/InStock", ...(l.publishedAt ? { validFrom: new Date(l.publishedAt).toISOString() } : {}),
         ...(l.priceAmountMinor != null ? { price: (Number(l.priceAmountMinor) / 100).toFixed(2), priceCurrency: l.currency,
-          priceSpecification: { "@type": "UnitPriceSpecification", price: (Number(l.priceAmountMinor) / 100).toFixed(2), priceCurrency: l.currency, unitCode: l.pricePeriod === "month" ? "MON" : l.pricePeriod === "day" ? "DAY" : "HUR" } } : {}),
+          ...(sale ? {} : { priceSpecification: { "@type": "UnitPriceSpecification", price: (Number(l.priceAmountMinor) / 100).toFixed(2), priceCurrency: l.currency, unitCode: l.pricePeriod === "month" ? "MON" : l.pricePeriod === "day" ? "DAY" : "HUR" } }) } : {}),
         itemOffered: { "@type": "Place", name: l.title, address: { "@type": "PostalAddress", addressLocality: r.district ?? undefined, addressRegion: r.region, addressCountry: "UZ" },
           ...(l.areaM2 ? { floorSize: { "@type": "QuantitativeValue", value: Number(l.areaM2), unitCode: "MTK" } } : {}),
           ...(pt && !pt.approx ? { geo: { "@type": "GeoCoordinates", latitude: pt.lat, longitude: pt.lng } } : {}) },
@@ -107,6 +114,7 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
         <div>
           <Gallery images={imgs} alt={l.title} fallback={l.isDemo ? t("det.demoImg") : t("det.noImg")} />
           <div className="mt-4 flex items-start justify-between gap-3"><h1 className="text-2xl font-bold">{l.title}</h1><div className="flex shrink-0 flex-wrap items-start justify-end gap-2"><FavoriteButton listingId={l.id} initial={fav.ids.has(l.id)} loggedIn={fav.loggedIn} />{visible && <ShareButton path={`/joylar/${l.id}-${l.slug}`} title={l.title} text={`${primaryPrice(price, l.areaM2, locale)} · ${[r.district, r.region].filter(Boolean).join(", ")}`} />}</div></div>
+          {sale && <span className="mt-2 inline-block rounded bg-emerald-100 px-2 py-0.5 text-sm font-semibold text-emerald-800">{ru ? "Продаётся" : "Sotiladi"}</span>}
           <p className="text-brand text-2xl font-bold mt-2">{primaryPrice(price, l.areaM2, locale)}</p>
           {total && <p className="text-sm text-slate-600">{priceLabel(price, locale)}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-2"><span title={ru ? "Администратор проверил объявление. Это не техническая проверка здания." : "Administrator e’lon ma’lumotlarini ko‘rib chiqqan. Bu binoning texnik tekshiruvi emas."} className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-brand">✓ {ru ? "Объявление проверено" : "E’lon tekshirilgan"}</span>{l.availabilityConfirmedAt && visible && <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs text-green-800">{ru ? "Доступность подтверждена" : "Bo‘shligi tasdiqlangan"}: {fmtDate(l.availabilityConfirmedAt, locale)}</span>}{visible && <CompareButton id={l.id} />}<span className="text-xs text-slate-500">{ru ? "Просмотры" : "Ko‘rishlar"}: {l.viewCount}</span></div>

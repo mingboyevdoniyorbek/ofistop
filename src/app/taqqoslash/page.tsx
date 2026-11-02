@@ -14,12 +14,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ i
   const rows = ids.length ? await db().select().from(s.listings).where(and(publicCond(), inArray(s.listings.id, ids))) : [];
   const amenities = await db().select().from(s.amenities); const names = new Map(amenities.map(a => [a.code, ru ? a.nameRu : a.nameUz]));
   const fields: [string, (l: typeof rows[number]) => string][] = [
-    [ru ? "Аренда целиком" : "Jami ijara", l => primaryPrice({ amount: l.priceAmountMinor, currency: l.currency, period: l.pricePeriod, basis: l.priceBasis, negotiable: l.priceNegotiable }, l.areaM2, locale)],
+    [ru ? "Сделка" : "Bitim turi", l => l.dealType === "sale" ? (ru ? "Продажа" : "Sotuv") : (ru ? "Аренда" : "Ijara")],
+    [ru ? "Цена целиком" : "Jami narx", l => primaryPrice({ amount: l.priceAmountMinor, currency: l.currency, period: l.pricePeriod, basis: l.priceBasis, negotiable: l.priceNegotiable }, l.areaM2, locale)],
     [ru ? "Единица цены" : "Narx birligi", l => priceLabel({ amount: l.priceAmountMinor, currency: l.currency, period: l.pricePeriod, basis: l.priceBasis }, locale)],
     [ru ? "Площадь" : "Maydon", l => l.areaM2 ? `${Number(l.areaM2)} m²` : "—"],
     [ru ? "Этаж" : "Qavat", l => l.floor == null ? "—" : String(l.floor)],
     [ru ? "Депозит" : "Depozit", l => l.depositAmountMinor == null ? "—" : `${formatMinor(l.depositAmountMinor)} ${l.depositCurrency}`],
-    [ru ? "Комиссия" : "Komissiya", l => l.commissionType === "none" ? (ru ? "Нет" : "Yo‘q") : l.commissionType === "fixed" ? `${formatMinor(l.commissionFixedMinor ?? 0n)} ${l.commissionCurrency}` : `${l.commissionPercent}% (${l.commissionPercentBase === "annual_rent" ? (ru ? "за год" : "yillik ijaradan") : (ru ? "за месяц" : "oylik ijaradan")})`],
+    [ru ? "Комиссия" : "Komissiya", l => l.commissionType === "none" ? (ru ? "Нет" : "Yo‘q") : l.commissionType === "fixed" ? `${formatMinor(l.commissionFixedMinor ?? 0n)} ${l.commissionCurrency}` : `${l.commissionPercent}% (${l.commissionPercentBase === "sale_price" ? (ru ? "от цены продажи" : "sotuv narxidan") : l.commissionPercentBase === "annual_rent" ? (ru ? "за год" : "yillik ijaradan") : (ru ? "за месяц" : "oylik ijaradan")})`],
     [ru ? "Коммунальные" : "Kommunal to‘lovlar", l => l.utilities === "included" ? (ru ? "Включены" : "Ichida") : l.utilities === "separate" ? (ru ? "Отдельно" : "Alohida") : l.utilities === "partly" ? (ru ? "Частично" : "Qisman ichida") : "—"],
     [ru ? "Удобства" : "Qulayliklar", l => l.amenities.map(a => names.get(a) ?? a).join(", ") || "—"],
     [ru ? "Кто сдаёт" : "E’lon beruvchi", l => L.poster[l.posterType]],

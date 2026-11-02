@@ -28,6 +28,7 @@ export default async function ListingCard({ it, note }: { it: Item; note?: strin
         </ListingPhoto>
         <div className="flex-1 space-y-1 p-2.5 sm:p-3">
           {note && <span className="inline-block rounded bg-amber-100 px-1.5 text-xs text-amber-900">{note}</span>}
+          {it.dealType === "sale" && <span className="inline-block rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800">{locale === "ru" ? "Продаётся" : "Sotiladi"}</span>}
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug sm:text-base">{it.title}</h3>
           <p className="text-base font-bold text-brand sm:text-lg">{primaryPrice(price, it.areaM2, locale)}</p>
           {total && <p className="hidden text-xs text-slate-500 sm:block">{priceLabel(price, locale)}</p>}

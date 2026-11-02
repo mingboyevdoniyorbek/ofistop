@@ -3,7 +3,7 @@ import { db, schema as s } from "@/db/client";
 import { publicCond, rentTotalSql, buildWhere, type Filters } from "./search";
 
 export type CenterStat = { rooms: number; areaMin: number | null; areaMax: number | null;
-  prices: { currency: "UZS" | "USD"; period: "month" | "day" | "hour"; basis: "whole" | "per_m2" | "per_seat"; min: bigint; max: bigint }[] };
+  prices: { currency: "UZS" | "USD"; period: "month" | "day" | "hour" | "once"; basis: "whole" | "per_m2" | "per_seat"; min: bigint; max: bigint }[] };
 
 /** Faqat HOZIR ommaviy ko'rinadigan (tasdiqlangan, bo'sh, muddati tugamagan) e'lonlar asosida. */
 export async function centerStats(ids: string[]): Promise<Map<string, CenterStat>> {

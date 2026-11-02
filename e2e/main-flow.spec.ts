@@ -75,12 +75,9 @@ test("2–4. Qoralama, validatsiya, xarita, rasm, asosiy rasm, moderatsiyaga yub
   const map = page.getByTestId("pick-map");
   await expect(map.locator(".leaflet-container, .leaflet-pane").first()).toBeAttached();
   await map.click({ position: { x: 120, y: 90 } });
-  await expect(page.getByLabel(uz["wiz.lat"])).toHaveValue(/^4\d\.\d{6}$/);
-  await expect(page.getByLabel(uz["wiz.lng"])).toHaveValue(/^6\d\.\d{6}$/);
+  // Koordinata raqamlari ko'rsatilmaydi: belgi qo'yilgani va uni olib tashlash tugmasi chiqqani tekshiriladi
   await expect(map.locator(".leaflet-marker-icon")).toHaveCount(1);
-  const latBefore = await page.getByLabel(uz["wiz.lat"]).inputValue();
-  await page.getByLabel(uz["wiz.lat"]).fill("41.300000"); // qo'lda kiritish marker'ni suradi
-  await expect(page.getByLabel(uz["wiz.lat"])).not.toHaveValue(latBefore);
+  await expect(page.getByRole("button", { name: uz["wiz.clearCoords"] })).toBeVisible();
   await shot(page, "03-forma-xarita");
   await next(page);
 

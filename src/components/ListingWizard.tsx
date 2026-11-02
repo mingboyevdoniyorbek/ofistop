@@ -9,7 +9,7 @@ import { placeCenter } from "@/lib/geo-centroids";
 import InlineSelect from "./InlineSelect";
 import { prepareUpload } from "@/lib/prepare-upload";
 import { parseMajorToMinor } from "@/lib/money";
-import { STEP_OF as ORIGINAL_STEPS, USES_FLOOR, USES_SEATS, type Form } from "@/lib/listing-input";
+import { STEP_OF as ORIGINAL_STEPS, USES_FLOOR, USES_SEATS, USES_TOTAL_FLOORS, type Form } from "@/lib/listing-input";
 
 type F = Required<Form>;
 type Img = { id: string; url: string | null; thumbUrl: string | null; isPrimary: boolean };
@@ -18,7 +18,7 @@ interface Props { promo?: boolean; updatedAt: string; id: string; slug: string; 
 
 const STEP_OF = Object.fromEntries(Object.entries(ORIGINAL_STEPS).map(([key, step]) => [key, step <= 3 ? step : step === 4 ? 3 : 4]));
 /** Xatolar ro'yxatidagi maydon nomlari (forma yorliqlari bilan bir xil kalitlar). */
-const LABELS: Record<string, MsgKey> = { title: "wiz.f.title", description: "wiz.f.description", regionId: "f.region", districtId: "f.district", address: "wiz.f.address", areaM2: "f.area", priceAmount: "f.price", priceBasis: "wiz.f.basis", seats: "wiz.f.seats", commissionFixed: "wiz.f.commFixed", commissionPercent: "wiz.f.commPct", commissionPercentBase: "wiz.f.commBase", depositAmount: "wiz.l.deposit", contactPhone: "wiz.f.phone", telegramUsername: "prof.telegram", images: "wiz.l.images", lat: "wiz.lat", lng: "wiz.lng", floor: "wiz.f.floor", totalFloors: "wiz.f.totalFloors", minTermMonths: "wiz.f.minTerm", availableFrom: "wiz.f.availFrom", centerId: "wiz.f.center", unitCode: "wiz.f.unitCode", roomsCount: "wiz.f.rooms", serviceFee: "wiz.f.serviceFee" };
+const LABELS: Record<string, MsgKey> = { title: "wiz.f.title", description: "wiz.f.description", regionId: "f.region", districtId: "f.district", address: "wiz.f.address", areaM2: "f.area", priceAmount: "f.price", priceBasis: "wiz.f.basis", seats: "wiz.f.seats", commissionFixed: "wiz.f.commFixed", commissionPercent: "wiz.f.commPct", commissionPercentBase: "wiz.f.commBase", depositAmount: "wiz.l.deposit", contactPhone: "wiz.f.phone", telegramUsername: "prof.telegram", images: "wiz.l.images", lat: "wiz.lat", lng: "wiz.lng", floor: "wiz.f.floor", totalFloors: "wiz.f.totalFloors", minTermMonths: "wiz.f.minTerm", availableFrom: "wiz.f.availFrom", centerId: "wiz.f.center", unitCode: "wiz.f.unitCode", roomsCount: "wiz.f.rooms", serviceFee: "wiz.f.serviceFee", landAreaSotix: "wiz.f.landArea" };
 const inp = "w-full rounded border border-slate-300 px-3 py-2.5 bg-white";
 
 function E({ k, errors }: { k: string; errors: Record<string, string> }) {
@@ -60,7 +60,13 @@ export default function ListingWizard(p: Props) {
   const [upRes, setUpRes] = useState<{ name: string; ok: boolean; error?: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const set = <K extends keyof F>(k: K, v: F[K]) => setF((x) => ({ ...x, [k]: v }));
-  const seats = USES_SEATS.includes(f.category), floors = USES_FLOOR.includes(f.category);
+  const seats = USES_SEATS.includes(f.category), floors = USES_FLOOR.includes(f.category), totalFloors = USES_TOTAL_FLOORS.includes(f.category);
+  const sale = f.dealType === "sale", ru = locale === "ru";
+  // Ijara/sotuv almashganda narx davri va komissiya bazasi ham mos qiymatga o'tadi.
+  const setDeal = (d: F["dealType"]) => setF((x) => ({ ...x, dealType: d,
+    pricePeriod: d === "sale" ? "once" : x.pricePeriod === "once" ? "month" : x.pricePeriod,
+    commissionPercentBase: d === "sale" ? "sale_price" : x.commissionPercentBase === "sale_price" ? "monthly_rent" : x.commissionPercentBase,
+    priceBasis: d === "sale" && x.priceBasis === "per_seat" ? "whole" : x.priceBasis }));
   const editable = !p.archived;
 
   async function save(background = false): Promise<boolean> {
@@ -170,6 +176,12 @@ export default function ListingWizard(p: Props) {
 
       <fieldset disabled={(busy && !backgroundSaving) || !editable} className="space-y-4">
         {step === 1 && <>
+          <div role="radiogroup" aria-label={ru ? "Тип объявления" : "E’lon turi"} className="grid grid-cols-2 gap-2">
+            {([["rent", ru ? "Сдаю в аренду" : "Ijaraga beraman", ru ? "Помесячно, посуточно…" : "Oylik, kunlik…"], ["sale", ru ? "Продаю" : "Sotaman", ru ? "Помещение или здание целиком" : "Joy yoki butun bino"]] as const).map(([k, title, sub]) =>
+              <button key={k} type="button" role="radio" aria-checked={f.dealType === k} onClick={() => setDeal(k)}
+                className={`rounded-xl border-2 px-3 py-3 text-left ${f.dealType === k ? "border-brand bg-blue-50" : "border-slate-200 bg-white hover:border-slate-300"}`}>
+                <span className="block font-semibold">{title}</span><span className="block text-xs text-slate-500">{sub}</span></button>)}
+          </div>
           <L errors={errors} k="category" label={t("wiz.f.category")}><InlineSelect className={inp} value={f.category} onChange={(e) => setF(x => ({ ...x, category: e.target.value as F["category"], priceBasis: e.target.value !== "coworking" && x.priceBasis === "per_seat" ? "whole" : x.priceBasis }))}>{Object.entries(LB.category).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</InlineSelect></L>
           <L errors={errors} k="title" label={t("wiz.f.title")} hint={t("wiz.h.title")}><input className={inp} maxLength={120} {...bind("title")} /></L>
           <L errors={errors} k="description" label={t("wiz.f.description")} hint={t("wiz.h.description")}><textarea className={inp} rows={6} maxLength={5000} {...bind("description")} /></L>
@@ -188,7 +200,8 @@ export default function ListingWizard(p: Props) {
           <fieldset className="rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("wiz.coords")}</legend>
             <p className="mb-2 text-xs text-slate-500">{t("wiz.coordsHint")}</p>
             <PickMap lat={f.lat} lng={f.lng} disabled={!editable} focus={placeCenter(p.regions.find((x) => x.id === f.regionId)?.slug, p.districts.find((x) => x.id === f.districtId)?.slug)} onPick={(la, ln) => setF((x) => ({ ...x, lat: la, lng: ln }))} />
-            <div className="mt-3 grid grid-cols-2 gap-3"><L errors={errors} k="lat" label={t("wiz.lat")}><input className={inp} inputMode="decimal" placeholder="41.311081" {...bind("lat")} /></L><L errors={errors} k="lng" label={t("wiz.lng")}><input className={inp} inputMode="decimal" placeholder="69.240562" {...bind("lng")} /></L></div>
+            {/* Kenglik/uzunlik raqamlari foydalanuvchiga ko'rsatilmaydi — joy faqat xaritada belgilanadi */}
+            <E errors={errors} k="lat" /><E errors={errors} k="lng" />
             <label className="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={f.exactLocationPublic} onChange={(e) => set("exactLocationPublic", e.target.checked)} />{t("wiz.exactPublic")}</label>
             {(f.lat || f.lng) && editable && <button type="button" onClick={() => setF((x) => ({ ...x, lat: "", lng: "" }))} className="mt-2 text-sm text-brand underline">{t("wiz.clearCoords")}</button>}</fieldset>
         </>}
@@ -197,29 +210,34 @@ export default function ListingWizard(p: Props) {
           <div className="grid gap-3 sm:grid-cols-2">
             <L errors={errors} k="areaM2" label={t("f.area")}><input className={inp} inputMode="decimal" {...bind("areaM2")} /></L>
             {floors && <L errors={errors} k="floor" label={t("wiz.f.floor")}><input className={inp} inputMode="numeric" {...bind("floor")} /></L>}
-            {floors && <L errors={errors} k="totalFloors" label={t("wiz.f.totalFloors")}><input className={inp} inputMode="numeric" {...bind("totalFloors")} /></L>}
+            {totalFloors && <L errors={errors} k="totalFloors" label={t("wiz.f.totalFloors")}><input className={inp} inputMode="numeric" {...bind("totalFloors")} /></L>}
+            {(sale || f.category === "building") && <L errors={errors} k="landAreaSotix" label={t("wiz.f.landArea")} hint={ru ? "Если есть свой участок. 1 сотка = 100 м²" : "Agar o‘z yer maydoni bo‘lsa. 1 sotix = 100 m²"}><input className={inp} inputMode="decimal" {...bind("landAreaSotix")} /></L>}
             {seats && <L errors={errors} k="seats" label={t("wiz.f.seats")}><input className={inp} inputMode="numeric" {...bind("seats")} /></L>}
             <L errors={errors} k="roomsCount" label={t("wiz.f.rooms")}><input className={inp} inputMode="numeric" {...bind("roomsCount")} /></L>
             <L errors={errors} k="furnished" label={t("wiz.f.furnished")}><InlineSelect className={inp} {...bind("furnished")}><option value="">{t("wiz.unspecified")}</option><option value="1">{t("f.furnYes")}</option><option value="0">{t("f.furnNo")}</option></InlineSelect></L>
           </div>
-          <fieldset className="space-y-3 rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("f.price")}</legend>
+          <fieldset className="space-y-3 rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{sale ? (ru ? "Цена продажи" : "Sotuv narxi") : t("f.price")}</legend>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]"><L errors={errors} k="priceAmount" label={t("wiz.f.amount")}><input className={inp} inputMode="decimal" {...bind("priceAmount")} /></L><div className="self-end">{cur("currency")}</div></div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <L errors={errors} k="pricePeriod" label={t("wiz.f.period")}><InlineSelect className={inp} {...bind("pricePeriod")}><option value="month">{t("wiz.per.month")}</option><option value="day">{t("wiz.per.day")}</option><option value="hour">{t("wiz.per.hour")}</option></InlineSelect></L>
-              <L errors={errors} k="priceBasis" label={t("wiz.f.basis")}><InlineSelect className={inp} {...bind("priceBasis")}><option value="whole">{t("wiz.b.whole")}</option><option value="per_m2">{t("wiz.b.per_m2")}</option>{seats && <option value="per_seat">{t("wiz.b.per_seat")}</option>}</InlineSelect></L></div>
+              {!sale && <L errors={errors} k="pricePeriod" label={t("wiz.f.period")}><InlineSelect className={inp} {...bind("pricePeriod")}><option value="month">{t("wiz.per.month")}</option><option value="day">{t("wiz.per.day")}</option><option value="hour">{t("wiz.per.hour")}</option></InlineSelect></L>}
+              <L errors={errors} k="priceBasis" label={t("wiz.f.basis")}><InlineSelect className={inp} {...bind("priceBasis")}><option value="whole">{t("wiz.b.whole")}</option><option value="per_m2">{t("wiz.b.per_m2")}</option>{seats && !sale && <option value="per_seat">{t("wiz.b.per_seat")}</option>}</InlineSelect></L></div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.priceNegotiable} onChange={(e) => set("priceNegotiable", e.target.checked)} />{t("wiz.negotiable")}</label>
             <p className="rounded bg-slate-50 p-2 text-sm" aria-live="polite">{t("wiz.preview")} <strong>{priceLabel(price, locale)}</strong>{total ? ` · ${total}` : ""}</p></fieldset>
           <fieldset className="space-y-3 rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("wiz.extra")}</legend>
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto]"><L errors={errors} k="depositAmount" label={t("wiz.f.deposit")}><input className={inp} inputMode="decimal" {...bind("depositAmount")} /></L><div className="self-end">{cur("depositCurrency")}</div></div>
+            {sale && <div className="grid gap-3 sm:grid-cols-2">
+              <L errors={errors} k="documentsReady" label={ru ? "Документы (кадастр)" : "Hujjatlar (kadastr)"}><InlineSelect className={inp} {...bind("documentsReady")}><option value="">{t("wiz.unspecified")}</option><option value="1">{ru ? "Готовы" : "Tayyor"}</option><option value="0">{ru ? "Оформляются" : "Rasmiylashtirilmoqda"}</option></InlineSelect></L>
+              <L errors={errors} k="installment" label={ru ? "Рассрочка" : "Bo‘lib to‘lash"}><InlineSelect className={inp} {...bind("installment")}><option value="">{t("wiz.unspecified")}</option><option value="1">{ru ? "Возможна" : "Mumkin"}</option><option value="0">{ru ? "Нет" : "Yo‘q"}</option></InlineSelect></L></div>}
+            {!sale && <div className="grid gap-3 sm:grid-cols-[1fr_auto]"><L errors={errors} k="depositAmount" label={t("wiz.f.deposit")}><input className={inp} inputMode="decimal" {...bind("depositAmount")} /></L><div className="self-end">{cur("depositCurrency")}</div></div>}
             <L errors={errors} k="commissionType" label={t("wiz.f.commission")}><InlineSelect className={inp} {...bind("commissionType")}><option value="none">{t("wiz.c.none")}</option><option value="fixed">{t("wiz.c.fixed")}</option><option value="percent">{t("wiz.c.percent")}</option></InlineSelect></L>
             {f.commissionType === "fixed" && <div className="grid gap-3 sm:grid-cols-[1fr_auto]"><L errors={errors} k="commissionFixed" label={t("wiz.f.commFixed")}><input className={inp} inputMode="decimal" {...bind("commissionFixed")} /></L><div className="self-end">{cur("commissionCurrency")}</div></div>}
             {f.commissionType === "percent" && <div className="grid gap-3 sm:grid-cols-2"><L errors={errors} k="commissionPercent" label={t("wiz.f.commPct")}><input className={inp} inputMode="decimal" {...bind("commissionPercent")} /></L>
-              <L errors={errors} k="commissionPercentBase" label={t("wiz.f.commBase")}><InlineSelect className={inp} {...bind("commissionPercentBase")}><option value="monthly_rent">{t("wiz.cb.monthly")}</option><option value="annual_rent">{t("wiz.cb.annual")}</option></InlineSelect></L></div>}
+              <L errors={errors} k="commissionPercentBase" label={t("wiz.f.commBase")}><InlineSelect className={inp} {...bind("commissionPercentBase")}>{sale ? <option value="sale_price">{ru ? "От цены продажи" : "Sotuv narxidan"}</option> : <><option value="monthly_rent">{t("wiz.cb.monthly")}</option><option value="annual_rent">{t("wiz.cb.annual")}</option></>}</InlineSelect></L></div>}
+            {!sale && <>
             <L errors={errors} k="utilities" label={t("wiz.f.utilities")}><InlineSelect className={inp} {...bind("utilities")}><option value="">{t("wiz.unspecified")}</option><option value="included">{t("wiz.u.included")}</option><option value="separate">{t("wiz.u.separate")}</option><option value="partly">{t("wiz.u.partly")}</option></InlineSelect></L>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]"><L errors={errors} k="serviceFee" label={t("wiz.f.serviceFee")}><input className={inp} inputMode="decimal" {...bind("serviceFee")} /></L><div className="self-end">{cur("serviceFeeCurrency")}</div></div>
             <L errors={errors} k="serviceFeePeriod" label={locale === "ru" ? "Период платы за обслуживание" : "Xizmat to‘lovi davri"}><InlineSelect className={inp} {...bind("serviceFeePeriod")}><option value="month">{locale === "ru" ? "Ежемесячно" : "Har oy"}</option><option value="once">{locale === "ru" ? "Один раз" : "Bir martalik"}</option></InlineSelect></L>
             <div className="grid gap-3 sm:grid-cols-2"><L errors={errors} k="minTermMonths" label={t("wiz.f.minTerm")}><input className={inp} inputMode="numeric" {...bind("minTermMonths")} /></L>
-              <L errors={errors} k="availableFrom" label={t("wiz.f.availFrom")} hint={t("wiz.h.availFrom")}><input type="date" className={inp} {...bind("availableFrom")} /></L></div></fieldset>
+              <L errors={errors} k="availableFrom" label={t("wiz.f.availFrom")} hint={t("wiz.h.availFrom")}><input type="date" className={inp} {...bind("availableFrom")} /></L></div></>}</fieldset>
         </>}
 
         {step === 3 && <>

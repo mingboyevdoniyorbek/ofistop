@@ -24,6 +24,7 @@ export async function postListingToChannel(listingId: string) {
     const url = `${base}/joylar/${l.id}-${l.slug}`;
     const price = primaryPrice({ amount: l.priceAmountMinor, currency: l.currency, period: l.pricePeriod, basis: l.priceBasis, negotiable: l.priceNegotiable }, l.areaM2, "uz");
     const lines = [
+      ...(l.dealType === "sale" ? ["🔑 <b>SOTILADI</b>"] : []),
       `🏢 <b>${esc(l.title)}</b>`,
       `💰 ${esc(price)}`,
       `📍 ${esc([r.district, r.region].filter(Boolean).join(", "))}`,
