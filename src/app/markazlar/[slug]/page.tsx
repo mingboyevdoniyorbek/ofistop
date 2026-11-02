@@ -42,6 +42,9 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const viewer = await getCurrentUser().catch(() => null);
   const isMember = !!viewer && (await managedCenterIds(viewer.id)).includes(r.c.id);
   const pager = (page: number) => { const q = new URLSearchParams(); for (const [key,value] of Object.entries(sp)) { if (typeof value === "string") q.set(key,value); } q.set("page",String(page)); return `?${q}#xonalar`; };
+  const filterCount = [f.areaMin || f.areaMax, f.priceMax, f.floor, f.sort !== "new"].filter(Boolean).length;
+  // Xona kam bo'lsa filtr joy egallamasin: faqat 6 tadan ko'p xona bo'lsa yoki filtr qo'llangan bo'lsa ko'rinadi.
+  const showFilter = rooms.total > 6 || filterCount > 0;
   const field = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2";
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -75,8 +78,14 @@ export default async function Page({ params, searchParams }: { params: Promise<{
         </aside>
       </div>
       <section className="mt-10 scroll-mt-4" id="xonalar">
-        <h2 className="text-2xl font-bold mb-4">{t("ctr.rooms")} · {rooms.total}</h2>
-        <form className="mb-6 grid gap-3 rounded-2xl bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4" action="#xonalar">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+        <h2 className="text-2xl font-bold">{t("ctr.rooms")} · {rooms.total}</h2>
+        {showFilter && <details className="group w-full rounded-xl border border-slate-200 bg-white sm:w-auto sm:min-w-0 sm:flex-1 sm:open:basis-full" open={filterCount > 0}>
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+            <span aria-hidden="true" className="transition group-open:rotate-90">▶</span>{ru ? "Фильтр помещений" : "Xonalarni filtrlash"}
+            {filterCount > 0 && <span className="rounded-full bg-brand px-2 py-0.5 text-xs text-white">{filterCount}</span>}
+          </summary>
+        <form className="grid grid-cols-2 gap-3 border-t border-slate-100 p-3 lg:grid-cols-4" action="#xonalar">
           <label className="text-sm">{ru ? "Площадь от, м²" : "Maydon, m² dan"}<input className={field} name="areaMin" inputMode="decimal" defaultValue={f.areaMin} /></label>
           <label className="text-sm">{ru ? "Площадь до, м²" : "Maydon, m² gacha"}<input className={field} name="areaMax" inputMode="decimal" defaultValue={f.areaMax} /></label>
           <label className="text-sm">{ru ? "Месячный бюджет до" : "Oylik budjet, gacha"}<input className={field} name="priceMax" inputMode="decimal" defaultValue={f.priceMax} /></label>
@@ -87,6 +96,8 @@ export default async function Page({ params, searchParams }: { params: Promise<{
           <button className="self-end rounded-lg bg-brand px-4 py-2 text-white">{t("home.search")}</button>
           <Link className="self-end px-4 py-2 text-sm text-brand underline" href={`/markazlar/${r.c.id}-${r.c.slug}#xonalar`}>{ru ? "Сбросить" : "Tozalash"}</Link>
         </form>
+        </details>}
+        </div>
         {!!f.errors?.length && <p role="alert" className="mb-4 text-red-700">{ru ? "Проверьте значения фильтров." : "Filtr qiymatlarini tekshiring."}</p>}
         {rooms.items.length === 0 ? <p className="text-slate-600">{t("ctr.noRooms")}</p>
           : <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">{rooms.items.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
