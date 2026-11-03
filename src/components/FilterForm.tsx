@@ -19,7 +19,7 @@ export default function FilterForm({ f, regions, districts, amenities, view }: {
       {f.bounds && <input type="hidden" name="bbox" value={f.bounds.join(",")} />}
       {f.near && <><input type="hidden" name="lat" value={f.near.lat}/><input type="hidden" name="lng" value={f.near.lng}/><input type="hidden" name="radius" value={f.near.radius}/></>}
       {f.center && <input type="hidden" name="center" value={f.center} />}
-      {f.deal && <input type="hidden" name="deal" value={f.deal} />}
+      {f.deal === "sale" && <input type="hidden" name="deal" value="sale" />}
       <input type="hidden" name="sort" value={f.sort} />
       {view === "map" && <input type="hidden" name="view" value="map" />}
       <label className="block">{locale === "ru" ? "Метро, ориентир или название" : "Metro, mo‘ljal yoki nom"}<input name="q" defaultValue={f.q} className={inp} placeholder={locale === "ru" ? "Ойбек, Novza, Tashkent City…" : "Oybek, Novza, Tashkent City…"} list={hintId}/><datalist id={hintId}><option value="Oybek"/><option value="Novza"/><option value="Tashkent City"/></datalist></label>

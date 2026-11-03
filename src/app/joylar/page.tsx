@@ -52,20 +52,21 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
     return `/joylar?${u}`;
   };
   // Ijara / sotuv tanlovi: narx filtrlari turga bog'liq bo'lgani uchun almashganda narx/davr/sahifa tozalanadi.
-  const dealHref = (deal: "" | "rent" | "sale") => {
+  const dealHref = (deal: "" | "sale") => {
     const u = new URLSearchParams();
     for (const [k, v] of Object.entries(sp)) { if (["deal", "page", "priceMin", "priceMax", "period", "sort"].includes(k)) continue; for (const x of Array.isArray(v) ? v : v ? [v] : []) u.append(k, x); }
     if (deal) u.set("deal", deal);
     const q = u.toString(); return q ? `/joylar?${q}` : "/joylar";
   };
-  const deals = [["", ru ? "Все" : "Hammasi"], ["rent", ru ? "Аренда" : "Ijara"], ["sale", ru ? "Продажа" : "Sotuv"]] as const;
+  const deals = [["", ru ? "Аренда" : "Ijara"], ["sale", ru ? "Продажа" : "Sotuv"]] as const;
+  const dealKey = f.deal === "sale" ? "sale" : "";
   const sorts = (["new", "price_asc", "price_desc", "area_asc", "area_desc"] as const).map((k) => [k, t(`sort.${k}`)] as [string, string]);
 
   return (
     <div className={`mx-auto max-w-[1440px] px-3 py-5 sm:px-6 ${view === "map" ? "space-y-4" : "grid gap-6 lg:grid-cols-[280px_1fr]"}`}>
       <SearchRestore/>
       <aside>
-        <details className={`${view === "map" ? "" : "lg:hidden"} rounded-2xl border border-slate-200 bg-white p-3`} open={false}>
+        <details className={`${view === "map" ? "" : "lg:hidden"} rounded-2xl border border-slate-200 bg-white p-3`} open={sp.filtr === "1"}>
           <summary className="cursor-pointer font-medium">{t("cat.filters")}</summary>
           <div className="mt-3"><FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} /></div>
         </details>
@@ -74,8 +75,8 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
       <section className="min-w-0">
         <h1 className="mb-3 text-2xl font-bold text-brand-dark">{locale === "ru" ? "Найдите место для бизнеса" : "Biznesingizga mos joyni toping"}</h1>
         <nav aria-label={ru ? "Тип сделки" : "Bitim turi"} className="mb-4 inline-flex rounded-xl bg-slate-100 p-1 text-sm font-semibold">
-          {deals.map(([k, v]) => <Link key={k} href={dealHref(k)} aria-current={(f.deal ?? "") === k ? "page" : undefined}
-            className={`rounded-lg px-4 py-1.5 ${(f.deal ?? "") === k ? "bg-white text-brand shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>{v}</Link>)}
+          {deals.map(([k, v]) => <Link key={k} href={dealHref(k)} aria-current={dealKey === k ? "page" : undefined}
+            className={`rounded-lg px-4 py-1.5 ${dealKey === k ? "bg-white text-brand shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>{v}</Link>)}
         </nav>
         <SearchTools key={mapQuery} query={`${mapQuery}&view=${view}`} regions={regions} districts={districts} amenities={amenities}/>
         {!!f.errors?.length && <p role="alert" className="mb-3 rounded bg-red-50 p-3 text-red-800">{locale === "ru" ? "Проверьте диапазоны чисел и дату" : f.errors.join(". ")}</p>}

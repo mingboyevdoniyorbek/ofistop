@@ -407,3 +407,26 @@ export const savedSearches = pgTable("saved_searches", {
   lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("saved_search_user_query_uq").on(t.userId, t.query)]);
+
+// Ofis mebellari bo'limi: mebel sotuvchi va ishlab chiqaruvchi firmalar (ariza → admin tasdig'i → /mebel ro'yxati)
+export const furnitureKindEnum = pgEnum("furniture_kind", ["ready", "custom", "both"]); // tayyor mebel / buyurtma asosida / ikkalasi
+export const furnitureStatusEnum = pgEnum("furniture_status", ["pending", "approved", "rejected"]);
+export const furnitureFirms = pgTable("furniture_firms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), // ariza bergan foydalanuvchi
+  name: text("name").notNull(),
+  kind: furnitureKindEnum("kind").notNull(),
+  description: text("description").notNull().default(""),
+  products: text("products").array().notNull().default(sql`'{}'::text[]`), // stol, kreslo, shkaf...
+  regionId: integer("region_id").notNull().references(() => regions.id),
+  address: text("address").notNull().default(""),
+  contactName: text("contact_name").notNull(),
+  phone: text("phone").notNull(),
+  telegramUsername: text("telegram_username"),
+  website: text("website"), // sayt yoki Instagram
+  status: furnitureStatusEnum("status").notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
+  reviewedBy: uuid("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("furniture_firms_status_idx").on(t.status, t.createdAt), index("furniture_firms_user_idx").on(t.userId)]);

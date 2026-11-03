@@ -12,12 +12,32 @@ import ShareButton from "@/components/ShareButton";
 type Item = Awaited<ReturnType<typeof searchListings>>["items"][number];
 
 /** Telefonda 2 ustunli ixcham karta; katta ekranda qo'shimcha ma'lumotlar ham ko'rinadi. */
-export default async function ListingCard({ it, note }: { it: Item; note?: string }) {
+/** compact — bosh sahifadagi gorizontal qatorlar uchun: ramkasiz, katta yumaloq rasm, belgilar rasm ustida, 3 qator matn. */
+export default async function ListingCard({ it, note, compact = false }: { it: Item; note?: string; compact?: boolean }) {
   const price = { amount: it.priceAmountMinor, currency: it.currency, period: it.pricePeriod, basis: it.priceBasis, negotiable: it.priceNegotiable };
   const { locale, t } = await getT(); const L = labels(locale);
   const total = totalLabel(price, it.areaM2, locale);
   const fav = await favState();
   const place = [it.districtName, it.regionName].filter(Boolean).join(", ");
+  if (compact) {
+    const badge = it.dealType === "sale" ? (locale === "ru" ? "Продаётся" : "Sotiladi") : it.posterType === "owner" ? (locale === "ru" ? "От владельца" : "Egasidan") : it.posterType === "business_center" ? (locale === "ru" ? "От бизнес-центра" : "Markazdan") : null;
+    return (
+      <article className="relative">
+        <div className="absolute right-2 top-2 z-10"><FavoriteButton variant="icon" listingId={it.id} initial={fav.ids.has(it.id)} loggedIn={fav.loggedIn} /></div>
+        <Link href={`/joylar/${it.id}-${it.slug}`} className="block">
+          <ListingPhoto thumb={mediaUrl(it.imageKey)} medium={mediaUrl(it.imageMediumKey)} full={mediaUrl(it.imageFullKey)} alt={it.title} className="aspect-[4/3] rounded-2xl" sizes="(max-width: 640px) 60vw, 260px">
+            {it.imageKey?.startsWith("placeholder:") ? t("card.demoImg", { cat: L.category[it.category] }) : t("card.noImg")}
+          </ListingPhoto>
+          {badge && <span className={`absolute left-2 top-2 z-10 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm ${it.dealType === "sale" ? "bg-emerald-600 text-white" : "bg-white/95 text-slate-900"}`}>{it.dealType === "sale" ? "🔑 " : "✓ "}{badge}</span>}
+          <div className="mt-2 space-y-0.5 px-0.5">
+            <h3 className="line-clamp-1 text-sm font-semibold">{it.title}</h3>
+            <p className="line-clamp-1 text-xs text-slate-600">{[it.districtName ?? it.regionName, it.areaM2 ? `${Number(it.areaM2)} ${t("unit.m2")}` : null].filter(Boolean).join(" · ")}</p>
+            <p className="truncate text-sm font-bold text-brand-dark">{primaryPrice(price, it.areaM2, locale)}</p>
+          </div>
+        </Link>
+      </article>
+    );
+  }
   return (
     <article className="relative flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white transition-shadow hover:shadow-md">
       <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1.5"><FavoriteButton variant="icon" listingId={it.id} initial={fav.ids.has(it.id)} loggedIn={fav.loggedIn} /><ShareButton variant="icon" path={`/joylar/${it.id}-${it.slug}`} title={it.title} text={`${primaryPrice(price, it.areaM2, locale)} · ${place}`} /></div>
