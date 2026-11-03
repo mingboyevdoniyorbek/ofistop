@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { HttpError, isUuid } from "./guard";
 import { normalizePhoneUz } from "./text";
@@ -51,7 +51,7 @@ export async function createFirmApplication(userId: string, raw: unknown) {
   return firm.id;
 }
 
-export async function reviewFirm(id: string, actor: { id: string }, action: "approve" | "reject" | "remove", reason?: string) {
+export async function reviewFirm(id: string, actor: { id: string }, action: "approve" | "reject" | "remove" | "feature" | "unfeature", reason?: string, days = 30) {
   if (!isUuid(id)) throw new HttpError(404, "Ariza topilmadi");
   return db().transaction(async (tx) => {
     const F = s.furnitureFirms;
@@ -60,6 +60,14 @@ export async function reviewFirm(id: string, actor: { id: string }, action: "app
     if (action === "remove") {
       await tx.delete(F).where(eq(F.id, id));
       await writeAudit({ actorId: actor.id, action: "furniture_firm.remove", entityType: "furniture_firm", entityId: id, meta: { name: firm.name } }, tx);
+      return;
+    }
+    // TOP (VIP) firma: /mebel'da va e'lon sahifalarida birinchi taklif qilinadi. Hozircha admin to'lovdan keyin qo'lda yoqadi.
+    if (action === "feature" || action === "unfeature") {
+      if (action === "feature" && firm.status !== "approved") throw new HttpError(409, "Avval firmani tasdiqlang");
+      const until = action === "feature" ? new Date(Math.max(Date.now(), firm.featuredUntil?.getTime() ?? 0) + days * 864e5) : null;
+      await tx.update(F).set({ featuredUntil: until }).where(eq(F.id, id));
+      await writeAudit({ actorId: actor.id, action: `furniture_firm.${action}`, entityType: "furniture_firm", entityId: id, meta: until ? { days } : null }, tx);
       return;
     }
     if (firm.status !== "pending") throw new HttpError(409, "Ariza allaqachon ko'rib chiqilgan");
@@ -80,6 +88,12 @@ export async function listFirms(locale: "uz" | "ru", filter: { product?: string;
   const F = s.furnitureFirms;
   const rows = await db().select({ f: F, region: locale === "ru" ? s.regions.nameRu : s.regions.nameUz }).from(F)
     .innerJoin(s.regions, eq(s.regions.id, F.regionId)).innerJoin(s.users, eq(s.users.id, F.userId))
-    .where(and(eq(F.status, "approved"), eq(s.users.isBlocked, false))).orderBy(desc(F.reviewedAt)).limit(200);
-  return rows.filter(({ f }) => (!filter.product || f.products.includes(filter.product)) && (!filter.kind || f.kind === filter.kind || (filter.kind !== "both" && f.kind === "both")));
+    .where(and(eq(F.status, "approved"), eq(s.users.isBlocked, false)))
+    .orderBy(sql`(${F.featuredUntil} IS NOT NULL AND ${F.featuredUntil} > now()) DESC`, desc(F.reviewedAt)).limit(200);
+  return rows.map((r) => ({ ...r, isTop: !!r.f.featuredUntil && r.f.featuredUntil > new Date() })).filter(({ f }) => (!filter.product || f.products.includes(filter.product)) && (!filter.kind || f.kind === filter.kind || (filter.kind !== "both" && f.kind === "both")));
+}
+
+/** E'lon sahifasidagi "Ofisingizga mebel" taklifi: faqat TOP (pullik) firmalar, ko'pi bilan 2 ta. */
+export async function topFirms(locale: "uz" | "ru", limit = 2) {
+  return (await listFirms(locale)).filter((x) => x.isTop).slice(0, limit);
 }

@@ -54,8 +54,9 @@ export default async function Furniture({ searchParams }: { searchParams: Promis
         </section>{cta}</div> : <>
         <p className="mt-5 text-sm text-slate-600">{ru ? "Компаний" : "Firmalar"}: {firms.length}</p>
         {firms.length === 0 ? <p className="mt-3 rounded-2xl border border-dashed border-slate-300 p-6 text-center text-slate-600">{ru ? "По этому фильтру компаний нет." : "Bu filtr bo‘yicha firma topilmadi."} <Link href="/mebel" className="text-brand underline">{ru ? "Показать все" : "Hammasini ko‘rish"}</Link></p>
-          : <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{firms.map(({ f, region }) => (
-            <li key={f.id} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          : <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{firms.map(({ f, region, isTop }) => (
+            <li key={f.id} className={`relative flex flex-col rounded-2xl border bg-white p-4 shadow-sm ${isTop ? "border-amber-300 ring-2 ring-amber-200" : "border-slate-200"}`}>
+              {isTop && <span className="absolute -top-2.5 right-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-0.5 text-[11px] font-extrabold tracking-wide text-white shadow">TOP</span>}
               <div className="flex items-center gap-3">
                 <span aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-blue-50 text-lg font-bold text-brand">{f.name.slice(0, 2).toUpperCase()}</span>
                 <div className="min-w-0"><h2 className="truncate font-semibold">{f.name}</h2><p className="text-xs text-slate-500">{KIND_LABELS[f.kind][lang]} · {region}</p></div>

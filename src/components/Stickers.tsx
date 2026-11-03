@@ -129,3 +129,35 @@ export function ProductIcon({ name, className = "h-5 w-5" }: { name: string; cla
   };
   return <svg viewBox="0 0 24 24" className={className} aria-hidden="true">{body[name] ?? <circle cx="12" cy="12" r="8" fill={c.light} />}</svg>;
 }
+
+/** Xizmat «Joyingizni biz ijaraga beramiz»: naushnikli menejer, qo'lida kalit, yonida "kelishildi" belgisi. */
+export function ServiceSticker({ className = "h-10 w-10", uid = "svc" }: P) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
+      <defs>
+        <linearGradient id={`${uid}-s`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3b82f6" /><stop offset="1" stopColor="#1e3a8a" /></linearGradient>
+        <linearGradient id={`${uid}-k`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fde68a" /><stop offset="1" stopColor="#d97706" /></linearGradient>
+      </defs>
+      <ellipse cx="30" cy="59" rx="22" ry="3" fill="#0f172a" opacity=".12" />
+      {/* tana: kostyum, oq ko'ylak, yashil galstuk */}
+      <path d="M10 58 C10 44 18 38 30 38 C42 38 50 44 50 58 Z" fill={`url(#${uid}-s)`} />
+      <path d="M24 38.5 L30 47 L36 38.5 Z" fill="#fff" /><path d="M29 41 h2 l1 9 l-2 2.5 l-2 -2.5 z" fill="#16a34a" />
+      <path d="M14 50 C16 45 19 43 22 42" stroke="#60a5fa" strokeWidth="1.4" strokeLinecap="round" opacity=".6" fill="none" />
+      {/* bosh va soch */}
+      <rect x="27" y="31" width="6" height="7" rx="2" fill="#e8b48a" />
+      <circle cx="30" cy="24" r="10" fill="#f2c39b" />
+      <path d="M20 23 C20 15 25 12.5 30.5 12.5 C36.5 12.5 40.5 16 40 22 C37 19 33 18 27 19.5 C24 20.2 22 21.5 20 23Z" fill="#3f2a1d" />
+      <circle cx="26.5" cy="25" r="1.1" fill="#1f2937" /><circle cx="33.5" cy="25" r="1.1" fill="#1f2937" />
+      <path d="M27 29 C28.8 30.6 31.2 30.6 33 29" stroke="#b45309" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+      {/* naushnik va mikrofon */}
+      <path d="M18.5 25 C18.5 15 23.5 10.5 30 10.5 C36.5 10.5 41.5 15 41.5 25" stroke="#1e293b" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+      <rect x="16.5" y="22" width="4.5" height="8" rx="2.2" fill="#1e293b" /><rect x="39" y="22" width="4.5" height="8" rx="2.2" fill="#1e293b" />
+      <path d="M19 29.5 C19 33.5 22 35 26 34.5" stroke="#1e293b" strokeWidth="1.6" fill="none" strokeLinecap="round" /><circle cx="26.5" cy="34.4" r="1.5" fill="#16a34a" />
+      {/* "kelishildi" pufakchasi */}
+      <path d="M45 6 h13 a3 3 0 0 1 3 3 v8 a3 3 0 0 1 -3 3 h-7 l-4 3.5 v-3.5 h-2 a3 3 0 0 1 -3 -3 v-8 a3 3 0 0 1 3 -3z" fill="#16a34a" />
+      <path d="M47.5 13 l3 3 l5.5 -6" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      {/* qo'lidagi kalit */}
+      <g transform="rotate(-30 50 46)"><circle cx="50" cy="40" r="4.5" fill={`url(#${uid}-k)`} /><circle cx="50" cy="40" r="1.8" fill="#1e3a8a" /><rect x="48.8" y="44" width="2.4" height="10" rx="1.2" fill={`url(#${uid}-k)`} /><rect x="51" y="50" width="2.6" height="1.6" rx=".6" fill="#d97706" /></g>
+    </svg>
+  );
+}

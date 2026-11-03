@@ -11,6 +11,8 @@ export interface Filters {
   q?: string; region?: number; district?: number; category?: string; center?: string;
   /** Ijara yoki sotuv. Sayt asosan ijara uchun: berilmasa — ijara (sotuv faqat deal=sale bilan, narxlar aralashmaydi). */
   deal: "rent" | "sale";
+  /** Bosh sahifa qatorlari: faqat TOP / faqat markaz xonalari / ulardan tashqari qolganlari. */
+  only?: "top" | "center" | "rest";
   currency: "UZS" | "USD"; period: "month" | "day" | "hour" | "once"; basis: "whole" | "per_m2" | "per_seat";
   priceMin?: string; priceMax?: string; areaMin?: string; areaMax?: string; floor?: number;
   furnished?: "1" | "0"; poster?: string; commission?: "none" | "any"; availableBy?: string;
@@ -73,6 +75,9 @@ export function buildWhere(f: Filters) {
   const conds: (SQL | undefined)[] = [publicCond()];
   if (f.errors?.length) conds.push(sql`false`);
   conds.push(eq(L.dealType, f.deal));
+  if (f.only === "top") conds.push(sql`${L.featuredUntil} > now()`);
+  if (f.only === "center") conds.push(sql`${L.centerId} IS NOT NULL AND (${L.featuredUntil} IS NULL OR ${L.featuredUntil} <= now())`);
+  if (f.only === "rest") conds.push(sql`${L.centerId} IS NULL AND (${L.featuredUntil} IS NULL OR ${L.featuredUntil} <= now())`);
   if (f.currencyFilter) conds.push(eq(L.currency, f.currency));
   if (f.periodFilter) conds.push(eq(L.pricePeriod, f.period));
   if (f.basisFilter) conds.push(eq(L.priceBasis, f.basis));
@@ -129,14 +134,6 @@ export async function topDistrictCounts(limit = 4) {
   return rows.map((r) => r.n);
 }
 
-/** Bosh sahifa qatorlari uchun: ijara e'lonlari eng ko'p tumanlar (nomi bilan). */
-export async function topDistricts(locale: "uz" | "ru", limit = 3, min = 2) {
-  const rows = await db().select({ id: s.districts.id, name: locale === "ru" ? s.districts.nameRu : s.districts.nameUz, n: sql<number>`count(*)::int` })
-    .from(s.listings).innerJoin(s.districts, eq(s.districts.id, s.listings.districtId))
-    .where(and(publicCond(), eq(s.listings.dealType, "rent"))).groupBy(s.districts.id).orderBy(desc(sql`count(*)`)).limit(limit);
-  return rows.filter((r) => r.n >= min);
-}
-
 /** Karta uchun umumiy select (qidiruv, sevimlilar va boshqalar). */
 function cardQuery(locale: "uz" | "ru") {
   const L = s.listings;
@@ -151,6 +148,7 @@ function cardQuery(locale: "uz" | "ru") {
     imageFullKey: sql<string | null>`(SELECT storage_key FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
     imageMediumKey: sql<string | null>`(SELECT medium_key FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
     isDemo: L.isDemo, publishedAt: L.publishedAt, availabilityStatus: L.availabilityStatus,
+    isTop: sql<boolean>`coalesce(${L.featuredUntil} > now(), false)`,
     // Oxirgi yangilanish: tahrir yoki "hali bo'sh" tasdig'i (qaysi biri keyin bo'lsa)
     refreshedAt: sql<string>`greatest(${L.updatedAt}, coalesce(${L.availabilityConfirmedAt}, ${L.updatedAt}))`,
   }).from(L)
@@ -177,7 +175,8 @@ export async function searchListings(f: Filters, locale: "uz" | "ru" = "uz") {
   const amount = f.priceMode === "total" ? rentTotalSql() : L.priceAmountMinor;
   const inScope = sql`(${L.currency} = ${f.currency} AND ${L.pricePeriod} = ${f.period} AND ${f.priceMode === "total" ? sql`${amount} IS NOT NULL` : eq(L.priceBasis, f.basis)})`;
   const order = {
-    new: [desc(L.publishedAt), desc(L.id)],
+    // TOP (to'langan) e'lonlar muddati davomida birinchi
+    new: [sql`(${L.featuredUntil} IS NOT NULL AND ${L.featuredUntil} > now()) DESC`, desc(L.publishedAt), desc(L.id)],
     price_asc: [desc(inScope), sql`CASE WHEN ${inScope} THEN ${amount} END ASC NULLS LAST`, desc(L.publishedAt), desc(L.id)],
     price_desc: [desc(inScope), sql`CASE WHEN ${inScope} THEN ${amount} END DESC NULLS LAST`, desc(L.publishedAt), desc(L.id)],
     area_asc: [asc(L.areaM2), desc(L.publishedAt)],

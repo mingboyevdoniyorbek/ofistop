@@ -248,6 +248,7 @@ export const listings = pgTable("listings", {
   availabilityConfirmedAt: timestamp("availability_confirmed_at", { withTimezone: true }),
   publishedAt: timestamp("published_at", { withTimezone: true }),
   viewCount: integer("view_count").notNull().default(0), // e'lon sahifasi ko'rishlari (bir tashrifchi/sutka — bitta)
+  featuredUntil: timestamp("featured_until", { withTimezone: true }), // TOP (VIP) e'lon shu vaqtgacha birinchi ko'rsatiladi
   expiresAt: timestamp("expires_at", { withTimezone: true }),
 
   isDemo: boolean("is_demo").notNull().default(false),
@@ -425,6 +426,7 @@ export const furnitureFirms = pgTable("furniture_firms", {
   telegramUsername: text("telegram_username"),
   website: text("website"), // sayt yoki Instagram
   status: furnitureStatusEnum("status").notNull().default("pending"),
+  featuredUntil: timestamp("featured_until", { withTimezone: true }), // TOP firma — /mebel va e'lon sahifalarida birinchi taklif
   rejectionReason: text("rejection_reason"),
   reviewedBy: uuid("reviewed_by").references(() => users.id),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
@@ -444,3 +446,25 @@ export const sitePageviews = pgTable("site_pageviews", {
   section: text("section").notNull(),  // home, catalog, listing, centers, center, furniture, landing, cabinet, other
   n: integer("n").notNull().default(0),
 }, (t) => [primaryKey({ columns: [t.day, t.section] })]);
+
+// «Joyingizni biz ijaraga beramiz» xizmati: egasi vaqti yo'q — OfisTop ijarachi topadi, qo'ng'iroqlarni qabul qiladi, joyni ko'rsatadi.
+export const serviceStatusEnum = pgEnum("service_status", ["new", "in_progress", "done", "rejected"]);
+export const serviceRequests = pgTable("service_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }), // kirmagan bo'lsa ham ariza qoldirish mumkin
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  telegramUsername: text("telegram_username"),
+  category: categoryEnum("category"),
+  regionId: integer("region_id").references(() => regions.id),
+  districtId: integer("district_id").references(() => districts.id),
+  address: text("address").notNull().default(""),
+  areaM2: text("area_m2"),
+  desiredPrice: text("desired_price"),
+  comment: text("comment"),
+  status: serviceStatusEnum("status").notNull().default("new"),
+  adminNote: text("admin_note"),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("service_requests_status_idx").on(t.status, t.createdAt)]);

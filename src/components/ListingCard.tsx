@@ -28,6 +28,7 @@ export default async function ListingCard({ it, note, compact = false }: { it: I
           <ListingPhoto thumb={mediaUrl(it.imageKey)} medium={mediaUrl(it.imageMediumKey)} full={mediaUrl(it.imageFullKey)} alt={it.title} className="aspect-[4/3] rounded-2xl" sizes="(max-width: 640px) 60vw, 260px">
             {it.imageKey?.startsWith("placeholder:") ? t("card.demoImg", { cat: L.category[it.category] }) : t("card.noImg")}
           </ListingPhoto>
+          {it.isTop && <span className="absolute bottom-2 left-2 z-10 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-0.5 text-[11px] font-extrabold tracking-wide text-white shadow">TOP</span>}
           {badge && <span className={`absolute left-2 top-2 z-10 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm ${it.dealType === "sale" ? "bg-emerald-600 text-white" : "bg-white/95 text-slate-900"}`}>{it.dealType === "sale" ? "🔑 " : "✓ "}{badge}</span>}
           <div className="mt-2 space-y-0.5 px-0.5">
             <h3 className="line-clamp-1 text-sm font-semibold">{it.title}</h3>
@@ -48,7 +49,8 @@ export default async function ListingCard({ it, note, compact = false }: { it: I
         </ListingPhoto>
         <div className="flex-1 space-y-1 p-2.5 sm:p-3">
           {note && <span className="inline-block rounded bg-amber-100 px-1.5 text-xs text-amber-900">{note}</span>}
-          {(it.dealType === "sale" || it.posterType !== "agency") && <div className="flex flex-wrap gap-1">
+          {(it.isTop || it.dealType === "sale" || it.posterType !== "agency") && <div className="flex flex-wrap gap-1">
+            {it.isTop && <span className="rounded bg-gradient-to-r from-amber-400 to-orange-500 px-1.5 py-0.5 text-xs font-extrabold text-white">TOP</span>}
             {it.dealType === "sale" && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800">{locale === "ru" ? "Продаётся" : "Sotiladi"}</span>}
             {/* Ishonch belgisi: vositachisiz — to'g'ridan-to'g'ri egasi yoki markaz vakili */}
             {it.posterType === "owner" && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-semibold text-brand">✓ {locale === "ru" ? "От владельца" : "Egasidan"}</span>}

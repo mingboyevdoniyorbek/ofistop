@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { labels } from "@/lib/format";
 import { getT } from "@/lib/i18n";
-import { parseFilters, searchListings, topDistrictCounts, topDistricts } from "@/lib/search";
+import { parseFilters, searchListings, topDistrictCounts } from "@/lib/search";
 import ListingCard from "@/components/ListingCard";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { landingSlugOf } from "@/lib/landing";
@@ -15,7 +15,7 @@ import { mediaUrl } from "@/lib/storage";
 import ListingPhoto from "@/components/ListingPhoto";
 import CenterCta from "@/components/CenterCta";
 import CenterBadges from "@/components/CenterBadges";
-import { CenterSticker, CoworkSticker, SaleSticker, SofaSticker } from "@/components/Stickers";
+import { CenterSticker, SaleSticker, ServiceSticker, SofaSticker } from "@/components/Stickers";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata() { return { alternates: await pageAlternates("/") }; }
@@ -25,26 +25,25 @@ export default async function Home() {
   const promo = promoEnabled();
   const user = await getCurrentUser();
   // Ommaviy bloklar 30–60 soniya keshlanadi (har bir tashrifda bazaga borilmaydi).
-  const [latest, centersAll, forSale, clusters, districts] = await Promise.all([
-    memo(`home:latest:${locale}`, 30_000, () => searchListings({ ...parseFilters({}), page: 1 }, locale)).catch(() => null),
+  // Tartib: 1) TOP (pullik) e'lonlar va 2) biznes markazlardagi xonalar — gorizontal qatorlarda;
+  // 3) qolgan e'lonlar — 2 ustunli to'rda, pastga qarab.
+  const list = (only: "top" | "center" | "rest", page = 1) => memo(`home:${only}:${page}:${locale}`, 30_000, () => searchListings({ ...parseFilters({}), only, page }, locale)).catch(() => null);
+  const [top, inCenters, rest1, rest2, centersAll, clusters] = await Promise.all([
+    list("top"), list("center"), list("rest", 1), list("rest", 2),
     memo(`home:centers:${locale}`, 60_000, () => listCenters(locale)).catch(() => []),
-    memo(`home:sale:${locale}`, 30_000, () => searchListings({ ...parseFilters({ deal: "sale" }), page: 1 }, locale)).catch(() => null),
     memo("home:clusters", 60_000, () => topDistrictCounts()).catch(() => []),
-    memo(`home:districts:${locale}`, 60_000, () => topDistricts(locale, 3)).catch(() => []),
   ]);
   const centers = centersAll.slice(0, 10);
-  const [stats, byDistrict] = await Promise.all([
-    memo(`home:centerStats:${centers.map((c) => c.id).join(",")}`, 60_000, () => centerStats(centers.map((c) => c.id))).catch(() => new Map()),
-    Promise.all(districts.map((d) => memo(`home:district:${d.id}:${locale}`, 30_000, () => searchListings({ ...parseFilters({ district: String(d.id) }), page: 1 }, locale)).catch(() => null))),
-  ]);
+  const stats = await memo(`home:centerStats:${centers.map((c) => c.id).join(",")}`, 60_000, () => centerStats(centers.map((c) => c.id))).catch(() => new Map());
+  const rest = rest1 ? [...rest1.items, ...(rest2?.items ?? [])] : null;
   // Bitta asosiy yo'nalish — ijara; qo'shimcha bo'limlar blokchalarda (Joymee kabi).
   const tiles = [
     { href: "/markazlar", icon: <CenterSticker className="h-12 w-12" />, label: ru ? "Бизнес-центры" : "Markazlar", tint: "from-blue-50 ring-blue-100" },
     { href: "/joylar?deal=sale", icon: <SaleSticker className="h-12 w-12" />, label: ru ? "Продажа" : "Sotuv", tint: "from-amber-50 ring-amber-100" },
     { href: "/mebel", icon: <SofaSticker className="h-12 w-12" />, label: ru ? "Мебель" : "Mebel", tint: "from-teal-50 ring-teal-100" },
-    { href: landingSlugOf("coworking") ? `/ijara/${landingSlugOf("coworking")}` : "/joylar?category=coworking", icon: <CoworkSticker className="h-12 w-12" />, label: ru ? "Коворкинг" : "Kovorking", tint: "from-indigo-50 ring-indigo-100" },
+    { href: "/xizmat", icon: <ServiceSticker className="h-12 w-12" />, label: ru ? "Сдадим за вас" : "Ijaraga beramiz", tint: "from-green-50 ring-green-100" },
   ];
-  const chips = Object.entries(CAT).filter(([k]) => k !== "building" && k !== "coworking");
+  const chips = Object.entries(CAT).filter(([k]) => k !== "building");
   return (
     <div>
       <section className="mx-auto max-w-6xl px-4 pt-4 pb-2 sm:pt-8">
@@ -71,9 +70,8 @@ export default async function Home() {
         </nav>
       </section>
 
-      {latest === null ? <p className="mx-auto max-w-6xl px-4 py-4 text-red-700">{t("home.loadFail")}</p>
-        : latest.items.length > 0 && <Rail title={t("home.latest")} href="/joylar" more={t("home.all")}>{latest.items.slice(0, 10).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
-      {districts.map((d, i) => { const r = byDistrict[i]; return r && r.items.length > 1 ? <Rail key={d.id} title={ru ? `Район ${d.name}` : `${d.name} tumanida`} sub={ru ? `${d.n} объявлений` : `${d.n} ta e’lon`} href={`/joylar?district=${d.id}`} more={t("home.all")}>{r.items.slice(0, 10).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail> : null; })}
+      {top && top.items.length > 0 && <Rail title={ru ? "TOP объявления" : "TOP e’lonlar"} sub={ru ? "Рекомендуемые" : "Tavsiya etilgan"} href="/joylar" more={t("home.all")}>{top.items.slice(0, 12).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
+      {inCenters && inCenters.items.length > 0 && <Rail title={ru ? "Помещения в бизнес-центрах" : "Biznes markazlardagi xonalar"} sub={ru ? `${inCenters.total} свободных помещений` : `${inCenters.total} ta bo‘sh xona`} href="/joylar?category=bc_room" more={t("home.all")}>{inCenters.items.slice(0, 12).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
 
       <section className="mx-auto max-w-6xl px-4 pt-6" aria-labelledby="centers-h">
           <RailHead id="centers-h" title={ru ? "Бизнес-центры" : "Biznes markazlar"} href="/markazlar" more={t("home.all")} />
@@ -93,10 +91,31 @@ export default async function Home() {
           </div>}
           <div className="mt-3"><CenterCta variant="compact" /></div>
         </section>
-      {forSale && forSale.total > 0 && <Rail title={`🔑 ${ru ? "Продаются: помещения и здания" : "Sotuvdagi joylar va binolar"}`} sub={ru ? `${forSale.total} объявлений` : `${forSale.total} ta e’lon`} href="/joylar?deal=sale" more={t("home.all")}>
-        {forSale.items.slice(0, 10).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
       <RecentlyViewed />
-      <section className="mx-auto mt-8 max-w-6xl px-4 pb-10"><div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-dark to-[#0f4c5c] p-6 text-white sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-10"><SofaSticker uid="sofa-cta" className="pointer-events-none absolute -bottom-6 -right-4 h-32 w-32 opacity-25 sm:static sm:order-first sm:h-28 sm:w-28 sm:opacity-100" /><div className="relative"><h2 className="text-2xl font-bold">{ru ? "Нужна мебель для офиса?" : "Ofisingizga mebel kerakmi?"}</h2><p className="mt-3 max-w-2xl text-blue-100">{ru ? "Столы, кресла, шкафы — готовые и на заказ. Компании-производители и продавцы в одном разделе." : "Stol, kreslo, shkaf — tayyor va buyurtma asosida. Ishlab chiqaruvchi va sotuvchi firmalar bitta bo‘limda."}</p></div><Link href="/mebel" className="relative mt-5 inline-block shrink-0 rounded-xl bg-white px-5 py-3 font-semibold text-brand sm:mt-0">{ru ? "Офисная мебель →" : "Ofis mebellari →"}</Link></div></section>
+
+      {/* Qolgan e'lonlar: telefonda 2 ustun, pastga qarab */}
+      <section className="mx-auto max-w-6xl px-4 pt-8" aria-labelledby="all-h">
+        <RailHead id="all-h" title={ru ? "Все объявления" : "Barcha e’lonlar"} href="/joylar" more={t("home.all")} />
+        {rest === null ? <p className="text-red-700">{t("home.loadFail")}</p>
+          : <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{rest.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
+        <Link href="/joylar" className="mt-5 block rounded-xl border border-brand py-3 text-center font-semibold text-brand hover:bg-blue-50">{ru ? "Показать все объявления →" : "Barcha e’lonlarni ko‘rish →"}</Link>
+      </section>
+
+      {/* Urg'u — biznes markazlar va "Biz ijaraga beramiz" xizmati */}
+      <section className="mx-auto mt-10 grid max-w-6xl gap-4 px-4 pb-10 lg:grid-cols-2">
+        <div className="relative overflow-hidden rounded-3xl bg-brand-dark p-6 text-white sm:p-8">
+          <CenterSticker uid="bc-cta" className="pointer-events-none absolute -bottom-4 -right-3 h-32 w-32 opacity-30" />
+          <h2 className="relative text-2xl font-bold">{ru ? "Все помещения вашего центра — на одной странице" : "Markazingizdagi barcha xonalar — bitta sahifada"}</h2>
+          <p className="relative mt-3 max-w-xl text-blue-100">{ru ? "Фото, удобства, свободные офисы и прямой контакт с арендаторами. Бесплатно." : "Rasmlar, qulayliklar, bo‘sh ofislar va ijarachilar bilan to‘g‘ridan-to‘g‘ri aloqa. Bepul."}</p>
+          <div className="relative mt-5 flex flex-wrap gap-3"><Link href="/markazlar/ariza" className="rounded-xl bg-accent px-5 py-3 font-semibold text-white">{ru ? "Добавить центр" : "Markazni qo‘shish"}</Link><Link href="/markazlar" className="rounded-xl bg-white px-5 py-3 font-semibold text-brand">{ru ? "Смотреть центры" : "Markazlarni ko‘rish"}</Link></div>
+        </div>
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#14532d] to-[#16a34a] p-6 text-white sm:p-8">
+          <ServiceSticker uid="svc-cta" className="pointer-events-none absolute -bottom-3 -right-2 h-32 w-32 opacity-40" />
+          <h2 className="relative text-2xl font-bold">{ru ? "Нет времени на арендаторов?" : "Ijarachilarga vaqtingiz yo‘qmi?"}</h2>
+          <p className="relative mt-3 max-w-xl text-green-50">{ru ? "Сдадим помещение за вас: примем звонки, покажем помещение, вы только подпишете договор." : "Joyingizni biz ijaraga beramiz: qo‘ng‘iroqlarni qabul qilamiz, joyni ko‘rsatamiz, siz faqat shartnoma tuzasiz."}</p>
+          <Link href="/xizmat" className="relative mt-5 inline-block rounded-xl bg-white px-5 py-3 font-semibold text-green-800">{ru ? "Подробнее →" : "Batafsil →"}</Link>
+        </div>
+      </section>
       <section className="bg-slate-50 border-y border-slate-200">
         <div className="mx-auto max-w-6xl px-4 py-8 grid gap-4 sm:grid-cols-3 text-sm">
           {[[t("home.s1"), t("home.s1b")], [t("home.s2"), t("home.s2b")], [t("home.s3"), t("home.s3b")]].map(([a, b]) => (

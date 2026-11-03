@@ -25,7 +25,9 @@ import { favState } from "@/lib/favorites";
 import ShareButton from "@/components/ShareButton";
 import { cache } from "react";
 import { memo } from "@/lib/memo";
-import { showViewCounts } from "@/lib/site-info";
+import { showViewCounts, telHref } from "@/lib/site-info";
+import { topFirms, KIND_LABELS } from "@/lib/furniture";
+import { SofaSticker } from "@/components/Stickers";
 const listImagesCached = cache((id: string) => listImages(id));
 
 export const dynamic = "force-dynamic";
@@ -59,9 +61,10 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
   const price = { amount: l.priceAmountMinor, currency: l.currency, period: l.pricePeriod, basis: l.priceBasis, negotiable: l.priceNegotiable };
   const total = totalLabel(price, l.areaM2, locale);
   // Bir-biriga bog'liq bo'lmagan so'rovlar parallel (ketma-ket emas) bajariladi.
-  const [pics, fav, amenityRows, similarRes] = await Promise.all([
+  const [pics, fav, amenityRows, similarRes, firms] = await Promise.all([
     listImagesCached(l.id), favState(), memo("amenities", 600_000, () => db().select().from(s.amenities)),
     searchListings({ ...parseFilters({ category: l.category, region: String(l.regionId), deal: l.dealType }), page: 1 }, locale),
+    l.dealType === "rent" ? memo(`top-firms:${locale}`, 60_000, () => topFirms(locale)).catch(() => []) : Promise.resolve([]),
   ]);
   const imgs = pics.filter((i) => i.url).map((i) => ({ url: i.url!, thumb: i.thumbUrl ?? i.url! }));
   const amNames = new Map(amenityRows.map((a) => [a.code, ru ? a.nameRu : a.nameUz]));
@@ -139,6 +142,15 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
         <section className="mt-10"><h2 className="font-semibold mb-3">{t("det.similar")}</h2>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{similar.map((it) => <ListingCard key={it.id} it={it} />)}</div></section>
       )}
+      {/* Ofis ijarasidan keyingi ehtiyoj: faqat TOP (pullik) mebel firmalari taklif qilinadi */}
+      {visible && firms.length > 0 && <section className="mt-10 rounded-3xl bg-gradient-to-br from-teal-50 to-white p-4 ring-1 ring-teal-100 sm:p-5" aria-labelledby="firms-h">
+        <div className="flex items-center gap-3"><SofaSticker uid="sofa-det" className="h-12 w-12 shrink-0" /><div><h2 id="firms-h" className="font-semibold">{ru ? "Мебель для этого офиса" : "Bu ofis uchun mebel"}</h2><p className="text-xs text-slate-500">{ru ? "Рекомендуемые компании OfisTop" : "OfisTop tavsiya etgan firmalar"}</p></div></div>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2">{firms.map(({ f, region }) => <li key={f.id} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
+          <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 font-bold text-brand">{f.name.slice(0, 2).toUpperCase()}</span>
+          <div className="min-w-0 flex-1"><p className="truncate font-semibold">{f.name}</p><p className="truncate text-xs text-slate-500">{KIND_LABELS[f.kind][ru ? "ru" : "uz"]} · {region}</p></div>
+          <a href={telHref(f.phone)} className="shrink-0 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-white">📞</a></li>)}</ul>
+        <Link href="/mebel" className="mt-3 inline-block text-sm text-brand hover:underline">{ru ? "Все мебельные компании →" : "Barcha mebel firmalari →"}</Link>
+      </section>}
       {visible && <ContactButtons variant="bar" listingId={l.id} hasPhone={!!l.contactPhone} hasTelegram={!!l.telegramUsername} />}
       <p className="mt-6"><Link href="/joylar" className="text-brand hover:underline">{t("det.back")}</Link></p>
     </div>
