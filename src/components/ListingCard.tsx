@@ -38,8 +38,8 @@ export default async function ListingCard({ it, note, compact = false }: { it: I
       <div className="absolute right-2 top-2 z-10"><FavoriteButton variant="icon" listingId={it.id} initial={fav.ids.has(it.id)} loggedIn={fav.loggedIn} /></div>
       <Link href={`/joylar/${it.id}-${it.slug}`} className="block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
         <div className="relative overflow-hidden rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_14px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5">
-          <ListingPhoto thumb={mediaUrl(it.imageKey)} medium={mediaUrl(it.imageMediumKey)} full={mediaUrl(it.imageFullKey)} alt={it.title}
-            className="aspect-[4/3] transition-transform duration-300 group-hover:scale-[1.03]" sizes={compact ? "(max-width: 640px) 62vw, 270px" : "(max-width: 1024px) 50vw, 25vw"}>
+          <ListingPhoto thumb={mediaUrl(it.imageKey)} medium={mediaUrl(it.imageMediumKey)} full={mediaUrl(it.imageFullKey)} alt={it.title} fit="cover"
+            className="aspect-square transition-transform duration-300 group-hover:scale-[1.03] sm:aspect-[4/3]" sizes={compact ? "(max-width: 640px) 62vw, 270px" : "(max-width: 1024px) 50vw, 25vw"}>
             {it.imageKey?.startsWith("placeholder:") ? t("card.demoImg", { cat: L.category[it.category] }) : t("card.noImg")}
           </ListingPhoto>
           {it.isTop && <VipBadge className="absolute left-2 top-2 z-10" />}

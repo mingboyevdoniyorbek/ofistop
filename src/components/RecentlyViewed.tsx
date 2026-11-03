@@ -38,14 +38,14 @@ export default function RecentlyViewed() {
       </div>
       <div className="-mx-4 flex snap-x snap-mandatory gap-3 no-scrollbar overflow-x-auto scroll-px-4 px-4 pb-2">
         {items.map((it) => (
-          <Link key={it.id} href={it.href} className="flex w-[44vw] max-w-[220px] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-slate-200 bg-white hover:shadow-md">
-            <ListingPhoto thumb={it.thumb} full={it.full} alt={it.title} sizes="220px" className="aspect-[4/3]" />
-            <div className="space-y-1 p-2.5">
-              <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{it.title}</h3>
-              <p className="text-base font-bold text-brand">{it.price}</p>
-              {it.place && <p className="line-clamp-2 text-xs text-slate-600">{it.place}</p>}
-              {it.date && <p className="text-xs text-slate-500">{it.date}</p>}
-              {it.area && <p className="text-xs text-slate-700">{it.area}</p>}
+          <Link key={it.id} href={it.href} className="group flex w-[44vw] max-w-[220px] shrink-0 snap-start flex-col">
+            <div className="overflow-hidden rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_14px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5">
+              <ListingPhoto thumb={it.thumb} full={it.full} alt={it.title} sizes="220px" fit="cover" className="aspect-square transition-transform duration-300 group-hover:scale-[1.03]" />
+            </div>
+            <div className="mt-2 space-y-0.5 px-0.5">
+              <p className="truncate text-[15px] font-extrabold tracking-tight text-slate-900">{it.price}</p>
+              <h3 className="line-clamp-1 text-sm font-medium text-slate-800">{it.title}</h3>
+              {(it.place || it.area) && <p className="line-clamp-1 text-xs text-slate-500">{[it.place, it.area].filter(Boolean).join(" · ")}</p>}
             </div>
           </Link>
         ))}
