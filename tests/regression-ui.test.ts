@@ -54,7 +54,7 @@ test('autosave keeps inputs enabled and saves edits made during an in-flight req
   expect(document.activeElement).toBe(input);
   await act(async()=>vi.advanceTimersByTime(10000));
   expect(requests).toHaveLength(2);
-  const saveButton=[...host.querySelectorAll('button')].find(b=>b.textContent==='Qoralamani saqlash')!;
+  const saveButton=[...host.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='Qoralamani saqlash')!; // telefonda matn qisqa ("Saqlash"), to'liq nom aria-label'da
   await act(async()=>saveButton.click());
   expect(requests).toHaveLength(3);
   await act(async()=>requests[2].resolve(Response.json({updatedAt:'v3'})));
