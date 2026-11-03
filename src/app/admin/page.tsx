@@ -24,6 +24,8 @@ const ACTIONS: Record<string, [string, string, string]> = {
   "center.delete": ["Markaz o‘chirildi", "Центр удалён", "bg-[#eb6834]"],
   "center.create": ["Markaz yaratildi", "Центр создан", "bg-[#2a78d6]"],
   "admin.login": ["Adminga kirildi", "Вход в админку", "bg-slate-400"],
+  "service_request.create": ["Yangi xizmat arizasi", "Новая заявка на услугу", "bg-[#16a34a]"],
+  "listing.feature": ["E’lon TOP’ga chiqarildi", "Объявление поднято в TOP", "bg-[#f59e0b]"],
   "furniture_firm.create": ["Yangi mebel firmasi arizasi", "Новая заявка мебельной компании", "bg-[#b45309]"],
   "furniture_firm.approve": ["Mebel firmasi tasdiqlandi", "Мебельная компания одобрена", "bg-[#1baf7a]"],
   "furniture_firm.reject": ["Mebel arizasi rad etildi", "Заявка мебели отклонена", "bg-[#eb6834]"],
@@ -43,9 +45,10 @@ export default async function AdminHome() {
   const action = [
     { label: ru ? "На проверке" : "Tekshiruvdagi e’lonlar", value: k.pending, href: "/admin/elonlar?holat=pending", cls: "from-[#12308a] to-[#2a78d6]" },
     { label: ru ? "Заявки центров" : "Markaz arizalari", value: k.apps, href: "/admin/arizalar", cls: "from-[#4338ca] to-[#7c3aed]" },
+    { label: ru ? "Заявки «Сдадим за вас»" : "Ijaraga berish xizmati", value: k.service_new, href: "/admin/xizmat", cls: "from-[#166534] to-[#16a34a]" },
     { label: ru ? "Мебельные компании" : "Mebel arizalari", value: k.furniture_pending, href: "/admin/mebel", cls: "from-[#9a3412] to-[#f59e0b]" },
     { label: ru ? "Открытые жалобы" : "Ochiq shikoyatlar", value: k.reports, href: "/admin/shikoyatlar", cls: "from-[#0e7490] to-[#0ea5e9]" },
-    { label: ru ? "Изменения центров" : "Markaz o‘zgarishlari", value: k.center_edits, href: "/admin/markazlar?holat=kutilmoqda", cls: "from-[#15803d] to-[#22c55e]" },
+    { label: ru ? "Изменения центров" : "Markaz o‘zgarishlari", value: k.center_edits, href: "/admin/markazlar?holat=kutilmoqda", cls: "from-[#0f766e] to-[#14b8a6]" },
   ];
   const mini = [
     { label: ru ? "Пользователи" : "Foydalanuvchilar", value: k.users, sub: `+${k.users_30} ${ru ? "за 30 дн." : "30 kunda"}`, color: "bg-[#2a78d6]", icon: "👤" },
@@ -57,8 +60,8 @@ export default async function AdminHome() {
   ];
   const SOURCE: Record<string, [string, string]> = { instagram: ["Instagram", "#d62976"], telegram: ["Telegram", "#229ed9"], google: ["Google", "#4285f4"], yandex: ["Yandex", "#fc3f1d"], facebook: ["Facebook", "#1877f2"], olx: ["OLX", "#23e5db"], direct: [ru ? "Прямой заход" : "To‘g‘ridan-to‘g‘ri", "#64748b"], other: [ru ? "Другие сайты" : "Boshqa saytlar", "#94a3b8"] };
   const SECTION: Record<string, string> = ru
-    ? { home: "Главная", catalog: "Каталог", listing: "Объявления", landing: "Подборки", centers: "Бизнес-центры", center: "Страницы центров", furniture: "Мебель", cabinet: "Кабинет", other: "Прочее" }
-    : { home: "Bosh sahifa", catalog: "Katalog", listing: "E’lon sahifalari", landing: "Turkum sahifalari", centers: "Markazlar ro‘yxati", center: "Markaz sahifalari", furniture: "Mebel", cabinet: "Kabinet", other: "Boshqa" };
+    ? { home: "Главная", catalog: "Каталог", listing: "Объявления", landing: "Подборки", centers: "Бизнес-центры", center: "Страницы центров", furniture: "Мебель", service: "Услуга «Сдадим за вас»", cabinet: "Кабинет", other: "Прочее" }
+    : { home: "Bosh sahifa", catalog: "Katalog", listing: "E’lon sahifalari", landing: "Turkum sahifalari", centers: "Markazlar ro‘yxati", center: "Markaz sahifalari", furniture: "Mebel", service: "Ijaraga berish xizmati", cabinet: "Kabinet", other: "Boshqa" };
   const bars = (rows: { key: string; n: number }[], name: (k: string) => string, color: (k: string) => string) => {
     const sum = rows.reduce((n, r) => n + r.n, 0) || 1;
     return rows.length === 0 ? <p className="text-sm text-slate-500">{ru ? "Данных пока нет." : "Hozircha ma’lumot yo‘q."}</p> : (
@@ -99,7 +102,7 @@ export default async function AdminHome() {
         </section>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {action.map((a) => <Link key={a.label} href={a.href} className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${a.cls} p-5 text-white shadow-sm transition hover:shadow-lg`}>
           <p className="text-sm text-white/85">{a.label}</p>
           <p className="mt-6 text-4xl font-bold">{a.value}</p>
@@ -117,7 +120,7 @@ export default async function AdminHome() {
           </div>
           <div className="mt-4 grid gap-6 md:grid-cols-[180px_1fr]">
             <div className="space-y-4">
-              <div><p className="text-3xl font-bold text-slate-900">{k.active}</p><p className="text-xs text-slate-500">{ru ? "Активных объявлений" : "Faol e’lonlar"}{k.sale_active ? ` · ${ru ? "продажа" : "sotuv"}: ${k.sale_active}` : ""}</p></div>
+              <div><p className="text-3xl font-bold text-slate-900">{k.active}</p><p className="text-xs text-slate-500">{ru ? "Активных объявлений" : "Faol e’lonlar"}{k.sale_active ? ` · ${ru ? "продажа" : "sotuv"}: ${k.sale_active}` : ""}{k.top_active ? ` · TOP: ${k.top_active}` : ""}</p></div>
               <div><p className="text-xl font-bold text-slate-900">+{created30} <span className="text-sm font-normal text-slate-500">· {ru ? "сегодня" : "bugun"} +{k.new_today}</span></p><p className="text-xs text-slate-500">{ru ? "Новых за 30 дней" : "30 kunda yangi"}</p></div>
             </div>
             <AreaChart data={days.map((d) => ({ day: d.day, value: d.created }))} label={ru ? "Новые объявления" : "Yangi e’lonlar"} unit={ru ? "объявл." : "ta e’lon"} />

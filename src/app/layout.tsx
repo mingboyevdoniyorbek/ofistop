@@ -57,6 +57,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Link href="/joylar" className="hidden md:inline hover:underline">{t("nav.search")}</Link>
             <Link href="/markazlar" className="hidden md:inline hover:underline">{t("nav.centers")}</Link>
             <Link href="/mebel" className="hidden md:inline hover:underline">{locale === "ru" ? "Мебель" : "Mebel"}</Link>
+            <Link href="/xizmat" className="hidden lg:inline hover:underline">{locale === "ru" ? "Сдадим за вас" : "Biz ijaraga beramiz"}</Link>
             <span className="flex-1" />
             <div className="hidden md:flex items-center gap-4">
               {user && <><Link href="/kabinet/sevimlilar" className="hover:underline">{t("nav.favorites")}</Link><Link href="/kabinet" className="hover:underline">{t("nav.cabinet")}</Link></>}
@@ -69,6 +70,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <MobileMenu label={t("nav.menu")}>
               <Link href="/joylar">{t("nav.search")}</Link>
               <Link href="/markazlar">{t("nav.centers")}</Link>
+              <Link href="/xizmat">{locale === "ru" ? "Сдадим ваше помещение за вас" : "Joyingizni biz ijaraga beramiz"}</Link>
               <Link href="/mebel">{locale === "ru" ? "Офисная мебель" : "Ofis mebellari"}</Link>
               {user && <><Link href="/kabinet">{t("nav.cabinet")}</Link><Link href="/kabinet/sevimlilar">{t("nav.favorites")}</Link><Link href="/kabinet/bildirishnomalar">{t("nav.notifications")}</Link></>}
               {!user && <Link href="/sevimlilar">{t("nav.favorites")}</Link>}
@@ -89,6 +91,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <nav aria-label={locale === "ru" ? "Разделы" : "Bo‘limlar"} className="grid grid-cols-2 gap-x-4 gap-y-1.5 content-start">
               <Link href="/joylar" className="hover:underline">{t("nav.search")}</Link>
               <Link href="/markazlar" className="hover:underline">{t("nav.centers")}</Link>
+              <Link href="/xizmat" className="font-semibold text-brand hover:underline">{locale === "ru" ? "Сдадим помещение за вас" : "Joyingizni biz ijaraga beramiz"}</Link>
               <Link href="/mebel" className="hover:underline">{locale === "ru" ? "Офисная мебель" : "Ofis mebellari"}</Link>
               <Link href="/mebel/ariza" className="hover:underline">{locale === "ru" ? "Добавить мебельную компанию" : "Mebel firmasini qo‘shish"}</Link>
               <Link href="/markazlar/ariza" className="font-semibold text-brand hover:underline">{locale === "ru" ? "Добавить бизнес-центр" : "Biznes markazingizni qo‘shing"}</Link>

@@ -14,6 +14,7 @@ export function sectionOf(path: string) {
   if (p === "/markazlar") return "centers";
   if (p.startsWith("/markazlar/")) return "center";
   if (p.startsWith("/mebel")) return "furniture";
+  if (p.startsWith("/xizmat")) return "service";
   if (p.startsWith("/kabinet")) return "cabinet";
   return "other";
 }

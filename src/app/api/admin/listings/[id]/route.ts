@@ -7,7 +7,7 @@ import { requireStaff, writeAudit, notify } from "@/lib/staff";
 import { moderate } from "@/lib/moderation";
 import { canChangeAvailability } from "@/lib/status";
 
-const body = z.object({ action: z.enum(["approve", "reject", "hide", "unhide", "remove"]), reason: z.string().max(1000).optional(), expectedUpdatedAt: z.string().optional() });
+const body = z.object({ action: z.enum(["approve", "reject", "hide", "unhide", "remove", "feature", "unfeature"]), days: z.number().int().min(1).max(365).optional(), reason: z.string().max(1000).optional(), expectedUpdatedAt: z.string().optional() });
 
 export const POST = handle(async (req, ctx) => {
   const actor = await requireStaff(req);
@@ -32,6 +32,17 @@ export const POST = handle(async (req, ctx) => {
       await notify(current.ownerId, "E’loningiz saytdan olib tashlandi", reason, `/kabinet/elon/${id}`, tx);
     });
     return NextResponse.json({ ok: true });
+  }
+
+  // TOP (VIP): hozircha admin to'lovdan keyin qo'lda yoqadi; to'lov tizimi ulanganda shu amal avtomatik chaqiriladi.
+  if (b.data.action === "feature" || b.data.action === "unfeature") {
+    const on = b.data.action === "feature";
+    if (on && (l.moderationStatus !== "approved" || l.isSuspended)) throw new HttpError(409, "Faqat tasdiqlangan e'lon TOP bo'ladi");
+    const until = on ? new Date(Math.max(Date.now(), l.featuredUntil?.getTime() ?? 0) + (b.data.days ?? 7) * 864e5) : null;
+    await d.update(s.listings).set({ featuredUntil: until }).where(eq(s.listings.id, id));
+    await writeAudit({ actorId: actor.id, action: on ? "listing.feature" : "listing.unfeature", entityType: "listing", entityId: id, meta: on ? { days: b.data.days ?? 7 } : null });
+    if (on) await notify(l.ownerId, "E’loningiz TOP’ga chiqarildi", `${until!.toISOString().slice(0, 10)} gacha bosh sahifada va qidiruvda birinchi ko‘rinadi.`, `/joylar/${l.id}-${l.slug}`);
+    return NextResponse.json({ ok: true, featuredUntil: until });
   }
 
   if (b.data.action === "hide" || b.data.action === "unhide") {

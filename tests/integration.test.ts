@@ -271,3 +271,33 @@ test('site visits: unique visitors per day, sections, sources; bots and admin pa
  expect(Object.fromEntries(st.devices.map((x:any)=>[x.key,x.n]))).toEqual({mobile:1,desktop:1});
  expect(st.sections.map((x:any)=>x.key).sort()).toEqual(['catalog','furniture','home']);
 });
+test('TOP listing (admin): shown first and only in the TOP rail; service request without login; TOP furniture firm first',async()=>{
+ const [o2]=await state.db.insert(schema.users).values({phone:'+998901112288'}).returning();const [reg]=await state.db.select().from(schema.regions).limit(1);
+ const base={ownerId:o2.id,posterType:'owner' as const,category:'office' as const,regionId:reg.id,moderationStatus:'approved' as const,availabilityStatus:'available' as const,expiresAt:new Date(Date.now()+30*864e5),contactPhone:'+998901112288'};
+ const [older]=await state.db.insert(schema.listings).values({...base,slug:'top-old',title:'Eski ofis',publishedAt:new Date(Date.now()-864e5)}).returning();
+ await state.db.insert(schema.listings).values({...base,slug:'top-new',title:'Yangi ofis',publishedAt:new Date()});
+ const target={id:older.id};
+ expect((await searchListings(parseFilters({}))).items[0].id).not.toBe(target.id);
+ const previous=state.user;state.user=staff;
+ try{
+  const r=await admin(req({action:'feature',days:7}),ctx(target.id));expect(r.status).toBe(200);
+  const after=await searchListings(parseFilters({}));expect(after.items[0].id).toBe(target.id);expect(after.items[0].isTop).toBe(true);
+  expect((await searchListings({...parseFilters({}),only:'top'})).items.map((x:any)=>x.id)).toEqual([target.id]);
+  expect((await searchListings({...parseFilters({}),only:'rest'})).items.some((x:any)=>x.id===target.id)).toBe(false);
+  expect((await admin(req({action:'unfeature'}),ctx(target.id))).status).toBe(200);
+  expect((await searchListings({...parseFilters({}),only:'top'})).total).toBe(0);
+ }finally{state.user=previous;}
+ const { createServiceRequest, updateServiceRequest }=await import('../src/lib/service-requests');
+ await expect(createServiceRequest(null,{name:'Aziz',phone:'12'})).rejects.toMatchObject({status:422});
+ await expect(createServiceRequest(null,{name:'Aziz',phone:'+998901234567',website:'spam'})).rejects.toMatchObject({status:422}); // honeypot
+ const sid=await createServiceRequest(null,{name:'Aziz',phone:'+998 90 123 45 67',areaM2:'120',desiredPrice:'900 USD',category:'office'});
+ await updateServiceRequest(sid,staff,'in_progress');
+ const [sr]=await state.db.select().from(schema.serviceRequests).where(eq(schema.serviceRequests.id,sid));expect(sr.status).toBe('in_progress');expect(sr.phone).toBe('+998901234567');
+ const { createFirmApplication, reviewFirm, listFirms, topFirms }=await import('../src/lib/furniture');
+ const [u1]=await state.db.insert(schema.users).values({phone:'+998901112277'}).returning();const [region]=await state.db.select().from(schema.regions).limit(1);
+ const a=await createFirmApplication(u1.id,{name:'Birinchi Mebel',kind:'ready',regionId:region.id,contactName:'Ali',phone:'+998901234500'});
+ const b=await createFirmApplication(u1.id,{name:'Ikkinchi Mebel',kind:'ready',regionId:region.id,contactName:'Bek',phone:'+998901234501'});
+ await reviewFirm(a,staff,'approve');await reviewFirm(b,staff,'approve');
+ await expect(reviewFirm(b,staff,'feature')).resolves.toBeUndefined();
+ expect((await listFirms('uz'))[0].f.name).toBe('Ikkinchi Mebel');expect((await topFirms('uz')).map((x:any)=>x.f.name)).toEqual(['Ikkinchi Mebel']);
+});

@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [{ url: `${base}${p}`, alternates: { languages: { uz: `${base}${p}`, ru: `${base}${ru}` } }, ...extra },
       { url: `${base}${ru}`, alternates: { languages: { uz: `${base}${p}`, ru: `${base}${ru}` } }, ...extra }];
   };
-  const fixed = ["", "/joylar", "/markazlar", "/mebel", "/biz-haqimizda", "/qoidalar", "/maxfiylik", "/shartlar", ...Object.keys(LANDING_CATS).map((k) => `/ijara/${k}`)].flatMap((p) => entry(p));
+  const fixed = ["", "/joylar", "/markazlar", "/mebel", "/xizmat", "/biz-haqimizda", "/qoidalar", "/maxfiylik", "/shartlar", ...Object.keys(LANDING_CATS).map((k) => `/ijara/${k}`)].flatMap((p) => entry(p));
   try {
     const prod = process.env.NODE_ENV === "production"; // production sitemap'ida demo ma'lumot bo'lmaydi
     const [ls, cs, ...places] = await Promise.all([

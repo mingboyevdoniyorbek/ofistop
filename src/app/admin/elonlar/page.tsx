@@ -60,6 +60,12 @@ export default async function AdminListings({ searchParams }: { searchParams: Pr
                   {l.availabilityStatus !== "archived" && <AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "remove", expectedUpdatedAt: l.updatedAt.toISOString() }} label={locale === "ru" ? "Удалить с сайта" : "Saytdan o‘chirish"} tone="danger" askReason={locale === "ru" ? "Причина удаления (будет отправлена владельцу)" : "O‘chirish sababi (e’lon egasiga yuboriladi)"} />}
                   {l.isSuspended && <AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "unhide" }} label={locale === "ru" ? "Снять блокировку" : "Blokni olib tashlash"} />}
                   {l.moderationStatus === "pending" && <><AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "approve", expectedUpdatedAt: l.updatedAt.toISOString() }} label={t("adm.approve")} tone="primary" /><AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "reject" }} label={t("adm.reject")} tone="danger" askReason={t("adm.askReject")} /></>}
+                  {!l.isSuspended && l.moderationStatus === "approved" && <>
+                    {l.featuredUntil && l.featuredUntil > new Date() && <span className="rounded bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-1 text-xs font-bold text-white">TOP · {fmtDate(l.featuredUntil, locale)} {locale === "ru" ? "до" : "gacha"}</span>}
+                    <AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "feature", days: 7 }} label={locale === "ru" ? "TOP +7 дн." : "TOP +7 kun"} confirm={locale === "ru" ? "Поднять в TOP на 7 дней? (после оплаты)" : "7 kunga TOP’ga chiqarilsinmi? (to‘lovdan keyin)"} />
+                    <AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "feature", days: 30 }} label={locale === "ru" ? "TOP +30 дн." : "TOP +30 kun"} confirm={locale === "ru" ? "Поднять в TOP на 30 дней? (после оплаты)" : "30 kunga TOP’ga chiqarilsinmi? (to‘lovdan keyin)"} />
+                    {l.featuredUntil && l.featuredUntil > new Date() && <AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "unfeature" }} label={locale === "ru" ? "Убрать TOP" : "TOP’ni olib tashlash"} />}
+                  </>}
                   {!l.isSuspended && l.moderationStatus === "approved" && ["available", "reserved"].includes(l.availabilityStatus) && <AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "hide" }} label={t("adm.hide")} tone="danger" askReason={t("adm.askHide")} />}
                 </div>
               </div>

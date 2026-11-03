@@ -21,7 +21,9 @@ export async function adminDashboard(locale: "uz" | "ru") {
     (SELECT count(*) FROM listings WHERE deal_type='sale' AND moderation_status='approved' AND availability_status='available' AND NOT is_suspended AND expires_at > now())::int AS sale_active,
     (SELECT count(*) FROM furniture_firms WHERE status='approved')::int AS furniture,
     (SELECT count(*) FROM furniture_firms WHERE status='pending')::int AS furniture_pending,
-    (SELECT count(*) FROM saved_searches)::int AS saved_searches`);
+    (SELECT count(*) FROM saved_searches)::int AS saved_searches,
+    (SELECT count(*) FROM service_requests WHERE status='new')::int AS service_new,
+    (SELECT count(*) FROM listings WHERE featured_until > now())::int AS top_active`);
   // So'nggi 30 kun: kunlik e'lon ko'rishlari va yangi e'lonlar (bo'sh kunlar 0 bilan).
   const { rows: days } = await queryClient().query(`SELECT d::date AS day,
       coalesce((SELECT sum(n) FROM view_days v WHERE v.kind='listing' AND v.day = d::date), 0)::int AS views,
