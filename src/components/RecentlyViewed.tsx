@@ -36,7 +36,7 @@ export default function RecentlyViewed() {
         <h2 id="recent-h" className="text-lg font-semibold">{ru ? "Недавно просмотренные объявления" : "Oxirgi ko‘rilgan e’lonlar"}</h2>
         <button type="button" onClick={clear} className="text-sm text-slate-500 hover:underline">{ru ? "Очистить" : "Tozalash"}</button>
       </div>
-      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2 [scrollbar-width:thin]">
+      <div className="-mx-4 flex snap-x snap-mandatory gap-3 no-scrollbar overflow-x-auto scroll-px-4 px-4 pb-2">
         {items.map((it) => (
           <Link key={it.id} href={it.href} className="flex w-[44vw] max-w-[220px] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-slate-200 bg-white hover:shadow-md">
             <ListingPhoto thumb={it.thumb} full={it.full} alt={it.title} sizes="220px" className="aspect-[4/3]" />

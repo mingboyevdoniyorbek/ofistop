@@ -195,8 +195,9 @@ test("markaz arizasi: yangi markaz → tasdiq → vakil; claim; rad etish; vakil
  expect(await sendMonthlyCenterReports(new Date("2026-11-01T01:00:00Z"))).toBe(0);
  expect(await sendMonthlyCenterReports(new Date("2026-11-02T00:00:00Z"))).toBe(0);
  const report=(await state.db.select().from(schema.notifications).where(eq(schema.notifications.userId,owner.id))).find((n:any)=>n.title==="Oylik hisobot: Ariza Plaza Premium");
- expect(report.body).toContain("10.2026: markaz sahifasi 7 marta");
- expect(trServer(report.body,"ru")).toContain("страница центра — 7 просмотров");
+ // Ko'rishlar soni sukut bo'yicha vakilga ko'rsatilmaydi (SHOW_VIEW_COUNTS), faqat aloqalar
+ expect(report.body).toMatch(/^10\.2026: telefon \d+, Telegram \d+, saqlanganlar \d+\.$/);
+ expect(trServer(report.body,"ru")).toMatch(/^10\.2026: звонки \d+, Telegram \d+, в избранном \d+\.$/);
 });
 
 import { deleteCenter } from "../src/lib/center-review";

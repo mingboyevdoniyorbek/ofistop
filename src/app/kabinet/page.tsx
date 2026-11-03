@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { showViewCounts } from "@/lib/site-info";
 import { desc, eq, inArray, or, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { requireUserPage } from "@/lib/page-auth";
@@ -61,7 +62,7 @@ export default async function Kabinet({ searchParams }: { searchParams: Promise<
                 {st === "pending" && <p className="text-sm text-slate-600">{t("cab.pendingNote")}</p>}
                 {st === "draft" && !r.publishedAt && (() => { const left = Math.max(1, Math.ceil((r.updatedAt.getTime() + DRAFT_TTL_DAYS * 864e5 - Date.now()) / 864e5)); return <p className="text-xs text-amber-800">{locale === "ru" ? `Черновик будет автоматически удалён через ${left} дн., если его не редактировать.` : `Qoralama tahrirlanmasa ${left} kundan keyin avtomatik o‘chiriladi.`}</p>; })()}
                 {st === "active" && r.availabilityConfirmedAt && Date.now() - r.availabilityConfirmedAt.getTime() > 7*86400000 && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{locale === "ru" ? "Помещение ещё свободно? Подтвердите доступность или отметьте, что оно сдано." : "Joyingiz hali ham bo‘shmi? Bo‘shligini tasdiqlang yoki ijaraga berilganini belgilang."}</p>}
-                {r.moderationStatus === "approved" && <p className="text-xs text-slate-500">{locale === "ru" ? "Просмотры" : "Ko‘rishlar"}: {r.viewCount} · {t("cab.stats", { phone: x.phone, tg: x.tg, fav: x.fav })}</p>}
+                {r.moderationStatus === "approved" && <p className="text-xs text-slate-500">{showViewCounts() ? `${locale === "ru" ? "Просмотры" : "Ko‘rishlar"}: ${r.viewCount} · ` : ""}{t("cab.stats", { phone: x.phone, tg: x.tg, fav: x.fav })}</p>}
                 <div className="flex flex-wrap items-center gap-3 pt-1">
                   {st !== "archived" && <Link href={`/kabinet/elon/${r.id}`} className="rounded bg-brand px-3 py-1 text-sm text-white">{t("cab.edit")}</Link>}
                   {r.moderationStatus === "approved" && <Link href={`/joylar/${r.id}-${r.slug}`} className="text-sm text-brand underline">{t("cab.view")}</Link>}

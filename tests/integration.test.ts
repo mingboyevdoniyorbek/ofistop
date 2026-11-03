@@ -256,3 +256,18 @@ test('furniture firm: application, validation, admin approval, public list and r
  await expect(reviewFirm(id,staff,'approve')).rejects.toMatchObject({status:409});
  await reviewFirm(id,staff,'remove');expect(await listFirms('uz')).toHaveLength(0);
 });
+test('site visits: unique visitors per day, sections, sources; bots and admin pages are ignored',async()=>{
+ const { recordVisit, visitStats }=await import('../src/lib/site-visits');
+ const r=(ua='Mozilla/5.0 (iPhone)')=>new Request('https://ofistop.uz/api/visit',{method:'POST',headers:{'user-agent':ua,'x-forwarded-for':'10.0.0.9'}});
+ expect(await recordVisit(r(),{path:'/',vid:'visitor-aaaa-1',ref:'https://l.instagram.com/'})).toBe(true);
+ expect(await recordVisit(r(),{path:'/joylar',vid:'visitor-aaaa-1'})).toBe(true);
+ expect(await recordVisit(r('Mozilla/5.0 (Windows NT 10.0)'),{path:'/mebel',vid:'visitor-bbbb-2',utm:'telegram',w:1440})).toBe(true);
+ expect(await recordVisit(r('Googlebot/2.1'),{path:'/',vid:'visitor-cccc-3'})).toBe(false);
+ expect(await recordVisit(r(),{path:'/admin',vid:'visitor-aaaa-1'})).toBe(false);
+ expect(await recordVisit(r(),{path:'/',vid:'x'})).toBe(false);
+ const st=await visitStats();
+ expect(st.totals.today).toBe(2);expect(st.totals.views).toBe(3);expect(st.days).toHaveLength(30);expect(st.days.at(-1)!.visitors).toBe(2);
+ expect(Object.fromEntries(st.sources.map((x:any)=>[x.key,x.n]))).toEqual({instagram:1,telegram:1});
+ expect(Object.fromEntries(st.devices.map((x:any)=>[x.key,x.n]))).toEqual({mobile:1,desktop:1});
+ expect(st.sections.map((x:any)=>x.key).sort()).toEqual(['catalog','furniture','home']);
+});

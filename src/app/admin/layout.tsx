@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/shikoyatlar", label: t("adm.nav.reports"), icon: "reports", badge: c.reports },
     { href: "/admin/arizalar", label: ru ? "Заявки центров" : "Markaz arizalari", icon: "apps", badge: c.apps, adminOnly: true },
     { href: "/admin/markazlar", label: t("adm.nav.centers"), icon: "centers", badge: c.edits, adminOnly: true },
-    { href: "/admin/mebel", label: ru ? "Мебельные компании" : "Mebel firmalari", icon: "apps", badge: c.furniture, adminOnly: true },
+    { href: "/admin/mebel", label: ru ? "Мебельные компании" : "Mebel firmalari", icon: "furniture", badge: c.furniture, adminOnly: true },
     { href: "/admin/foydalanuvchilar", label: t("adm.nav.users"), icon: "users", adminOnly: true },
     { href: "/admin/hududlar", label: t("adm.nav.geo"), icon: "geo", adminOnly: true },
     { href: "/admin/audit", label: t("adm.nav.audit"), icon: "audit", adminOnly: true },

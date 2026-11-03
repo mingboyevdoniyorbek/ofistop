@@ -18,6 +18,7 @@ import { siteJsonLd } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
 import SiteContacts from "@/components/SiteContacts";
 import Analytics from "@/components/Analytics";
+import VisitTracker from "@/components/VisitTracker";
 import FavSync from "@/components/FavSync";
 import NotificationBell from "@/components/NotificationBell";
 import { and, eq, isNull, sql } from "drizzle-orm";
@@ -48,6 +49,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen flex flex-col">
         <JsonLd data={siteJsonLd()} />
         <Analytics />
+        <VisitTracker />
         <I18nProvider locale={locale}>
         <header className="border-b border-slate-200 bg-white sticky top-0 z-20">
           <nav className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3 md:gap-4 text-sm" aria-label={t("nav.aria")}>

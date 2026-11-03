@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "./I18nProvider";
 import FormSelect from "./FormSelect";
+import { ProductIcon } from "./Stickers";
 import { FURNITURE_PRODUCTS, KIND_LABELS, PRODUCT_LABELS } from "@/lib/furniture-labels";
 
 type Init = { contactName: string; phone: string; telegramUsername: string };
@@ -38,7 +39,7 @@ export default function FurnitureApplicationForm({ init, regions }: { init: Init
       <fieldset className="sm:col-span-2"><legend className="text-sm font-medium">{ru ? "Что предлагаете" : "Nimalarni taklif qilasiz"}</legend>
         <div className="mt-1 flex flex-wrap gap-2">{FURNITURE_PRODUCTS.map((p) =>
           <label key={p} className="cursor-pointer rounded-full border border-slate-300 px-3 py-1.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand has-[:checked]:text-white">
-            <input type="checkbox" className="sr-only" checked={f.products.includes(p)} onChange={(e) => setF((x) => ({ ...x, products: e.target.checked ? [...x.products, p] : x.products.filter((y) => y !== p) }))} />{PRODUCT_LABELS[p].icon} {PRODUCT_LABELS[p][lang]}</label>)}</div></fieldset>
+            <input type="checkbox" className="sr-only" checked={f.products.includes(p)} onChange={(e) => setF((x) => ({ ...x, products: e.target.checked ? [...x.products, p] : x.products.filter((y) => y !== p) }))} /><span className="inline-flex items-center gap-1.5"><ProductIcon name={p} className="h-5 w-5 rounded bg-white p-0.5" />{PRODUCT_LABELS[p][lang]}</span></label>)}</div></fieldset>
       <div className="sm:col-span-2">{L("description", ru ? "О компании" : "Firma haqida", <textarea maxLength={1500} rows={4} className={inp} value={f.description} onChange={set("description")} placeholder={ru ? "Материалы, сроки изготовления, доставка и сборка, гарантия…" : "Materiallar, tayyorlash muddati, yetkazib berish va yig‘ish, kafolat…"} />)}</div>
       {L("regionId", ru ? "Регион *" : "Hudud *", <FormSelect className={inp} value={f.regionId} onChange={set("regionId")}><option value="">{ru ? "Выберите" : "Tanlang"}</option>{regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</FormSelect>)}
       {L("address", ru ? "Адрес шоурума или цеха" : "Do‘kon yoki sex manzili", <input maxLength={300} className={inp} value={f.address} onChange={set("address")} />)}
