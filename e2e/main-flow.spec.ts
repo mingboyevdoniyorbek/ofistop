@@ -317,8 +317,8 @@ test("15. Mobil: navigatsiya, filtr paneli, tafsilot va forma gorizontal skrolls
   await p.goto(detailUrl.replace(/\/joylar\/.*/, "/joylar"));
   await p.locator("main a[href^='/joylar/']").first().click();
   await noHorizontalScroll(p);
-  await p.getByRole("link", { name: uz["det.contactJump"] }).click();
-  await expect(p.getByRole("button", { name: uz["ctc.reveal"] }).first()).toBeInViewport();
+  // Pastki panel: qo'ng'iroq tugmasi sahifa aylantirilmasdan ham ko'rinib turadi
+  await expect(p.getByRole("button", { name: new RegExp(uz["ctc.callShort"]) })).toBeInViewport();
   await shot(p, "11-mobil-tafsilot");
   await c.addCookies((await (await browser.newContext({ storageState: STATE.owner })).cookies()));
   await p.goto("/joylar");

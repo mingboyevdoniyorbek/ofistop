@@ -1,6 +1,8 @@
-import { and, eq, gt, lte, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, lte, ne, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { parseFilters, searchWhere } from "./search";
+import { primaryPrice } from "./format";
+import { scheduleTelegramFlush } from "./telegram-notify";
 const keys = new Set(["q", "deal", "region", "district", "category", "center", "currency", "period", "basis", "priceMode", "priceMin", "priceMax", "areaMin", "areaMax", "floor", "furnished", "poster", "commission", "availableBy", "amenities", "lat", "lng", "radius", "bbox"]);
 export function canonicalSearch(query: string) {
   const out = new URLSearchParams();
@@ -32,4 +34,38 @@ export async function checkSavedSearches(userId: string) {
     });
   }
   return notifications;
+}
+
+/**
+ * Yangi chop etilgan e'lon qaysi saqlangan qidiruvlarga mos kelishini tekshiradi va egalariga
+ * bildirishnoma yaratadi (qo'ng'iroqcha + Telegram, foydalanuvchi bot bilan bog'langan bo'lsa).
+ * Bir foydalanuvchiga bitta e'lon uchun faqat bitta xabar ketadi, hatto bir nechta qidiruvi mos kelsa ham.
+ * Moslik qidiruv bilan bir xil shart (searchWhere) orqali tekshiriladi — sayt natijasi bilan farq qilmaydi.
+ */
+export async function notifySavedSearchMatches(listingId: string) {
+  const L = s.listings;
+  const [l] = await db().select({ id: L.id, slug: L.slug, title: L.title, ownerId: L.ownerId, areaM2: L.areaM2, amount: L.priceAmountMinor, currency: L.currency, period: L.pricePeriod, basis: L.priceBasis, negotiable: L.priceNegotiable, isDemo: L.isDemo })
+    .from(L).where(eq(L.id, listingId)).limit(1);
+  if (!l || l.isDemo) return 0;
+  const searches = await db().select().from(s.savedSearches).where(ne(s.savedSearches.userId, l.ownerId)).limit(5000);
+  const matched = new Map<string, { searchIds: string[]; name: string }>();
+  for (const saved of searches) {
+    if (matched.has(saved.userId)) { matched.get(saved.userId)!.searchIds.push(saved.id); continue; }
+    try {
+      const where = await searchWhere(filtersFromQuery(saved.query));
+      const [hit] = await db().select({ id: L.id }).from(L).leftJoin(s.businessCenters, eq(s.businessCenters.id, L.centerId)).where(and(where, eq(L.id, l.id))).limit(1);
+      if (hit) matched.set(saved.userId, { searchIds: [saved.id], name: saved.name });
+    } catch (e) { console.error("[saved-search-match]", (e as Error).message); } // bitta buzuq qidiruv qolganlarini to'xtatmasin
+  }
+  if (!matched.size) return 0;
+  const price = primaryPrice({ amount: l.amount, currency: l.currency, period: l.period, basis: l.basis, negotiable: l.negotiable }, l.areaM2, "uz");
+  const area = l.areaM2 ? ` · ${Number(l.areaM2)} m²` : "";
+  await db().insert(s.notifications).values([...matched].map(([userId, m]) => ({
+    userId, title: "Qidiruvingizga mos yangi e’lonlar", body: `${m.name}: ${l.title} — ${price}${area}`, href: `/joylar/${l.id}-${l.slug}`,
+  })));
+  // Bu e'lon allaqachon xabar qilindi — "yangilarini tekshirish" uni qayta sanamasin.
+  const ids = [...matched.values()].flatMap((m) => m.searchIds);
+  await db().update(s.savedSearches).set({ lastCheckedAt: new Date() }).where(inArray(s.savedSearches.id, ids));
+  scheduleTelegramFlush();
+  return matched.size;
 }

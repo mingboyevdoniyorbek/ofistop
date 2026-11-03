@@ -67,7 +67,7 @@ const POST = handle(async (req,ctx) => {
  });
  // Vakil rasmi admin tasdiqlaguncha saytda ko'rinmaydi; admin xabardor qilinadi.
  if(actor.centerMember) await alertAdmins(`🖼 Vakil markazga rasm yukladi, tekshiruvni kutmoqda: ${centerName}`,"/admin/markazlar?holat=kutilmoqda");
- return res; } catch(e) {if(stored) await Promise.all([deleteObject(stored.key),deleteObject(stored.thumbKey)]);throw e;}
+ return res; } catch(e) {if(stored) await Promise.all([deleteObject(stored.key),deleteObject(stored.thumbKey),deleteObject(stored.mediumKey)]);throw e;}
 });
 
 return { PATCH, POST };

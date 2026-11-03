@@ -50,7 +50,18 @@ test('draft, image upload, submit, approval, contact update remoderation and pen
  const imageRes=await upload(new Request('http://localhost/api',{method:'POST',body:fd}),ctx(id));expect(imageRes.status,JSON.stringify(await imageRes.clone().json())).toBe(200);
  expect((await submit(req(),ctx(id))).status).toBe(200);
  expect((await patch(req({fields:{title:''}},'PATCH'),ctx(id))).status).toBe(422);
+ // Saqlangan qidiruvlar: mos keladigan (2 ta, bitta foydalanuvchida) — bitta xabar; mos kelmaydigan va egasining o'zi — xabarsiz
+ const [fan]=await state.db.insert(schema.users).values({phone:'+998901112255'}).returning();const [other]=await state.db.insert(schema.users).values({phone:'+998901112266'}).returning();
+ await state.db.insert(schema.savedSearches).values([{userId:fan.id,name:'USD ofislar',query:'currency=USD&deal=rent'},{userId:fan.id,name:'Hammasi',query:'priceMode=total'},{userId:other.id,name:'Sotuv',query:'deal=sale'},{userId:owner.id,name:'Meniki',query:'currency=USD'}]);
  expect((await moderate(id,staff,'approve',undefined,30)).ok).toBe(true);
+ const match=(await state.db.select().from(schema.notifications)).filter((n:any)=>n.title==='Qidiruvingizga mos yangi e’lonlar');
+ expect(match.map((n:any)=>n.userId)).toEqual([fan.id]);expect(match[0].body).toContain('Yorug ofis');expect(match[0].href).toMatch(new RegExp(`^/joylar/${id}-`));
+ await state.db.delete(schema.savedSearches);
+ // Eski rasmga o'rta (800px) nusxa: yangi yuklashda bor; o'chirib, cron funksiyasi qayta yaratadi
+ const [im]=await state.db.select().from(schema.listingImages).where(eq(schema.listingImages.listingId,id));expect(im.mediumKey).toMatch(/\.md\.webp$/);
+ await state.db.update(schema.listingImages).set({mediumKey:null}).where(eq(schema.listingImages.id,im.id));
+ const { backfillMediumImages }=await import('../src/lib/listing-images');expect(await backfillMediumImages()).toBe(1);expect(await backfillMediumImages()).toBe(0);
+ const [after]=await state.db.select().from(schema.listingImages).where(eq(schema.listingImages.id,im.id));expect(after.mediumKey).toBe(im.mediumKey);
  const changed=await patch(req({fields:{contactPhone:'+998909998877'}},'PATCH'),ctx(id));expect(changed.status).toBe(200);expect((await changed.json()).remoderation).toBe(true);
  expect((await moderate(id,staff,'approve',undefined,30)).ok).toBe(true);
 });

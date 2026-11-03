@@ -193,6 +193,7 @@ export const ru: Record<MsgKey, string> = {
   "det.metaDesc": "{cat}, {place}. {text}",
   "ctc.call": "Позвонить: {phone}",
   "ctc.reveal": "Показать телефон",
+  "ctc.callShort": "Позвонить",
   "ctc.tg": "Написать в Telegram",
   "ctc.none": "Автор объявления не указал контактные данные.",
   "gal.aria": "Фотографии",

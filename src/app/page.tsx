@@ -28,6 +28,8 @@ export default async function Home() {
   const latest = await memo(`home:latest:${locale}`, 30_000, () => searchListings({ ...parseFilters({}), page: 1 }, locale)).catch(() => null);
   const centers = (await memo(`home:centers:${locale}`, 60_000, () => listCenters(locale)).catch(() => [])).slice(0, 10);
   const stats = await memo(`home:centerStats:${centers.map((c) => c.id).join(",")}`, 60_000, () => centerStats(centers.map((c) => c.id))).catch(() => new Map());
+  const forSale = await memo(`home:sale:${locale}`, 30_000, () => searchListings({ ...parseFilters({ deal: "sale" }), page: 1 }, locale)).catch(() => null);
+  const ru = locale === "ru";
   const clusters = await memo("home:clusters", 60_000, () => topDistrictCounts()).catch(() => []);
   return (
     <div>
@@ -36,6 +38,13 @@ export default async function Home() {
           <h1 className="text-2xl sm:text-3xl font-bold text-brand-dark">{t("home.title")}</h1>
           <p className="mt-2 text-slate-600">{t("home.sub")}</p>
           <form action="/joylar" method="get" className="mt-5 grid gap-2 sm:grid-cols-[1fr_200px_auto]">
+            {/* Ijara / sotuv tanlovi — JS'siz radio tugmalar; "Hammasi" bo'sh qiymat (deal=) — filtr qo'llanmaydi */}
+            <fieldset className="flex w-fit rounded-xl bg-white p-1 text-sm font-semibold shadow-sm ring-1 ring-slate-200 sm:col-span-3">
+              <legend className="sr-only">{ru ? "Тип сделки" : "Bitim turi"}</legend>
+              {([["", ru ? "Все" : "Hammasi"], ["rent", ru ? "Аренда" : "Ijara"], ["sale", ru ? "Покупка" : "Sotib olish"]] as const).map(([v, label]) =>
+                <label key={v} className="cursor-pointer rounded-lg px-4 py-1.5 text-slate-600 has-[:checked]:bg-brand has-[:checked]:text-white has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand">
+                  <input type="radio" name="deal" value={v} defaultChecked={!v} className="sr-only" />{label}</label>)}
+            </fieldset>
             <input name="q" aria-label={t("home.kw")} placeholder={t("home.kwPh")} className="rounded border border-slate-300 px-3 py-2.5" />
             <FormSelect name="category" aria-label={t("home.type")} className="rounded border border-slate-300 px-3 py-2.5"><option value="">{t("home.allTypes")}</option>
               {Object.entries(CAT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FormSelect>
@@ -47,6 +56,7 @@ export default async function Home() {
       <section className="mx-auto max-w-6xl px-4 py-8">
         <h2 className="text-lg font-semibold mb-3">{t("home.types")}</h2>
         <div className="flex flex-wrap gap-2">
+          <Link href="/joylar?deal=sale" className="rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800 hover:border-emerald-500">🔑 {ru ? "Продажа: помещения и здания" : "Sotuvdagi joylar va binolar"}</Link>
           {Object.entries(CAT).map(([k, v]) => <Link key={k} href={landingSlugOf(k) ? `/ijara/${landingSlugOf(k)}` : `/joylar?category=${k}`} className="rounded-full border border-slate-300 px-3 py-1.5 text-sm hover:border-brand">{v}</Link>)}
         </div>
       </section>
@@ -68,6 +78,10 @@ export default async function Home() {
           </div>}
           <div className="mt-3"><CenterCta variant="compact" /></div>
         </section>
+      {forSale && forSale.total > 0 && <section className="mx-auto max-w-6xl px-4 pt-8" aria-labelledby="sale-h">
+        <div className="mb-3 flex items-baseline justify-between"><h2 id="sale-h" className="text-lg font-semibold">🔑 {ru ? "Продаются: помещения и здания" : "Sotuvdagi joylar va binolar"} <span className="font-normal text-slate-500">· {forSale.total}</span></h2><Link href="/joylar?deal=sale" className="text-sm text-brand hover:underline">{t("home.all")}</Link></div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{forSale.items.slice(0, 4).map((it) => <ListingCard key={it.id} it={it} />)}</div>
+      </section>}
       <RecentlyViewed />
       <section className="mx-auto max-w-6xl px-4 pb-10">
         <div className="flex items-baseline justify-between mb-3"><h2 className="text-lg font-semibold">{t("home.latest")}</h2><Link href="/joylar" className="text-sm text-brand hover:underline">{t("home.all")}</Link></div>

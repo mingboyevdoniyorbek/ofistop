@@ -6,11 +6,11 @@ async function main() {
   const input = await sharp({ create: { width: 300, height: 200, channels: 3, background: "#173488" } }).jpeg().toBuffer();
   const image = await storeImage(input);
   try {
-    for (const key of [image.key, image.thumbKey]) {
+    for (const key of [image.key, image.thumbKey, image.mediumKey]) {
       const bytes = await getObject(key);
       if (!bytes || (await sharp(bytes).metadata()).format !== "webp") throw new Error("Read verification failed");
     }
-  } finally { await Promise.all([deleteObject(image.key), deleteObject(image.thumbKey)]); }
+  } finally { await Promise.all([deleteObject(image.key), deleteObject(image.thumbKey), deleteObject(image.mediumKey)]); }
   if (await getObject(image.key) || await getObject(image.thumbKey)) throw new Error("Delete verification failed");
   console.log("R2: upload, read WebP, delete, confirm missing: PASS");
 }

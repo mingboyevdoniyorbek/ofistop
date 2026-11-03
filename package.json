@@ -31,6 +31,7 @@
     "db:bootstrap": "node --import tsx scripts/bootstrap.ts",
     "db:setup": "npm run db:migrate && npm run db:bootstrap",
     "cleanup": "node --import tsx scripts/cleanup.ts",
+    "images:medium": "node --import tsx scripts/backfill-medium.ts",
     "purge-drafts": "node --import tsx scripts/purge-drafts.ts",
     "typecheck": "tsc --noEmit"
   },

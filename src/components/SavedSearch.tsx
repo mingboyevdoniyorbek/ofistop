@@ -8,7 +8,7 @@ export function SaveSearch({ query }: { query: string }) {
     e.preventDefault(); setBusy(true); setMessage("");
     try { const r = await fetch("/api/saved-searches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, query }) });
       if (r.status === 401) { location.assign(`/kirish?next=${encodeURIComponent(location.pathname + location.search)}`); return; }
-      const data = await r.json(); setMessage(r.ok ? (ru ? "Сохранено. Новые совпадения появятся в уведомлениях." : "Saqlandi. Yangi mos e’lonlar bildirishnomalarda chiqadi.") : data.error);
+      const data = await r.json(); setMessage(r.ok ? (ru ? "Сохранено. О новых подходящих объявлениях сообщим в уведомлениях и в Telegram (если бот подключён в профиле)." : "Saqlandi. Yangi mos e’lon chiqsa, bildirishnomada va Telegram’da xabar beramiz (profilda bot ulangan bo‘lsa).") : data.error);
     } catch { setMessage(ru ? "Нет соединения" : "Aloqa uzildi"); } finally { setBusy(false); }
   }}><input className="min-w-0 flex-1 rounded-xl border p-2 text-sm" required maxLength={80} aria-label={ru ? "Название поиска" : "Qidiruv nomi"} placeholder={ru ? "Например: офис у метро" : "Masalan: metro yonida ofis"} value={name} onChange={e => setName(e.target.value)}/><button disabled={busy} className="rounded-xl bg-brand px-4 py-2 text-sm text-white">{ru ? "Сохранить" : "Saqlash"}</button><p className="w-full text-sm" role="status">{message}</p></form>}</div>;
 }

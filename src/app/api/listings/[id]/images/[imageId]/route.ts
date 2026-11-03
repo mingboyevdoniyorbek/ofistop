@@ -24,7 +24,7 @@ export const DELETE = handle(async (req, ctx) => {
     if (img.isPrimary) { const next = rows.find((r) => r.id !== imageId); if (next) await tx.update(s.listingImages).set({ isPrimary: true }).where(eq(s.listingImages.id, next.id)); }
     remod = await remoderateIfApproved(tx, l, user.id, "Muallif rasm o'chirdi");
   });
-  keys = [img.storageKey, ...(img.thumbKey ? [img.thumbKey] : [])];
+  keys = [img.storageKey, ...(img.thumbKey ? [img.thumbKey] : []), ...(img.mediumKey ? [img.mediumKey] : [])];
   const [current] = await locked.update(s.listings).set({updatedAt:new Date()}).where(eq(s.listings.id,l.id)).returning({updatedAt:s.listings.updatedAt});
   return NextResponse.json({ updatedAt: current.updatedAt.toISOString(), images: await listImages(l.id, locked), remoderation: remod });
   });

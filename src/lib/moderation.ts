@@ -4,6 +4,7 @@ import { submitErrors, toForm } from "./listing-input";
 import { db, schema as s } from "@/db/client";
 import { moderationTransition, type Moderation, type Role, canModerate } from "./status";
 import { postListingToChannel } from "./telegram-channel";
+import { notifySavedSearchMatches } from "./saved-searches";
 
 type Tx = Parameters<Parameters<ReturnType<typeof db>["transaction"]>[0]>[0];
 export async function recordModeration(tx: Tx, p: { listingId: string; actorId: string | null; from: Moderation | null; to: Moderation; reason?: string | null }) {
@@ -37,6 +38,10 @@ export async function moderate(listingId: string, actor: { id: string; role: Rol
     return { ok: true as const, to: t.to };
   });
   // Birinchi marta chop etilgan e'lon Telegram kanalga yuboriladi (sozlangan bo'lsa).
-  if (res.ok && firstPublish) await postListingToChannel(listingId);
+  if (res.ok && firstPublish) {
+    await postListingToChannel(listingId);
+    // Saqlangan qidiruvi mos kelgan foydalanuvchilarga xabar (xato e'lon tasdig'ini buzmasin)
+    await notifySavedSearchMatches(listingId).catch((e) => console.error("[saved-search-notify]", (e as Error).message));
+  }
   return res;
 }
