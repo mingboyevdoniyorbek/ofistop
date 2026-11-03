@@ -66,6 +66,13 @@ test("2–4. Qoralama, validatsiya, xarita, rasm, asosiy rasm, moderatsiyaga yub
   await pick(page, page.getByLabel(uz["wiz.f.category"]), "Alohida ofis");
   await page.getByLabel(uz["wiz.f.title"]).fill(TITLE);
   await page.getByLabel(uz["wiz.f.description"]).fill("E2E test e'loni: yorug', ta'mirlangan, alohida kirish, metro yaqinida.");
+  // 1-bosqichda birinchi navbatda rasmlar: biri yaroqsiz — qisman xato
+  await page.getByLabel(uz["wiz.pickImg"]).setInputFiles([img.a, img.b, img.bad]);
+  await expect(page.getByText("2 ta rasm yuklandi.")).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "not-an-image.jpg" })).toContainText("Fayl rasm emas yoki buzilgan");
+  await expect(page.getByRole("img", { name: "Rasm 2" })).toBeVisible();
+  await page.getByRole("button", { name: uz["wiz.makePrimary"] }).click();
+  await expect(page.getByRole("listitem").filter({ has: page.getByRole("img", { name: "Rasm 2" }) })).toContainText(uz["wiz.primary"]);
   await next(page);
 
   // 2-bosqich: hudud, manzil, xaritadan joy tanlash
@@ -89,15 +96,8 @@ test("2–4. Qoralama, validatsiya, xarita, rasm, asosiy rasm, moderatsiyaga yub
   await expect(page.getByText(/Jami: 1 000 USD \/ oy/).first()).toBeVisible();
   await page.getByLabel(uz["wiz.f.deposit"]).fill("1000");
 
-  // 3-bosqichda rasmlar ham: biri yaroqsiz — qisman xato
-  await page.getByLabel(uz["wiz.pickImg"]).setInputFiles([img.a, img.b, img.bad]);
-  await expect(page.getByText("2 ta rasm yuklandi.")).toBeVisible();
-  await expect(page.getByRole("alert").filter({ hasText: "not-an-image.jpg" })).toContainText("Fayl rasm emas yoki buzilgan");
-  await expect(page.getByRole("img", { name: "Rasm 2" })).toBeVisible();
-  await page.getByRole("button", { name: uz["wiz.makePrimary"] }).click();
-  await expect(page.getByRole("listitem").filter({ has: page.getByRole("img", { name: "Rasm 2" }) })).toContainText(uz["wiz.primary"]);
   await page.getByLabel("Internet").check().catch(() => undefined);
-  await shot(page, "04-forma-rasmlar");
+  await shot(page, "04-forma-narx");
   await next(page);
 
   // 4-bosqich: aloqa, oldindan ko'rish va yuborish

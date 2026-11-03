@@ -16,10 +16,11 @@ type Img = { id: string; url: string | null; thumbUrl: string | null; isPrimary:
 interface Props { promo?: boolean; updatedAt: string; id: string; slug: string; initial: F; images: Img[]; moderation: "draft" | "pending" | "approved" | "rejected"; rejectionReason: string | null; archived: boolean;
   regions: { id: number; name: string; slug?: string }[]; districts: { id: number; regionId: number; name: string; slug?: string }[]; amenities: { code: string; name: string }[]; centers: { id: string; name: string }[] }
 
-const STEP_OF = Object.fromEntries(Object.entries(ORIGINAL_STEPS).map(([key, step]) => [key, step <= 3 ? step : step === 4 ? 3 : 4]));
+// Qadamlar: 1 — rasmlar va joy haqida, 2 — manzil, 3 — narx va shartlar, 4 — aloqa va yuborish.
+const STEP_OF: Record<string, number> = { ...Object.fromEntries(Object.entries(ORIGINAL_STEPS).map(([key, step]) => [key, step <= 3 ? step : 4])), images: 1 };
 /** Xatolar ro'yxatidagi maydon nomlari (forma yorliqlari bilan bir xil kalitlar). */
 const LABELS: Record<string, MsgKey> = { title: "wiz.f.title", description: "wiz.f.description", regionId: "f.region", districtId: "f.district", address: "wiz.f.address", areaM2: "f.area", priceAmount: "f.price", priceBasis: "wiz.f.basis", seats: "wiz.f.seats", commissionFixed: "wiz.f.commFixed", commissionPercent: "wiz.f.commPct", commissionPercentBase: "wiz.f.commBase", depositAmount: "wiz.l.deposit", contactPhone: "wiz.f.phone", telegramUsername: "prof.telegram", images: "wiz.l.images", lat: "wiz.lat", lng: "wiz.lng", floor: "wiz.f.floor", totalFloors: "wiz.f.totalFloors", minTermMonths: "wiz.f.minTerm", availableFrom: "wiz.f.availFrom", centerId: "wiz.f.center", unitCode: "wiz.f.unitCode", roomsCount: "wiz.f.rooms", serviceFee: "wiz.f.serviceFee", landAreaSotix: "wiz.f.landArea" };
-const inp = "w-full rounded border border-slate-300 px-3 py-2.5 bg-white";
+const inp = "mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20";
 
 function E({ k, errors }: { k: string; errors: Record<string, string> }) {
   return errors[k] ? <span id={`err-${k}`} role="alert" className="mt-1 block text-sm text-red-700">{errors[k]}</span> : null;
@@ -32,7 +33,7 @@ export default function ListingWizard(p: Props) {
   const router = useRouter();
   const version = useRef(p.updatedAt);
   const t = useT(); const locale = useLocale(); const LB = labels(locale);
-  const steps = locale === "ru" ? ["О помещении", "Адрес", "Цена и фотографии", "Проверка и отправка"] : ["Joy haqida", "Manzil", "Narx va rasmlar", "Tekshirish va yuborish"];
+  const steps = locale === "ru" ? ["Фото и описание", "Адрес", "Цена и условия", "Проверка и отправка"] : ["Rasmlar va tavsif", "Manzil", "Narx va shartlar", "Tekshirish va yuborish"];
   const publishLabel = t("wiz.submitTitle");
   const [f, setF] = useState<F>(p.initial);
   const [saved, setSaved] = useState(JSON.stringify(p.initial));
@@ -169,13 +170,45 @@ export default function ListingWizard(p: Props) {
       {p.archived && <p role="status" className="mb-3 rounded bg-amber-50 p-3 text-sm">{t("wiz.archived")}</p>}
       {p.moderation === "rejected" && <p role="status" className="mb-3 rounded border border-red-300 bg-red-50 p-3 text-sm"><strong>{t("wiz.rejected")}</strong> {p.rejectionReason}. {t("wiz.rejectedFix")}</p>}
       {p.moderation === "approved" && <p role="status" className="mb-3 rounded bg-slate-50 p-3 text-sm">{t("wiz.approvedNote")}</p>}
-      <ol className="mb-5 flex flex-wrap gap-2" aria-label={t("wiz.stepsAria")}>
-        {steps.map((label, i) => <li key={i}><button type="button" onClick={() => go(i + 1)} aria-current={step === i + 1 ? "step" : undefined} disabled={busy} className={`rounded-full border px-3 py-1 text-sm ${step === i + 1 ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{i + 1}. {label}</button></li>)}
-      </ol>
+      <div className="mb-5">
+        <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true"><div className="h-full rounded-full bg-gradient-to-r from-brand to-accent transition-all duration-300" style={{ width: `${(step / steps.length) * 100}%` }} /></div>
+        <ol className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1" aria-label={t("wiz.stepsAria")}>
+          {steps.map((label, i) => <li key={i} className="shrink-0"><button type="button" onClick={() => go(i + 1)} aria-current={step === i + 1 ? "step" : undefined} disabled={busy}
+            className={`relative inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${step === i + 1 ? "bg-brand font-semibold text-white shadow-sm" : step > i + 1 ? "bg-blue-50 text-brand" : "bg-slate-100 text-slate-600"}`}>
+            <span aria-hidden="true" className={`grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold ${step === i + 1 ? "bg-white text-brand" : step > i + 1 ? "bg-brand text-white" : "bg-white text-slate-500"}`}>{step > i + 1 ? "✓" : i + 1}</span>
+            <span className="sr-only">{i + 1}. </span>{label}</button></li>)}
+        </ol>
+      </div>
           {Object.keys(errors).length > 0 && <div role="alert" className="mb-3 rounded border border-red-300 bg-red-50 p-3 text-sm"><p className="font-medium">{t("wiz.mustFill")}</p><ul className="mt-1 list-disc pl-5">{Object.entries(errors).map(([k, v]) => <li key={k}>{LABELS[k] ? t(LABELS[k]) : k}: {v} {STEP_OF[k] && <button type="button" onClick={() => setStep(STEP_OF[k])} className="text-brand underline">{t("wiz.fix")}</button>}</li>)}</ul></div>}
 
       <fieldset disabled={(busy && !backgroundSaving) || !editable} className="space-y-4">
         {step === 1 && <>
+          <section aria-labelledby="img-h" className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4">
+            <div className="flex items-baseline justify-between gap-2"><h2 id="img-h" className="font-semibold">{locale === "ru" ? "Фотографии" : "Rasmlar"}</h2><span className="text-xs text-slate-500">{images.length}/15</span></div>
+            <p className="mb-3 mt-0.5 text-xs text-slate-500">{locale === "ru" ? "Первое фото — главное, оно показывается в объявлениях. Хорошие фото = больше звонков." : "Birinchi rasm asosiy bo‘ladi va e’lonlarda ko‘rsatiladi. Yaxshi rasm — ko‘proq qo‘ng‘iroq."}</p>
+            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={busy || !editable || images.length >= 15} onChange={(e) => upload(e.target.files)} aria-label={t("wiz.pickImg")} className="hidden" />
+            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {images.length < 15 && <li><button type="button" onClick={() => fileRef.current?.click()} disabled={busy || !editable}
+                className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-brand/40 bg-white text-brand transition hover:border-brand hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50">
+                <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-brand text-2xl leading-none text-white">+</span>
+                <span className="px-1 text-center text-xs font-semibold">{busy ? (locale === "ru" ? "Подождите…" : "Kuting…") : (locale === "ru" ? "Добавить фото" : "Rasm qo‘shish")}</span>
+              </button></li>}
+              {images.map((im, i) => (
+              <li key={im.id} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {im.thumbUrl ? <img src={im.thumbUrl} alt={t("wiz.imgAlt", { n: i + 1 })} className={`aspect-square w-full rounded-xl object-cover ${im.isPrimary ? "ring-2 ring-accent ring-offset-1" : ""}`} /> : <div className="aspect-square rounded-xl bg-slate-100" />}
+                <button type="button" disabled={busy} onClick={() => window.confirm(t("wiz.delConfirm")) && imgCall(`/api/listings/${p.id}/images/${im.id}`, { method: "DELETE" })} aria-label={t("wiz.del")}
+                  className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-red-600 text-sm text-white shadow">✕</button>
+                <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
+                  {im.isPrimary ? <span className="rounded bg-green-100 px-1.5 py-0.5 font-semibold text-green-900">{t("wiz.primary")}</span> : <button type="button" disabled={busy} onClick={() => reorder(images.map((x) => x.id), im.id)} className="rounded border border-slate-300 bg-white px-1.5 py-0.5">{t("wiz.makePrimary")}</button>}
+                  <button type="button" disabled={busy || i === 0} onClick={() => move(i, -1)} aria-label={t("wiz.moveEarlier")} className="rounded border border-slate-300 bg-white px-1.5 py-0.5 disabled:opacity-40">←</button>
+                  <button type="button" disabled={busy || i === images.length - 1} onClick={() => move(i, 1)} aria-label={t("wiz.moveLater")} className="rounded border border-slate-300 bg-white px-1.5 py-0.5 disabled:opacity-40">→</button>
+                </div></li>))}
+            </ul>
+            {upRes.some((r) => !r.ok) && <ul role="alert" className="mt-2 space-y-0.5 text-sm text-red-700">{upRes.filter((r) => !r.ok).map((r) => <li key={r.name}>{r.name}: {r.error}</li>)}</ul>}
+            {upRes.some((r) => r.ok) && <p role="status" className="mt-2 text-sm text-green-700">{t("wiz.uploaded", { n: upRes.filter((r) => r.ok).length })}</p>}
+            <E errors={errors} k="images" />
+          </section>
           <div role="radiogroup" aria-label={ru ? "Тип объявления" : "E’lon turi"} className="grid grid-cols-2 gap-2">
             {([["rent", ru ? "Сдаю в аренду" : "Ijaraga beraman", ru ? "Помесячно, посуточно…" : "Oylik, kunlik…"], ["sale", ru ? "Продаю" : "Sotaman", ru ? "Помещение или здание целиком" : "Joy yoki butun bino"]] as const).map(([k, title, sub]) =>
               <button key={k} type="button" role="radio" aria-checked={f.dealType === k} onClick={() => setDeal(k)}
@@ -197,7 +230,7 @@ export default function ListingWizard(p: Props) {
           <L errors={errors} k="regionId" label={t("f.region")}><InlineSelect className={inp} value={f.regionId} onChange={(e) => { set("regionId", Number(e.target.value)); set("districtId", null); }} {...bad("regionId")}>{p.regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</InlineSelect></L>
           <L errors={errors} k="districtId" label={t("f.district")} hint={distOpts.length ? undefined : t("wiz.h.noDistricts")}><InlineSelect className={inp} value={f.districtId ?? ""} onChange={(e) => set("districtId", e.target.value ? Number(e.target.value) : null)}><option value="">{t("wiz.notSelected")}</option>{distOpts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</InlineSelect></L>
           <L errors={errors} k="address" label={t("wiz.f.address")}><input className={inp} maxLength={200} {...bind("address")} /></L>
-          <fieldset className="rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("wiz.coords")}</legend>
+          <fieldset className="rounded-2xl border border-slate-200 p-3 sm:p-4"><legend className="px-1 text-sm font-medium">{t("wiz.coords")}</legend>
             <p className="mb-2 text-xs text-slate-500">{t("wiz.coordsHint")}</p>
             <PickMap lat={f.lat} lng={f.lng} disabled={!editable} focus={placeCenter(p.regions.find((x) => x.id === f.regionId)?.slug, p.districts.find((x) => x.id === f.districtId)?.slug)} onPick={(la, ln) => setF((x) => ({ ...x, lat: la, lng: ln }))} />
             {/* Kenglik/uzunlik raqamlari foydalanuvchiga ko'rsatilmaydi — joy faqat xaritada belgilanadi */}
@@ -216,14 +249,14 @@ export default function ListingWizard(p: Props) {
             <L errors={errors} k="roomsCount" label={t("wiz.f.rooms")}><input className={inp} inputMode="numeric" {...bind("roomsCount")} /></L>
             <L errors={errors} k="furnished" label={t("wiz.f.furnished")}><InlineSelect className={inp} {...bind("furnished")}><option value="">{t("wiz.unspecified")}</option><option value="1">{t("f.furnYes")}</option><option value="0">{t("f.furnNo")}</option></InlineSelect></L>
           </div>
-          <fieldset className="space-y-3 rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{sale ? (ru ? "Цена продажи" : "Sotuv narxi") : t("f.price")}</legend>
+          <fieldset className="space-y-3 rounded-2xl border border-slate-200 p-3 sm:p-4"><legend className="px-1 text-sm font-medium">{sale ? (ru ? "Цена продажи" : "Sotuv narxi") : t("f.price")}</legend>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]"><L errors={errors} k="priceAmount" label={t("wiz.f.amount")}><input className={inp} inputMode="decimal" {...bind("priceAmount")} /></L><div className="self-end">{cur("currency")}</div></div>
             <div className="grid gap-3 sm:grid-cols-2">
               {!sale && <L errors={errors} k="pricePeriod" label={t("wiz.f.period")}><InlineSelect className={inp} {...bind("pricePeriod")}><option value="month">{t("wiz.per.month")}</option><option value="day">{t("wiz.per.day")}</option><option value="hour">{t("wiz.per.hour")}</option></InlineSelect></L>}
               <L errors={errors} k="priceBasis" label={t("wiz.f.basis")}><InlineSelect className={inp} {...bind("priceBasis")}><option value="whole">{t("wiz.b.whole")}</option><option value="per_m2">{t("wiz.b.per_m2")}</option>{seats && !sale && <option value="per_seat">{t("wiz.b.per_seat")}</option>}</InlineSelect></L></div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.priceNegotiable} onChange={(e) => set("priceNegotiable", e.target.checked)} />{t("wiz.negotiable")}</label>
             <p className="rounded bg-slate-50 p-2 text-sm" aria-live="polite">{t("wiz.preview")} <strong>{priceLabel(price, locale)}</strong>{total ? ` · ${total}` : ""}</p></fieldset>
-          <fieldset className="space-y-3 rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("wiz.extra")}</legend>
+          <fieldset className="space-y-3 rounded-2xl border border-slate-200 p-3 sm:p-4"><legend className="px-1 text-sm font-medium">{t("wiz.extra")}</legend>
             {sale && <div className="grid gap-3 sm:grid-cols-2">
               <L errors={errors} k="documentsReady" label={ru ? "Документы (кадастр)" : "Hujjatlar (kadastr)"}><InlineSelect className={inp} {...bind("documentsReady")}><option value="">{t("wiz.unspecified")}</option><option value="1">{ru ? "Готовы" : "Tayyor"}</option><option value="0">{ru ? "Оформляются" : "Rasmiylashtirilmoqda"}</option></InlineSelect></L>
               <L errors={errors} k="installment" label={ru ? "Рассрочка" : "Bo‘lib to‘lash"}><InlineSelect className={inp} {...bind("installment")}><option value="">{t("wiz.unspecified")}</option><option value="1">{ru ? "Возможна" : "Mumkin"}</option><option value="0">{ru ? "Нет" : "Yo‘q"}</option></InlineSelect></L></div>}
@@ -241,27 +274,7 @@ export default function ListingWizard(p: Props) {
         </>}
 
         {step === 3 && <>
-          <section aria-labelledby="img-h"><h2 id="img-h" className="mb-1 font-medium">{t("wiz.images", { n: images.length })}</h2>
-            <p className="mb-2 text-xs text-slate-500">{t("wiz.imgHint")}</p>
-            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={busy || !editable || images.length >= 15} onChange={(e) => upload(e.target.files)} aria-label={t("wiz.pickImg")} className="hidden" />
-            <button type="button" onClick={() => fileRef.current?.click()} disabled={busy || !editable || images.length >= 15} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3 font-semibold text-white shadow-sm transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
-              <span aria-hidden="true" className="text-2xl leading-none">+</span>
-              {images.length >= 15 ? (locale === "ru" ? "Лимит: 15 фотографий" : "15 ta rasm limiti to‘ldi") : busy ? (locale === "ru" ? "Подождите…" : "Kuting…") : (locale === "ru" ? "Добавить фотографии" : "Rasm qo‘shish")}
-            </button>
-            {upRes.some((r) => !r.ok) && <ul role="alert" className="mt-2 space-y-0.5 text-sm text-red-700">{upRes.filter((r) => !r.ok).map((r) => <li key={r.name}>{r.name}: {r.error}</li>)}</ul>}
-            {upRes.some((r) => r.ok) && <p role="status" className="mt-1 text-sm text-green-700">{t("wiz.uploaded", { n: upRes.filter((r) => r.ok).length })}</p>}
-            <E errors={errors} k="images" />
-            <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">{images.map((im, i) => (
-              <li key={im.id} className="rounded border border-slate-200 p-1.5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {im.thumbUrl ? <img src={im.thumbUrl} alt={t("wiz.imgAlt", { n: i + 1 })} className="aspect-[4/3] w-full rounded object-cover" /> : <div className="aspect-[4/3] bg-slate-100" />}
-                <div className="mt-1.5 flex flex-wrap items-center gap-1 text-xs">
-                  {im.isPrimary ? <span className="rounded bg-green-100 px-1.5 py-0.5 text-green-900">{t("wiz.primary")}</span> : <button type="button" disabled={busy} onClick={() => reorder(images.map((x) => x.id), im.id)} className="rounded border border-slate-300 px-1.5 py-0.5">{t("wiz.makePrimary")}</button>}
-                  <button type="button" disabled={busy || i === 0} onClick={() => move(i, -1)} aria-label={t("wiz.moveEarlier")} className="rounded border border-slate-300 px-1.5 py-0.5">←</button>
-                  <button type="button" disabled={busy || i === images.length - 1} onClick={() => move(i, 1)} aria-label={t("wiz.moveLater")} className="rounded border border-slate-300 px-1.5 py-0.5">→</button>
-                  <button type="button" disabled={busy} onClick={() => window.confirm(t("wiz.delConfirm")) && imgCall(`/api/listings/${p.id}/images/${im.id}`, { method: "DELETE" })} className="rounded border border-red-300 px-1.5 py-0.5 text-red-700">{t("wiz.del")}</button>
-                </div></li>))}</ul></section>
-          <fieldset className="rounded border border-slate-200 p-3"><legend className="px-1 text-sm font-medium">{t("f.amenities")}</legend>
+          <fieldset className="rounded-2xl border border-slate-200 p-3 sm:p-4"><legend className="px-1 text-sm font-medium">{t("f.amenities")}</legend>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{p.amenities.filter(a => f.amenities.includes(a.code) || !["three_phase", "truck_access"].includes(a.code) || ["warehouse", "production", "retail"].includes(f.category)).map((a) => <label key={a.code} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.amenities.includes(a.code)} onChange={(e) => set("amenities", e.target.checked ? [...f.amenities, a.code] : f.amenities.filter((x) => x !== a.code))} />{a.name}</label>)}</div></fieldset>
         </>}
 
@@ -292,10 +305,11 @@ export default function ListingWizard(p: Props) {
       {dirty && <p className="mt-3 text-sm text-amber-800" role="status">{locale === "ru" ? "Есть несохранённые изменения" : "Saqlanmagan o‘zgarishlar bor"}</p>}
       {msg && <p role={msg.ok ? "status" : "alert"} className={`mt-4 rounded p-2 text-sm ${msg.ok ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`}>{msg.t}</p>}
       {warn.map((w) => <p key={w} role="status" className="mt-2 rounded bg-amber-50 p-2 text-sm text-amber-900">{w}</p>)}
-      <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
-        <button type="button" disabled={busy || step === 1} onClick={() => go(step - 1)} className="rounded border border-slate-300 px-4 py-2 disabled:opacity-50">{t("wiz.back")}</button>
-        <button type="button" disabled={busy || !editable} onClick={() => void save()} className="rounded border border-brand px-4 py-2 text-brand disabled:opacity-50">{t("wiz.saveDraft")}</button>
-        {step < 4 && <button type="button" disabled={busy} onClick={() => go(step + 1)} className="rounded bg-brand px-4 py-2 text-white disabled:opacity-60">{t("wiz.next")}</button>}
+      {/* Pastki panel: telefonda ham doim ko'rinadi */}
+      <div className="sticky bottom-0 z-20 -mx-4 mt-6 flex items-center gap-2 border-t border-slate-200 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mx-0 sm:px-0">
+        <button type="button" disabled={busy || step === 1} onClick={() => go(step - 1)} aria-label={t("wiz.back")} className="shrink-0 rounded-xl border border-slate-300 px-3.5 py-3 font-medium disabled:opacity-40"><span aria-hidden="true" className="sm:hidden">←</span><span className="hidden sm:inline">{t("wiz.back")}</span></button>
+        <button type="button" disabled={busy || !editable} onClick={() => void save()} aria-label={t("wiz.saveDraft")} className="min-w-0 shrink rounded-xl border border-brand px-3.5 py-3 font-medium text-brand disabled:opacity-50"><span className="sm:hidden">{locale === "ru" ? "Сохранить" : "Saqlash"}</span><span className="hidden sm:inline">{t("wiz.saveDraft")}</span></button>
+        {step < 4 && <button type="button" disabled={busy} onClick={() => go(step + 1)} className="ml-auto min-w-0 flex-1 rounded-xl bg-brand px-4 py-3 font-semibold text-white shadow-sm disabled:opacity-60 sm:flex-none sm:px-8">{t("wiz.next")}</button>}
       </div>
     </div>
   );

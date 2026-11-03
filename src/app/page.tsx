@@ -122,8 +122,8 @@ function Rail({ title, sub, href, more, children }: { title: string; sub?: strin
     </section>
   );
 }
-/** Telefonda ~1.6 ta karta ko'rinadi — yonida yana borligi sezilib turadi. */
-const RailItem = ({ children }: { children: React.ReactNode }) => <div className="w-[60vw] max-w-[260px] shrink-0 snap-start">{children}</div>;
+/** Qatordagi karta "Barcha e'lonlar" to'ridagi ustun bilan bir xil kenglikda: telefonda ekranga aniq 2 ta sig'adi (px-4 + gap-3). */
+const RailItem = ({ children }: { children: React.ReactNode }) => <div className="w-[calc((100vw-2.75rem)/2)] max-w-[270px] shrink-0 snap-start">{children}</div>;
 
 /** "Xaritada ko'rish" kartasi: chapda logo va matn, o'ngda hududlardagi e'lonlar soni ko'rsatilgan kichik xarita (haqiqiy xaritadagi klasterlar kabi). */
 function MapCard({ ru, counts }: { ru: boolean; counts: number[] }) {
