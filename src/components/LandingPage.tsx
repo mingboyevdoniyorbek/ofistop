@@ -59,7 +59,7 @@ export default async function LandingPage({ catSlug, placeSlug, page }: { catSlu
       </div>}
       <div className="mt-5">
         {res.items.length === 0 ? <p className="rounded border border-dashed border-slate-300 p-6 text-slate-600">{ru ? "Сейчас нет активных объявлений. " : "Hozircha faol e’lon yo‘q. "}<Link href="/joylar" className="text-brand underline">{t("nav.search")}</Link></p>
-          : <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{res.items.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
+          : <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-4">{res.items.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
       </div>
       <div className="mt-6 flex flex-wrap items-center gap-3">
         {page > 1 && <Link href={`${self}${page > 2 ? `?page=${page - 1}` : ""}`} className="rounded-xl border border-slate-300 px-4 py-2 text-sm">← {ru ? "Назад" : "Oldingi"}</Link>}

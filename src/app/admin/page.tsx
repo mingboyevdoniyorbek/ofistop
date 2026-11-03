@@ -25,7 +25,7 @@ const ACTIONS: Record<string, [string, string, string]> = {
   "center.create": ["Markaz yaratildi", "Центр создан", "bg-[#2a78d6]"],
   "admin.login": ["Adminga kirildi", "Вход в админку", "bg-slate-400"],
   "service_request.create": ["Yangi xizmat arizasi", "Новая заявка на услугу", "bg-[#16a34a]"],
-  "listing.feature": ["E’lon TOP’ga chiqarildi", "Объявление поднято в TOP", "bg-[#f59e0b]"],
+  "listing.feature": ["E’lon VIP’ga chiqarildi", "Объявление поднято в VIP", "bg-[#f59e0b]"],
   "furniture_firm.create": ["Yangi mebel firmasi arizasi", "Новая заявка мебельной компании", "bg-[#b45309]"],
   "furniture_firm.approve": ["Mebel firmasi tasdiqlandi", "Мебельная компания одобрена", "bg-[#1baf7a]"],
   "furniture_firm.reject": ["Mebel arizasi rad etildi", "Заявка мебели отклонена", "bg-[#eb6834]"],
@@ -120,7 +120,7 @@ export default async function AdminHome() {
           </div>
           <div className="mt-4 grid gap-6 md:grid-cols-[180px_1fr]">
             <div className="space-y-4">
-              <div><p className="text-3xl font-bold text-slate-900">{k.active}</p><p className="text-xs text-slate-500">{ru ? "Активных объявлений" : "Faol e’lonlar"}{k.sale_active ? ` · ${ru ? "продажа" : "sotuv"}: ${k.sale_active}` : ""}{k.top_active ? ` · TOP: ${k.top_active}` : ""}</p></div>
+              <div><p className="text-3xl font-bold text-slate-900">{k.active}</p><p className="text-xs text-slate-500">{ru ? "Активных объявлений" : "Faol e’lonlar"}{k.sale_active ? ` · ${ru ? "продажа" : "sotuv"}: ${k.sale_active}` : ""}{k.top_active ? ` · VIP: ${k.top_active}` : ""}</p></div>
               <div><p className="text-xl font-bold text-slate-900">+{created30} <span className="text-sm font-normal text-slate-500">· {ru ? "сегодня" : "bugun"} +{k.new_today}</span></p><p className="text-xs text-slate-500">{ru ? "Новых за 30 дней" : "30 kunda yangi"}</p></div>
             </div>
             <AreaChart data={days.map((d) => ({ day: d.day, value: d.created }))} label={ru ? "Новые объявления" : "Yangi e’lonlar"} unit={ru ? "объявл." : "ta e’lon"} />
