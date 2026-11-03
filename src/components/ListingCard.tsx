@@ -22,22 +22,27 @@ export default async function ListingCard({ it, note }: { it: Item; note?: strin
     <article className="relative flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white transition-shadow hover:shadow-md">
       <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1.5"><FavoriteButton variant="icon" listingId={it.id} initial={fav.ids.has(it.id)} loggedIn={fav.loggedIn} /><ShareButton variant="icon" path={`/joylar/${it.id}-${it.slug}`} title={it.title} text={`${primaryPrice(price, it.areaM2, locale)} · ${place}`} /></div>
       <Link href={`/joylar/${it.id}-${it.slug}`} className="flex flex-1 flex-col">
-        <ListingPhoto thumb={mediaUrl(it.imageKey)} full={mediaUrl(it.imageFullKey)} alt={it.title} className="aspect-[4/3]"
+        <ListingPhoto thumb={mediaUrl(it.imageKey)} medium={mediaUrl(it.imageMediumKey)} full={mediaUrl(it.imageFullKey)} alt={it.title} className="aspect-[4/3]"
           sizes="(max-width: 1024px) 50vw, 25vw">
           {it.imageKey?.startsWith("placeholder:") ? t("card.demoImg", { cat: L.category[it.category] }) : t("card.noImg")}
         </ListingPhoto>
         <div className="flex-1 space-y-1 p-2.5 sm:p-3">
           {note && <span className="inline-block rounded bg-amber-100 px-1.5 text-xs text-amber-900">{note}</span>}
-          {it.dealType === "sale" && <span className="inline-block rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800">{locale === "ru" ? "Продаётся" : "Sotiladi"}</span>}
+          {(it.dealType === "sale" || it.posterType !== "agency") && <div className="flex flex-wrap gap-1">
+            {it.dealType === "sale" && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-800">{locale === "ru" ? "Продаётся" : "Sotiladi"}</span>}
+            {/* Ishonch belgisi: vositachisiz — to'g'ridan-to'g'ri egasi yoki markaz vakili */}
+            {it.posterType === "owner" && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-semibold text-brand">✓ {locale === "ru" ? "От владельца" : "Egasidan"}</span>}
+            {it.posterType === "business_center" && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-semibold text-brand">✓ {locale === "ru" ? "От бизнес-центра" : "Markazdan"}</span>}
+          </div>}
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug sm:text-base">{it.title}</h3>
           <p className="text-base font-bold text-brand sm:text-lg">{primaryPrice(price, it.areaM2, locale)}</p>
           {total && <p className="hidden text-xs text-slate-500 sm:block">{priceLabel(price, locale)}</p>}
           <p className="hidden text-xs text-slate-600 sm:block">{it.commissionType === "none" ? (locale === "ru" ? "Без комиссии" : "Komissiyasiz") : (locale === "ru" ? "Есть комиссия" : "Komissiya bor")}{it.depositAmountMinor != null && ` · ${locale === "ru" ? "Депозит" : "Depozit"}: ${formatMinor(it.depositAmountMinor)} ${it.depositCurrency}`}</p>
           <p className="line-clamp-2 text-xs text-slate-600 sm:text-sm">{place}</p>
-          {it.publishedAt && <p className="text-xs text-slate-500 sm:hidden">{fmtDate(it.publishedAt, locale)}</p>}
+          {it.refreshedAt && <p className="text-xs text-slate-500">{locale === "ru" ? "Обновлено" : "Yangilangan"}: {fmtDate(it.refreshedAt, locale)}</p>}
           {(it.areaM2 || it.floor != null) && <p className="text-xs text-slate-700 sm:text-sm">{it.areaM2 ? `${Number(it.areaM2)} ${t("unit.m2")}` : ""}{it.areaM2 && it.floor != null ? " · " : ""}{it.floor != null ? t("card.floor", { n: it.floor }) : ""}</p>}
           {it.centerName && <p className="hidden text-sm text-slate-600 sm:block">{t("card.center", { name: it.centerName })}</p>}
-          <p className="hidden text-xs text-slate-500 sm:block">{L.poster[it.posterType]}{it.availabilityConfirmedAt ? ` · ${t("card.confirmed", { date: fmtDate(it.availabilityConfirmedAt, locale) })}` : ""}</p>
+          <p className="hidden text-xs text-slate-500 sm:block">{L.poster[it.posterType]}</p>
         </div>
       </Link>
       <div className="px-2.5 pb-2.5 sm:px-3 sm:pb-3"><CompareButton id={it.id}/></div>

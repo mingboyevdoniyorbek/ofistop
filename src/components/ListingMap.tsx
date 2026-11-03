@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Map as LMap } from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -12,6 +12,9 @@ function viewport(map: LMap) { const b = map.getBounds(); return [Math.max(-180,
 export default function ListingMap({ query, listHref, children }: { query: string; listHref: string; children?: ReactNode }) {
   const ru = useLocale() === "ru", router = useRouter();
   const box = useRef<HTMLDivElement>(null), mapRef = useRef<LMap | null>(null);
+  // Xarita hududi (bbox) o'zgarsa xarita qayta yaratilmaydi: u faqat ro'yxatni filtrlaydi. Boshlang'ich ko'rinish uchun bir marta o'qiladi.
+  const baseQuery = useMemo(() => { const u = new URLSearchParams(query); u.delete("bbox"); return u.toString(); }, [query]);
+  const initialBbox = useRef(new URLSearchParams(query).get("bbox"));
   useEffect(() => {
     if (!box.current) return;
     const observer = new ResizeObserver(() => mapRef.current?.invalidateSize({ pan: false }));
@@ -42,10 +45,10 @@ export default function ListingMap({ query, listHref, children }: { query: strin
       map = L.map(box.current, { center: TASHKENT, zoom: 11, minZoom: 2, maxZoom: 19, maxBounds: [[-85,-180],[85,180]], maxBoundsViscosity: 1 }); mapRef.current = map;
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }).on("tileerror", () => { if (!disposed) setTileError(true); }).on("tileload", () => { if (!disposed) setTileError(false); }).addTo(map);
       const layer = L.layerGroup().addTo(map); let ring: ReturnType<typeof L.circle> | null = null;
-      const params = new URLSearchParams(query);
+      const params = new URLSearchParams(baseQuery);
       try {
         const saved = JSON.parse(sessionStorage.getItem("ofistop-map-view") ?? "null");
-        const bbox = params.get("bbox")?.split(",").map(Number);
+        const bbox = initialBbox.current?.split(",").map(Number); initialBbox.current = null;
         if (bbox?.length === 4 && bbox.every(Number.isFinite)) map.fitBounds([[bbox[1], bbox[0]], [bbox[3], bbox[2]]]);
         else if (params.has("lat") && params.has("lng")) map.setView([Number(params.get("lat")), Number(params.get("lng"))], 14);
         else if (saved && Array.isArray(saved.center) && saved.center.length === 2 && saved.center.every(Number.isFinite) && Number.isFinite(saved.zoom)) map.setView(saved.center, saved.zoom);
@@ -54,7 +57,7 @@ export default function ListingMap({ query, listHref, children }: { query: strin
         if (!map || disposed) return;
         controller?.abort(); controller = new AbortController(); const signal = controller.signal;
         setLoading(true); setError("");
-        const u = new URLSearchParams(query); u.set("bbox", viewport(map)); u.set("zoom", String(map.getZoom()));
+        const u = new URLSearchParams(baseQuery); u.set("bbox", viewport(map)); u.set("zoom", String(map.getZoom()));
         if (group) { u.set("group", group); u.set("groupPage", String(page)); }
         try {
           const response = await fetch(`/api/map?${u}`, { signal });
@@ -78,16 +81,21 @@ export default function ListingMap({ query, listHref, children }: { query: strin
         finally { if (!disposed && !signal.aborted) setLoading(false); }
       }
       fetchGroup.current = (id, page) => void refresh(id, page);
+      // Kompyuterda (ro'yxat xarita yonida) xarita siljisa ro'yxat o'zi yangilanadi; telefonda "Shu hududdan qidirish" tugmasi.
+      const ignoreUntil = Date.now() + 800; let listTimer: ReturnType<typeof setTimeout> | undefined;
       map.on("moveend", () => {
-        setMoved(true); try { const c = map!.getCenter(); sessionStorage.setItem("ofistop-map-view", JSON.stringify({ center: [c.lat, c.lng], zoom: map!.getZoom() })); } catch {}
+        if (Date.now() > ignoreUntil && window.matchMedia("(min-width: 1024px)").matches) {
+          clearTimeout(listTimer);
+          listTimer = setTimeout(() => { if (!disposed && map) { const u = new URLSearchParams(baseQuery); u.set("bbox", viewport(map)); u.set("view", "map"); u.delete("page"); router.replace(`/joylar?${u}`, { scroll: false }); } }, 700);
+        } else if (Date.now() > ignoreUntil) setMoved(true); try { const c = map!.getCenter(); sessionStorage.setItem("ofistop-map-view", JSON.stringify({ center: [c.lat, c.lng], zoom: map!.getZoom() })); } catch {}
         clearTimeout(timer); timer = setTimeout(() => void refresh(), 180);
       });
       void refresh();
     })().catch(() => { if (!disposed) { setLoading(false); setError(ru ? "Карта недоступна" : "Xarita ochilmadi"); } });
     return () => { disposed = true; clearTimeout(timer); controller?.abort(); map?.remove(); mapRef.current = null; };
-  }, [query, ru, attempt]);
+  }, [baseQuery, ru, attempt]); // eslint-disable-line react-hooks/exhaustive-deps
   function searchHere() {
-    if (!mapRef.current) return; const u = new URLSearchParams(query); u.set("bbox", viewport(mapRef.current)); u.set("view", "map"); u.delete("page"); router.push(`/joylar?${u}`, { scroll: false }); setMoved(false);
+    if (!mapRef.current) return; const u = new URLSearchParams(baseQuery); u.set("bbox", viewport(mapRef.current)); u.set("view", "map"); u.delete("page"); router.push(`/joylar?${u}`, { scroll: false }); setMoved(false);
   }
   function resetArea() {
     try { sessionStorage.removeItem("ofistop-map-view"); } catch {}

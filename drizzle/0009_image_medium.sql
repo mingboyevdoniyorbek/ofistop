@@ -1,0 +1,1 @@
+ALTER TABLE "listing_images" ADD COLUMN "medium_key" text;

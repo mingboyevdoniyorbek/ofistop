@@ -35,13 +35,13 @@ export const POST = handle(async (req, ctx) => {
       const [{ m }] = await tx.select({ m: max(s.listingImages.position) }).from(s.listingImages).where(eq(s.listingImages.listingId, l.id));
       let pos = (m ?? -1) + 1;
       for (const [i, im] of stored.entries())
-        await tx.insert(s.listingImages).values({ listingId: l.id, storageKey: im.key, thumbKey: im.thumbKey, width: im.width, height: im.height, position: pos++, isPrimary: n === 0 && i === 0 });
+        await tx.insert(s.listingImages).values({ listingId: l.id, storageKey: im.key, thumbKey: im.thumbKey, mediumKey: im.mediumKey, width: im.width, height: im.height, position: pos++, isPrimary: n === 0 && i === 0 });
       remod = await remoderateIfApproved(tx, l, user.id, "Muallif rasm qo'shdi");
     });
   }
   const [current] = await locked.update(s.listings).set({updatedAt:new Date()}).where(eq(s.listings.id,l.id)).returning({updatedAt:s.listings.updatedAt});
   return NextResponse.json({ updatedAt: current.updatedAt.toISOString(), results, images: await listImages(l.id, locked), remoderation: remod }, { status: stored.length ? 200 : 422 });
-  }); } catch (e) { await Promise.all(stored.flatMap(im => [deleteObject(im.key), deleteObject(im.thumbKey)])); throw e; }
+  }); } catch (e) { await Promise.all(stored.flatMap(im => [deleteObject(im.key), deleteObject(im.thumbKey), deleteObject(im.mediumKey)])); throw e; }
 });
 
 // Tartib va asosiy rasm
@@ -62,5 +62,5 @@ export const PATCH = handle(async (req, ctx) => {
   });
   const [current] = await locked.update(s.listings).set({updatedAt:new Date()}).where(eq(s.listings.id,l.id)).returning({updatedAt:s.listings.updatedAt});
   return NextResponse.json({ updatedAt: current.updatedAt.toISOString(), images: await listImages(l.id, locked) });
-  }); } catch (e) { await Promise.all(stored.flatMap(im => [deleteObject(im.key), deleteObject(im.thumbKey)])); throw e; }
+  }); } catch (e) { await Promise.all(stored.flatMap(im => [deleteObject(im.key), deleteObject(im.thumbKey), deleteObject(im.mediumKey)])); throw e; }
 });

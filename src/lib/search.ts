@@ -141,7 +141,10 @@ function cardQuery(locale: "uz" | "ru") {
     // Kichik rasm (thumb) va to'liq rasm: kartada srcset orqali ekran zichligiga mosi tanlanadi.
     imageKey: sql<string | null>`(SELECT COALESCE(thumb_key, storage_key) FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
     imageFullKey: sql<string | null>`(SELECT storage_key FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
+    imageMediumKey: sql<string | null>`(SELECT medium_key FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
     isDemo: L.isDemo, publishedAt: L.publishedAt, availabilityStatus: L.availabilityStatus,
+    // Oxirgi yangilanish: tahrir yoki "hali bo'sh" tasdig'i (qaysi biri keyin bo'lsa)
+    refreshedAt: sql<string>`greatest(${L.updatedAt}, coalesce(${L.availabilityConfirmedAt}, ${L.updatedAt}))`,
   }).from(L)
     .innerJoin(s.regions, eq(s.regions.id, L.regionId))
     .leftJoin(s.districts, eq(s.districts.id, L.districtId))

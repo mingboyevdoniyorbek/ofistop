@@ -1,6 +1,7 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull, like } from "drizzle-orm";
+import sharp from "sharp";
 import { db, schema as s } from "@/db/client";
-import { mediaUrl } from "./storage";
+import { getObject, mediaUrl, putObject } from "./storage";
 import { moderationTransition } from "./status";
 import { recordModeration } from "./moderation";
 import { HttpError } from "./guard";
@@ -19,4 +20,28 @@ export async function remoderateIfApproved(tx: Tx, l: { id: string; moderationSt
   await tx.update(s.listings).set({ moderationStatus: t.to, updatedAt: new Date() }).where(eq(s.listings.id, l.id));
   await recordModeration(tx, { listingId: l.id, actorId, from: "approved", to: t.to, reason });
   return true;
+}
+
+/**
+ * Eski rasmlar uchun o'rta (~800px) nusxani yaratadi: 1600px asosiy rasmdan (belgisi bilan) kichraytiriladi.
+ * Kunlik cron oz-ozdan chaqiradi (vaqt chegarasi bilan); `npm run images:medium` hammasini birdan to'ldiradi.
+ */
+export async function backfillMediumImages(limit = 100, budgetMs = 40_000) {
+  const started = Date.now();
+  const rows = await db().select({ id: s.listingImages.id, key: s.listingImages.storageKey }).from(s.listingImages)
+    .where(and(isNull(s.listingImages.mediumKey), eq(s.listingImages.isPlaceholder, false), like(s.listingImages.storageKey, "img/%"))).limit(limit);
+  let done = 0;
+  for (const r of rows) {
+    if (Date.now() - started > budgetMs) break;
+    const m = /^img\/([0-9a-f-]{36})\.webp$/.exec(r.key); if (!m) continue;
+    try {
+      const src = await getObject(r.key); if (!src) continue;
+      const md = await sharp(src).resize({ width: 800, height: 800, fit: "inside", withoutEnlargement: true }).webp({ quality: 76, effort: 4 }).toBuffer();
+      const mediumKey = `img/${m[1]}.md.webp`;
+      await putObject(mediumKey, md);
+      await db().update(s.listingImages).set({ mediumKey }).where(eq(s.listingImages.id, r.id));
+      done++;
+    } catch (e) { console.error("[images:medium]", r.key, (e as Error).message); }
+  }
+  return done;
 }

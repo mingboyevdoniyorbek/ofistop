@@ -84,7 +84,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
         ) : (<>
           <div className="flex gap-1.5 mb-3 text-sm" role="group" aria-label={t("cat.view")}>
             <Link href={qs({ view: "list" })} aria-current={view === "list"} className={`rounded border px-3 py-1.5 ${view === "list" ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t("cat.list")}</Link>
-            <Link href={qs({ view: "map" })} aria-current={view === "map"} className={`rounded border px-3 py-1.5 ${view === "map" ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t("cat.map")}</Link>
+            <Link href={qs({ view: "map" })} aria-current={view === "map"} className={`rounded border px-3 py-1.5 ${view === "map" ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t("cat.map")}<span className="hidden lg:inline"> + {ru ? "список" : "ro‘yxat"}</span></Link>
           </div>
           {view === "map" ? <ListingMap query={mapQuery} listHref={qs({ view: "list" })}><p className="mb-3 font-semibold">{t("cat.results", { n: data.total })}</p><div className="space-y-3">{data.items.map(it => <ListingCard key={it.id} it={it}/>)}</div>{data.pages > 1 && <Link className="mt-4 block text-brand underline" href={qs({ view: "list", page: "1" })}>{locale === "ru" ? "Все результаты" : "Barcha natijalar"}</Link>}</ListingMap> : <>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-sm">

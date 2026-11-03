@@ -64,6 +64,13 @@
       "when": 1793619148609,
       "tag": "0008_listing_sale",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793729766967,
+      "tag": "0009_image_medium",
+      "breakpoints": true
     }
   ]
 }

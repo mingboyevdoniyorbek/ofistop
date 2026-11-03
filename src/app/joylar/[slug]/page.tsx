@@ -113,7 +113,7 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
       <div className="grid gap-6 md:grid-cols-[1fr_300px]">
         <div>
           <Gallery images={imgs} alt={l.title} fallback={l.isDemo ? t("det.demoImg") : t("det.noImg")} />
-          <div className="mt-4 flex items-start justify-between gap-3"><h1 className="text-2xl font-bold">{l.title}</h1><div className="flex shrink-0 flex-wrap items-start justify-end gap-2"><FavoriteButton listingId={l.id} initial={fav.ids.has(l.id)} loggedIn={fav.loggedIn} />{visible && <ShareButton path={`/joylar/${l.id}-${l.slug}`} title={l.title} text={`${primaryPrice(price, l.areaM2, locale)} · ${[r.district, r.region].filter(Boolean).join(", ")}`} />}</div></div>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><h1 className="min-w-0 break-words text-2xl font-bold">{l.title}</h1><div className="flex shrink-0 flex-wrap items-start gap-2 sm:justify-end"><FavoriteButton listingId={l.id} initial={fav.ids.has(l.id)} loggedIn={fav.loggedIn} />{visible && <ShareButton path={`/joylar/${l.id}-${l.slug}`} title={l.title} text={`${primaryPrice(price, l.areaM2, locale)} · ${[r.district, r.region].filter(Boolean).join(", ")}`} />}</div></div>
           {sale && <span className="mt-2 inline-block rounded bg-emerald-100 px-2 py-0.5 text-sm font-semibold text-emerald-800">{ru ? "Продаётся" : "Sotiladi"}</span>}
           <p className="text-brand text-2xl font-bold mt-2">{primaryPrice(price, l.areaM2, locale)}</p>
           {total && <p className="text-sm text-slate-600">{priceLabel(price, locale)}</p>}
@@ -138,7 +138,7 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
         <section className="mt-10"><h2 className="font-semibold mb-3">{t("det.similar")}</h2>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{similar.map((it) => <ListingCard key={it.id} it={it} />)}</div></section>
       )}
-      {visible && <a href="#aloqa" className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 p-3 backdrop-blur md:hidden"><span className="block rounded bg-brand py-2.5 text-center font-medium text-white">{t("det.contactJump")}</span></a>}
+      {visible && <ContactButtons variant="bar" listingId={l.id} hasPhone={!!l.contactPhone} hasTelegram={!!l.telegramUsername} />}
       <p className="mt-6"><Link href="/joylar" className="text-brand hover:underline">{t("det.back")}</Link></p>
     </div>
   );

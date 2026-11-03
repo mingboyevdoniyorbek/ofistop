@@ -31,7 +31,7 @@ export class ImageError extends Error {}
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 export const MAX_IMAGES = 15;
 export const MAX_UPLOAD_BYTES = 90 * 1024 * 1024;
-export const KEY_RE = /^img\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\.thumb)?\.webp$/;
+export const KEY_RE = /^img\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\.thumb|\.md)?\.webp$/;
 
 function root() {
   if ((process.env.STORAGE_DRIVER ?? "local") !== "local") throw new Error("S3 adapteri hali ulanmagan. STORAGE_DRIVER=local ishlating.");
@@ -89,15 +89,18 @@ export async function processImage(input: Buffer) {
   const main = await sharp(resized.data).composite([await watermarkFor(resized.info.width, resized.info.height)]).webp({ quality: 80, effort: 5 }).toBuffer({ resolveWithObject: true });
   // Bound both axes so portrait photos also produce small catalogue thumbnails.
   const thumb = await base().resize({ width: 480, height: 480, fit: "inside", withoutEnlargement: true }).webp({ quality: 72, effort: 5 }).toBuffer();
-  return { main: main.data, thumb, width: main.info.width, height: main.info.height };
+  // O'rta o'lcham (~800px): telefonning 2 ustunli kartochkasi uchun aniq, lekin 1600px'dan ~3 barobar yengil. Belgisi bilan.
+  const mdBase = await base().resize({ width: 800, height: 800, fit: "inside", withoutEnlargement: true }).toBuffer({ resolveWithObject: true });
+  const medium = await sharp(mdBase.data).composite([await watermarkFor(mdBase.info.width, mdBase.info.height)]).webp({ quality: 76, effort: 5 }).toBuffer();
+  return { main: main.data, thumb, medium, width: main.info.width, height: main.info.height };
 }
 
 export async function storeImage(input: Buffer) {
   const p = await processImage(input); const id = randomUUID();
-  const key = `img/${id}.webp`, thumbKey = `img/${id}.thumb.webp`;
-  try { await putObject(key, p.main); await putObject(thumbKey, p.thumb); }
-  catch (e) { await Promise.allSettled([deleteObject(key), deleteObject(thumbKey)]); throw e; }
-  return { key, thumbKey, width: p.width, height: p.height };
+  const key = `img/${id}.webp`, thumbKey = `img/${id}.thumb.webp`, mediumKey = `img/${id}.md.webp`;
+  try { await putObject(key, p.main); await putObject(thumbKey, p.thumb); await putObject(mediumKey, p.medium); }
+  catch (e) { await Promise.allSettled([deleteObject(key), deleteObject(thumbKey), deleteObject(mediumKey)]); throw e; }
+  return { key, thumbKey, mediumKey, width: p.width, height: p.height };
 }
 /**
  * Rasm manzili. MEDIA_PUBLIC_URL berilsa (masalan https://img.ofistop.uz — R2 bucket'ga ulangan ommaviy domen),

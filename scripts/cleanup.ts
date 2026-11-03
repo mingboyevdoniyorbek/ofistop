@@ -6,7 +6,7 @@ async function main() {
  const pool = getPool();
  await pool.query("DELETE FROM auth_challenges WHERE expires_at < now() - interval '1 day'");
  for (const query of ["DELETE FROM sessions WHERE expires_at < now()", "DELETE FROM otp_challenges WHERE expires_at < now() - interval '1 day'", "DELETE FROM telegram_logins WHERE expires_at < now() - interval '1 day'", "DELETE FROM rate_limits WHERE reset_at < now() - interval '1 day'"]) await pool.query(query);
- const {rows} = await pool.query("SELECT storage_key AS key FROM listing_images UNION SELECT thumb_key FROM listing_images WHERE thumb_key IS NOT NULL UNION SELECT storage_key FROM business_center_images");
+ const {rows} = await pool.query("SELECT storage_key AS key FROM listing_images UNION SELECT thumb_key FROM listing_images WHERE thumb_key IS NOT NULL UNION SELECT medium_key FROM listing_images WHERE medium_key IS NOT NULL UNION SELECT storage_key FROM business_center_images");
  const live = new Set(rows.flatMap(r => [r.key, r.key?.replace(".webp", ".thumb.webp")]));
  const dir = path.resolve(process.env.UPLOAD_DIR || "./uploads", "img");
  let removed = 0;

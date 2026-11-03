@@ -274,6 +274,7 @@ export const listingImages = pgTable("listing_images", {
   listingId: uuid("listing_id").notNull().references(() => listings.id, { onDelete: "cascade" }),
   storageKey: text("storage_key").notNull(),
   thumbKey: text("thumb_key"),
+  mediumKey: text("medium_key"), // ~800px — telefondagi kartochkalar uchun (480px xira, 1600px og'ir)
   width: integer("width"),
   height: integer("height"),
   position: integer("position").notNull().default(0),

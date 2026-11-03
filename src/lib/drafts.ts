@@ -16,8 +16,8 @@ async function removeDrafts(where: ReturnType<typeof and>) {
     const rows = await tx.select({ id: L.id }).from(L).where(and(eq(L.moderationStatus, "draft"), isNull(L.publishedAt), where)).for("update");
     if (!rows.length) return [];
     const ids = rows.map((r) => r.id);
-    for (const im of await tx.select({ k: s.listingImages.storageKey, t: s.listingImages.thumbKey }).from(s.listingImages).where(inArray(s.listingImages.listingId, ids)))
-      keys.push(im.k, ...(im.t ? [im.t] : []));
+    for (const im of await tx.select({ k: s.listingImages.storageKey, t: s.listingImages.thumbKey, m: s.listingImages.mediumKey }).from(s.listingImages).where(inArray(s.listingImages.listingId, ids)))
+      keys.push(im.k, ...(im.t ? [im.t] : []), ...(im.m ? [im.m] : []));
     await tx.delete(L).where(inArray(L.id, ids)); // rasmlar, sevimlilar va boshqa bog'liq yozuvlar cascade bilan o'chadi
     return ids;
   });
