@@ -37,11 +37,11 @@ export const POST = handle(async (req, ctx) => {
   // TOP (VIP): hozircha admin to'lovdan keyin qo'lda yoqadi; to'lov tizimi ulanganda shu amal avtomatik chaqiriladi.
   if (b.data.action === "feature" || b.data.action === "unfeature") {
     const on = b.data.action === "feature";
-    if (on && (l.moderationStatus !== "approved" || l.isSuspended)) throw new HttpError(409, "Faqat tasdiqlangan e'lon TOP bo'ladi");
+    if (on && (l.moderationStatus !== "approved" || l.isSuspended)) throw new HttpError(409, "Faqat tasdiqlangan e'lon VIP bo'ladi");
     const until = on ? new Date(Math.max(Date.now(), l.featuredUntil?.getTime() ?? 0) + (b.data.days ?? 7) * 864e5) : null;
     await d.update(s.listings).set({ featuredUntil: until }).where(eq(s.listings.id, id));
     await writeAudit({ actorId: actor.id, action: on ? "listing.feature" : "listing.unfeature", entityType: "listing", entityId: id, meta: on ? { days: b.data.days ?? 7 } : null });
-    if (on) await notify(l.ownerId, "E’loningiz TOP’ga chiqarildi", `${until!.toISOString().slice(0, 10)} gacha bosh sahifada va qidiruvda birinchi ko‘rinadi.`, `/joylar/${l.id}-${l.slug}`);
+    if (on) await notify(l.ownerId, "E’loningiz VIP’ga chiqarildi", `${until!.toISOString().slice(0, 10)} gacha bosh sahifada va qidiruvda birinchi ko‘rinadi.`, `/joylar/${l.id}-${l.slug}`);
     return NextResponse.json({ ok: true, featuredUntil: until });
   }
 

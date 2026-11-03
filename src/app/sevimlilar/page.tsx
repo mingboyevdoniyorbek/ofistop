@@ -22,7 +22,7 @@ export default async function GuestFavs({ searchParams }: { searchParams: Promis
       <h1 className="mb-1 text-xl font-bold">{t("nav.favorites")} {cards.length > 0 && <span className="text-base font-normal text-slate-500">({cards.length})</span>}</h1>
       <p className="mb-4 text-sm text-slate-600">{ru ? "Избранное хранится в этом браузере. " : "Sevimlilar shu brauzerda saqlanadi. "}<Link href="/kirish?next=/kabinet/sevimlilar" className="text-brand underline">{ru ? "Войдите, чтобы сохранить их в аккаунте" : "Hisobga saqlash uchun kiring"}</Link></p>
       {cards.length === 0 ? <p className="rounded border border-dashed border-slate-300 p-6 text-slate-600">{t("cab.favEmpty")} <Link href="/joylar" className="text-brand underline">{t("nav.search")}</Link></p>
-        : <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{cards.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
+        : <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-4">{cards.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
     </div>
   );
 }

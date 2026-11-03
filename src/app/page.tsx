@@ -10,11 +10,6 @@ import { pageAlternates } from "@/lib/seo";
 import NewListingButton from "@/components/NewListingButton";
 import { promoEnabled, guestAccessEnabled } from "@/lib/launch-mode";
 import { getCurrentUser } from "@/lib/auth";
-import { centerStats, listCenters } from "@/lib/centers";
-import { mediaUrl } from "@/lib/storage";
-import ListingPhoto from "@/components/ListingPhoto";
-import CenterCta from "@/components/CenterCta";
-import CenterBadges from "@/components/CenterBadges";
 import { CenterSticker, SaleSticker, ServiceSticker, SofaSticker } from "@/components/Stickers";
 
 export const dynamic = "force-dynamic";
@@ -28,20 +23,17 @@ export default async function Home() {
   // Tartib: 1) TOP (pullik) e'lonlar va 2) biznes markazlardagi xonalar — gorizontal qatorlarda;
   // 3) qolgan e'lonlar — 2 ustunli to'rda, pastga qarab.
   const list = (only: "top" | "center" | "rest", page = 1) => memo(`home:${only}:${page}:${locale}`, 30_000, () => searchListings({ ...parseFilters({}), only, page }, locale)).catch(() => null);
-  const [top, inCenters, rest1, rest2, centersAll, clusters] = await Promise.all([
+  const [top, inCenters, rest1, rest2, clusters] = await Promise.all([
     list("top"), list("center"), list("rest", 1), list("rest", 2),
-    memo(`home:centers:${locale}`, 60_000, () => listCenters(locale)).catch(() => []),
     memo("home:clusters", 60_000, () => topDistrictCounts()).catch(() => []),
   ]);
-  const centers = centersAll.slice(0, 10);
-  const stats = await memo(`home:centerStats:${centers.map((c) => c.id).join(",")}`, 60_000, () => centerStats(centers.map((c) => c.id))).catch(() => new Map());
   const rest = rest1 ? [...rest1.items, ...(rest2?.items ?? [])] : null;
   // Bitta asosiy yo'nalish — ijara; qo'shimcha bo'limlar blokchalarda (Joymee kabi).
   const tiles = [
-    { href: "/markazlar", icon: <CenterSticker className="h-12 w-12" />, label: ru ? "Бизнес-центры" : "Markazlar", tint: "from-blue-50 ring-blue-100" },
-    { href: "/joylar?deal=sale", icon: <SaleSticker className="h-12 w-12" />, label: ru ? "Продажа" : "Sotuv", tint: "from-amber-50 ring-amber-100" },
-    { href: "/mebel", icon: <SofaSticker className="h-12 w-12" />, label: ru ? "Мебель" : "Mebel", tint: "from-teal-50 ring-teal-100" },
-    { href: "/xizmat", icon: <ServiceSticker className="h-12 w-12" />, label: ru ? "Сдадим за вас" : "Ijaraga beramiz", tint: "from-green-50 ring-green-100" },
+    { href: "/markazlar", icon: <CenterSticker className="h-14 w-14" />, label: ru ? "Бизнес-центры" : "Markazlar", tint: "from-blue-50 ring-blue-100" },
+    { href: "/joylar?deal=sale", icon: <SaleSticker className="h-14 w-14" />, label: ru ? "Продажа" : "Sotuv", tint: "from-amber-50 ring-amber-100" },
+    { href: "/mebel", icon: <SofaSticker className="h-14 w-14" />, label: ru ? "Мебель" : "Mebel", tint: "from-teal-50 ring-teal-100" },
+    { href: "/xizmat", icon: <ServiceSticker className="h-14 w-14" />, label: ru ? "Сдадим за вас" : "Ijaraga beramiz", tint: "from-green-50 ring-green-100" },
   ];
   const chips = Object.entries(CAT).filter(([k]) => k !== "building");
   return (
@@ -70,34 +62,16 @@ export default async function Home() {
         </nav>
       </section>
 
-      {top && top.items.length > 0 && <Rail title={ru ? "TOP объявления" : "TOP e’lonlar"} sub={ru ? "Рекомендуемые" : "Tavsiya etilgan"} href="/joylar" more={t("home.all")}>{top.items.slice(0, 12).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
+      {top && top.items.length > 0 && <Rail title={ru ? "VIP объявления" : "VIP e’lonlar"} sub={ru ? "Рекомендуемые" : "Tavsiya etilgan"} href="/joylar" more={t("home.all")}>{top.items.slice(0, 12).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
       {inCenters && inCenters.items.length > 0 && <Rail title={ru ? "Помещения в бизнес-центрах" : "Biznes markazlardagi xonalar"} sub={ru ? `${inCenters.total} свободных помещений` : `${inCenters.total} ta bo‘sh xona`} href="/joylar?category=bc_room" more={t("home.all")}>{inCenters.items.slice(0, 12).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
 
-      <section className="mx-auto max-w-6xl px-4 pt-6" aria-labelledby="centers-h">
-          <RailHead id="centers-h" title={ru ? "Бизнес-центры" : "Biznes markazlar"} href="/markazlar" more={t("home.all")} />
-          {centers.length > 0 && <div className="-mx-4 flex snap-x snap-mandatory gap-3 no-scrollbar overflow-x-auto scroll-px-4 px-4 pb-2">
-            {centers.map((c) => { const st = stats.get(c.id); return (
-              <Link key={c.id} href={`/markazlar/${c.id}-${c.slug}`} className="flex w-[70vw] max-w-[280px] shrink-0 snap-start flex-col">
-                <ListingPhoto thumb={mediaUrl(c.cover)} alt={c.name} sizes="280px" className="aspect-[16/10] rounded-2xl">
-                  <span className="text-3xl font-bold text-brand" aria-hidden="true">{c.name.slice(0, 2).toUpperCase()}</span>
-                </ListingPhoto>
-                <div className="mt-2 space-y-1 px-0.5">
-                  <h3 className="line-clamp-1 font-semibold">{c.name}</h3>
-                  <CenterBadges c={c} ru={ru} />
-                  <p className="line-clamp-1 text-xs text-slate-500">{[c.district, c.region].filter(Boolean).join(", ")}</p>
-                  <p className={`text-sm font-medium ${st?.rooms ? "text-accent" : "text-slate-500"}`}>{st?.rooms ? (ru ? `Свободно помещений: ${st.rooms}` : `${st.rooms} ta bo‘sh xona`) : (ru ? "Нет свободных помещений" : "Bo‘sh xona yo‘q")}</p>
-                </div>
-              </Link>); })}
-          </div>}
-          <div className="mt-3"><CenterCta variant="compact" /></div>
-        </section>
       <RecentlyViewed />
 
       {/* Qolgan e'lonlar: telefonda 2 ustun, pastga qarab */}
       <section className="mx-auto max-w-6xl px-4 pt-8" aria-labelledby="all-h">
         <RailHead id="all-h" title={ru ? "Все объявления" : "Barcha e’lonlar"} href="/joylar" more={t("home.all")} />
         {rest === null ? <p className="text-red-700">{t("home.loadFail")}</p>
-          : <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{rest.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
+          : <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-4">{rest.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
         <Link href="/joylar" className="mt-5 block rounded-xl border border-brand py-3 text-center font-semibold text-brand hover:bg-blue-50">{ru ? "Показать все объявления →" : "Barcha e’lonlarni ko‘rish →"}</Link>
       </section>
 

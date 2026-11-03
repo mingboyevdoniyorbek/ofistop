@@ -45,9 +45,9 @@ export default async function FurnitureAdmin({ searchParams }: { searchParams: P
                 <AdminAction url={`/api/admin/furniture/${f.id}`} body={{ action: "reject" }} tone="danger" label={ru ? "Отклонить" : "Rad etish"} askReason={ru ? "Причина отказа (её увидит заявитель):" : "Rad etish sababi (ariza beruvchi ko‘radi):"} />
               </>}
               {f.status === "approved" && <>
-                {f.featuredUntil && f.featuredUntil > new Date() && <span className="rounded bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-1 text-xs font-bold text-white">TOP · {fmtDate(f.featuredUntil, locale)} {ru ? "до" : "gacha"}</span>}
-                <AdminAction url={`/api/admin/furniture/${f.id}`} body={{ action: "feature", days: 30 }} label={ru ? "TOP +30 дн." : "TOP +30 kun"} confirm={ru ? "Сделать компанию TOP на 30 дней? (после оплаты)" : "Firma 30 kunga TOP qilinsinmi? (to‘lovdan keyin)"} />
-                {f.featuredUntil && f.featuredUntil > new Date() && <AdminAction url={`/api/admin/furniture/${f.id}`} body={{ action: "unfeature" }} label={ru ? "Убрать TOP" : "TOP’ni olib tashlash"} />}
+                {f.featuredUntil && f.featuredUntil > new Date() && <span className="rounded bg-gradient-to-b from-[#ffe27a] to-[#f5b400] px-2 py-1 text-xs font-black text-[#4a3000]"> VIP · {fmtDate(f.featuredUntil, locale)} {ru ? "до" : "gacha"}</span>}
+                <AdminAction url={`/api/admin/furniture/${f.id}`} body={{ action: "feature", days: 30 }} label={ru ? "VIP +30 дн." : "VIP +30 kun"} confirm={ru ? "Сделать компанию VIP на 30 дней? (после оплаты)" : "Firma 30 kunga VIP qilinsinmi? (to‘lovdan keyin)"} />
+                {f.featuredUntil && f.featuredUntil > new Date() && <AdminAction url={`/api/admin/furniture/${f.id}`} body={{ action: "unfeature" }} label={ru ? "Убрать VIP" : "VIP’ni olib tashlash"} />}
               </>}
               <AdminAction url={`/api/admin/furniture/${f.id}`} body={{ action: "remove" }} tone="danger" label={ru ? "Удалить" : "O‘chirish"} confirm={ru ? "Удалить компанию навсегда?" : "Firma butunlay o‘chirilsinmi?"} />
             </div>

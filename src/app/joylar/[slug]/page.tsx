@@ -140,7 +140,7 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
       </div>
       {similar.length > 0 && (
         <section className="mt-10"><h2 className="font-semibold mb-3">{t("det.similar")}</h2>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{similar.map((it) => <ListingCard key={it.id} it={it} />)}</div></section>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-4">{similar.map((it) => <ListingCard key={it.id} it={it} />)}</div></section>
       )}
       {/* Ofis ijarasidan keyingi ehtiyoj: faqat TOP (pullik) mebel firmalari taklif qilinadi */}
       {visible && firms.length > 0 && <section className="mt-10 rounded-3xl bg-gradient-to-br from-teal-50 to-white p-4 ring-1 ring-teal-100 sm:p-5" aria-labelledby="firms-h">
