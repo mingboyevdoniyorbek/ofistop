@@ -3,6 +3,7 @@ import { getT } from "@/lib/i18n";
 import { pageAlternates } from "@/lib/seo";
 import { listFirms, FURNITURE_PRODUCTS, KIND_LABELS, PRODUCT_LABELS } from "@/lib/furniture";
 import { telHref } from "@/lib/site-info";
+import { ProductIcon, SofaSticker } from "@/components/Stickers";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata() {
@@ -28,11 +29,14 @@ export default async function Furniture({ searchParams }: { searchParams: Promis
     </section>);
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <h1 className="text-2xl font-bold text-brand-dark sm:text-3xl">🪑 {ru ? "Офисная мебель" : "Ofis mebellari"}</h1>
-      <p className="mt-1 text-slate-600">{ru ? "Столы, кресла, шкафы — готовая мебель и изготовление на заказ. Связывайтесь с компаниями напрямую." : "Stol, kreslo, shkaf — tayyor mebel va buyurtma asosida tayyorlash. Firmalar bilan to‘g‘ridan-to‘g‘ri bog‘laning."}</p>
-      {all.length > 0 && <><nav aria-label={ru ? "Вид мебели" : "Mebel turi"} className="-mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div className="flex items-center gap-4 rounded-3xl bg-gradient-to-br from-teal-50 via-white to-amber-50 p-4 ring-1 ring-teal-100 sm:p-6">
+        <SofaSticker uid="sofa-hero" className="h-20 w-20 shrink-0 sm:h-28 sm:w-28" />
+        <div className="min-w-0"><h1 className="text-2xl font-bold text-brand-dark sm:text-3xl">{ru ? "Офисная мебель" : "Ofis mebellari"}</h1>
+      <p className="mt-1 text-sm text-slate-600 sm:text-base">{ru ? "Столы, кресла, шкафы — готовая мебель и изготовление на заказ. Связывайтесь с компаниями напрямую." : "Stol, kreslo, shkaf — tayyor mebel va buyurtma asosida tayyorlash. Firmalar bilan to‘g‘ridan-to‘g‘ri bog‘laning."}</p></div>
+      </div>
+      {all.length > 0 && <><nav aria-label={ru ? "Вид мебели" : "Mebel turi"} className="-mx-4 mt-4 flex gap-2 no-scrollbar overflow-x-auto px-4 pb-1">
         <Link href={href({ tur: undefined })} className={chip(!product)}>{ru ? "Все" : "Hammasi"}</Link>
-        {FURNITURE_PRODUCTS.map((p) => <Link key={p} href={href({ tur: p })} className={chip(product === p)}>{PRODUCT_LABELS[p].icon} {PRODUCT_LABELS[p][lang]}</Link>)}
+        {FURNITURE_PRODUCTS.map((p) => <Link key={p} href={href({ tur: p })} className={`${chip(product === p)} inline-flex items-center gap-1.5`}><ProductIcon name={p} className={`h-5 w-5 ${product === p ? "rounded bg-white p-0.5" : ""}`} />{PRODUCT_LABELS[p][lang]}</Link>)}
       </nav>
       <nav aria-label={ru ? "Тип предложения" : "Taklif turi"} className="mt-3 inline-flex rounded-xl bg-slate-100 p-1 text-sm font-semibold">
         {([[undefined, ru ? "Все" : "Hammasi"], ["ready", ru ? "Готовая" : "Tayyor"], ["custom", ru ? "На заказ" : "Buyurtmaga"]] as const).map(([k, v]) =>
@@ -56,7 +60,7 @@ export default async function Furniture({ searchParams }: { searchParams: Promis
                 <span aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-blue-50 text-lg font-bold text-brand">{f.name.slice(0, 2).toUpperCase()}</span>
                 <div className="min-w-0"><h2 className="truncate font-semibold">{f.name}</h2><p className="text-xs text-slate-500">{KIND_LABELS[f.kind][lang]} · {region}</p></div>
               </div>
-              {f.products.length > 0 && <ul className="mt-3 flex flex-wrap gap-1.5">{f.products.map((p) => { const l = PRODUCT_LABELS[p as keyof typeof PRODUCT_LABELS]; return l ? <li key={p} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs">{l.icon} {l[lang]}</li> : null; })}</ul>}
+              {f.products.length > 0 && <ul className="mt-3 flex flex-wrap gap-1.5">{f.products.map((p) => { const l = PRODUCT_LABELS[p as keyof typeof PRODUCT_LABELS]; return l ? <li key={p} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs"><ProductIcon name={p} className="h-4 w-4" />{l[lang]}</li> : null; })}</ul>}
               {f.description && <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm text-slate-700">{f.description}</p>}
               {f.address && <p className="mt-2 text-xs text-slate-500">📍 {f.address}</p>}
               <div className="mt-auto flex flex-wrap gap-2 pt-4">

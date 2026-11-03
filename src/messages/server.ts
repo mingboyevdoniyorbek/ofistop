@@ -104,6 +104,7 @@ export const SERVER_MSGS: readonly (readonly [string, string])[] = [
   ["Markazga bog‘langan e’lonlar saqlanib qoldi va endi markazsiz ko‘rinadi.", "Объявления, привязанные к центру, сохранены и теперь показываются без центра."],
   ["Tasdiqlash uchun markaz nomini aynan yozing", "Для подтверждения введите название центра точно"],
   ["Bu email bilan foydalanuvchi topilmadi. Avval u Google orqali kirishi kerak.", "Пользователь с таким email не найден. Сначала он должен войти через Google."],
+  ["{month}: telefon {ph}, Telegram {tg}, saqlanganlar {fav}.", "{month}: звонки {ph}, Telegram {tg}, в избранном {fav}."],
   ["{month}: markaz sahifasi {cv} marta, xonalar {rv} marta ko‘rildi; telefon {ph}, Telegram {tg}, saqlanganlar {fav}.", "{month}: страница центра — {cv} просмотров, помещения — {rv}; звонки {ph}, Telegram {tg}, в избранном {fav}."],
   ["Noto'g'ri so'rov", "Некорректный запрос"],
   ["So'rov noto'g'ri", "Некорректный запрос"],

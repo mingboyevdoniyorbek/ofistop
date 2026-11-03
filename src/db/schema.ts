@@ -430,3 +430,17 @@ export const furnitureFirms = pgTable("furniture_firms", {
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("furniture_firms_status_idx").on(t.status, t.createdAt), index("furniture_firms_user_idx").on(t.userId)]);
+
+// Sayt tashriflari (admin analitikasi). Shaxsiy ma'lumot yo'q: brauzerdagi tasodifiy ID server siri bilan xeshlanadi.
+export const siteVisitors = pgTable("site_visitors", {
+  day: date("day").notNull().default(sql`CURRENT_DATE`),
+  visitor: text("visitor").notNull(),   // sha256(SESSION_SECRET|vid) — 24 belgi
+  source: text("source").notNull().default("direct"), // kun davomidagi birinchi kirish manbasi: instagram, telegram, google...
+  device: text("device").notNull().default("mobile"),  // mobile | desktop
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.day, t.visitor] })]);
+export const sitePageviews = pgTable("site_pageviews", {
+  day: date("day").notNull().default(sql`CURRENT_DATE`),
+  section: text("section").notNull(),  // home, catalog, listing, centers, center, furniture, landing, cabinet, other
+  n: integer("n").notNull().default(0),
+}, (t) => [primaryKey({ columns: [t.day, t.section] })]);

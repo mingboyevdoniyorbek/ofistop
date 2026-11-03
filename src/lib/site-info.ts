@@ -18,4 +18,9 @@ export function siteInfo() {
   };
 }
 export type SiteInfo = ReturnType<typeof siteInfo>;
+/**
+ * Ko'rishlar soni e'lon beruvchilarga ko'rsatiladimi. Sayt endi o'smoqda: kichik raqamlar e'lon beruvchini
+ * ranjitmasligi uchun sukut bo'yicha yashirin (admin panelda doim ko'rinadi). Auditoriya ko'paygach SHOW_VIEW_COUNTS=true.
+ */
+export const showViewCounts = () => process.env.SHOW_VIEW_COUNTS === "true";
 export const telHref = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;

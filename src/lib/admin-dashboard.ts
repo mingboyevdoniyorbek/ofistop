@@ -17,7 +17,11 @@ export async function adminDashboard(locale: "uz" | "ru") {
     (SELECT count(*) FROM business_centers WHERE pending_changes IS NOT NULL OR EXISTS (SELECT 1 FROM business_center_images i WHERE i.center_id = business_centers.id AND i.pending))::int AS center_edits,
     (SELECT count(*) FROM contact_events WHERE kind IN ('phone_reveal','call_click') AND day > current_date - 30)::int AS calls_30,
     (SELECT count(*) FROM contact_events WHERE kind='telegram_click' AND day > current_date - 30)::int AS tg_30,
-    (SELECT count(*) FROM favorites WHERE created_at > now() - interval '30 days')::int AS favs_30`);
+    (SELECT count(*) FROM favorites WHERE created_at > now() - interval '30 days')::int AS favs_30,
+    (SELECT count(*) FROM listings WHERE deal_type='sale' AND moderation_status='approved' AND availability_status='available' AND NOT is_suspended AND expires_at > now())::int AS sale_active,
+    (SELECT count(*) FROM furniture_firms WHERE status='approved')::int AS furniture,
+    (SELECT count(*) FROM furniture_firms WHERE status='pending')::int AS furniture_pending,
+    (SELECT count(*) FROM saved_searches)::int AS saved_searches`);
   // So'nggi 30 kun: kunlik e'lon ko'rishlari va yangi e'lonlar (bo'sh kunlar 0 bilan).
   const { rows: days } = await queryClient().query(`SELECT d::date AS day,
       coalesce((SELECT sum(n) FROM view_days v WHERE v.kind='listing' AND v.day = d::date), 0)::int AS views,

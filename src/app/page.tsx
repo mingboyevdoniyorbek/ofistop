@@ -15,6 +15,7 @@ import { mediaUrl } from "@/lib/storage";
 import ListingPhoto from "@/components/ListingPhoto";
 import CenterCta from "@/components/CenterCta";
 import CenterBadges from "@/components/CenterBadges";
+import { CenterSticker, CoworkSticker, SaleSticker, SofaSticker } from "@/components/Stickers";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata() { return { alternates: await pageAlternates("/") }; }
@@ -38,10 +39,10 @@ export default async function Home() {
   ]);
   // Bitta asosiy yo'nalish — ijara; qo'shimcha bo'limlar blokchalarda (Joymee kabi).
   const tiles = [
-    { href: "/markazlar", icon: "🏢", label: ru ? "Бизнес-центры" : "Markazlar" },
-    { href: "/joylar?deal=sale", icon: "🔑", label: ru ? "Продажа" : "Sotuv" },
-    { href: "/mebel", icon: "🪑", label: ru ? "Мебель" : "Mebel" },
-    { href: landingSlugOf("coworking") ? `/ijara/${landingSlugOf("coworking")}` : "/joylar?category=coworking", icon: "💼", label: ru ? "Коворкинг" : "Kovorking" },
+    { href: "/markazlar", icon: <CenterSticker className="h-12 w-12" />, label: ru ? "Бизнес-центры" : "Markazlar", tint: "from-blue-50 ring-blue-100" },
+    { href: "/joylar?deal=sale", icon: <SaleSticker className="h-12 w-12" />, label: ru ? "Продажа" : "Sotuv", tint: "from-amber-50 ring-amber-100" },
+    { href: "/mebel", icon: <SofaSticker className="h-12 w-12" />, label: ru ? "Мебель" : "Mebel", tint: "from-teal-50 ring-teal-100" },
+    { href: landingSlugOf("coworking") ? `/ijara/${landingSlugOf("coworking")}` : "/joylar?category=coworking", icon: <CoworkSticker className="h-12 w-12" />, label: ru ? "Коворкинг" : "Kovorking", tint: "from-indigo-50 ring-indigo-100" },
   ];
   const chips = Object.entries(CAT).filter(([k]) => k !== "building" && k !== "coworking");
   return (
@@ -61,11 +62,11 @@ export default async function Home() {
         <div className="lg:mt-3 lg:grid lg:grid-cols-2 lg:gap-3">
         <MapCard ru={ru} counts={clusters} />
         <nav aria-label={ru ? "Разделы" : "Bo‘limlar"} className="mt-3 grid grid-cols-4 gap-2 lg:mt-0">
-          {tiles.map((x) => <Link key={x.href} href={x.href} className="flex flex-col items-center gap-1.5 rounded-2xl bg-slate-50 px-1 py-3 text-center text-xs font-semibold text-slate-800 ring-1 ring-slate-200 transition hover:bg-blue-50 hover:ring-brand sm:text-sm">
-            <span aria-hidden="true" className="grid h-10 w-10 place-items-center rounded-full bg-white text-xl shadow-sm">{x.icon}</span>{x.label}</Link>)}
+          {tiles.map((x) => <Link key={x.href} href={x.href} className={`group flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-b ${x.tint} to-white px-1 pt-2.5 pb-2.5 text-center text-xs font-semibold text-slate-800 ring-1 transition hover:-translate-y-0.5 hover:shadow-md sm:text-sm`}>
+            <span className="transition-transform duration-200 group-hover:scale-110">{x.icon}</span>{x.label}</Link>)}
         </nav>
         </div>
-        <nav aria-label={t("home.types")} className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
+        <nav aria-label={t("home.types")} className="-mx-4 mt-3 flex gap-2 no-scrollbar overflow-x-auto px-4 pb-1">
           {chips.map(([k, v]) => <Link key={k} href={landingSlugOf(k) ? `/ijara/${landingSlugOf(k)}` : `/joylar?category=${k}`} className="shrink-0 rounded-full border border-slate-300 bg-white px-3.5 py-1.5 text-sm hover:border-brand">{v}</Link>)}
         </nav>
       </section>
@@ -76,7 +77,7 @@ export default async function Home() {
 
       <section className="mx-auto max-w-6xl px-4 pt-6" aria-labelledby="centers-h">
           <RailHead id="centers-h" title={ru ? "Бизнес-центры" : "Biznes markazlar"} href="/markazlar" more={t("home.all")} />
-          {centers.length > 0 && <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2">
+          {centers.length > 0 && <div className="-mx-4 flex snap-x snap-mandatory gap-3 no-scrollbar overflow-x-auto scroll-px-4 px-4 pb-2">
             {centers.map((c) => { const st = stats.get(c.id); return (
               <Link key={c.id} href={`/markazlar/${c.id}-${c.slug}`} className="flex w-[70vw] max-w-[280px] shrink-0 snap-start flex-col">
                 <ListingPhoto thumb={mediaUrl(c.cover)} alt={c.name} sizes="280px" className="aspect-[16/10] rounded-2xl">
@@ -95,7 +96,7 @@ export default async function Home() {
       {forSale && forSale.total > 0 && <Rail title={`🔑 ${ru ? "Продаются: помещения и здания" : "Sotuvdagi joylar va binolar"}`} sub={ru ? `${forSale.total} объявлений` : `${forSale.total} ta e’lon`} href="/joylar?deal=sale" more={t("home.all")}>
         {forSale.items.slice(0, 10).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
       <RecentlyViewed />
-      <section className="mx-auto mt-8 max-w-6xl px-4 pb-10"><div className="rounded-3xl bg-brand-dark p-6 text-white sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-10"><div><h2 className="text-2xl font-bold">{ru ? "Нужна мебель для офиса?" : "Ofisingizga mebel kerakmi?"}</h2><p className="mt-3 max-w-2xl text-blue-100">{ru ? "Столы, кресла, шкафы — готовые и на заказ. Компании-производители и продавцы в одном разделе." : "Stol, kreslo, shkaf — tayyor va buyurtma asosida. Ishlab chiqaruvchi va sotuvchi firmalar bitta bo‘limda."}</p></div><Link href="/mebel" className="mt-5 inline-block shrink-0 rounded-xl bg-white px-5 py-3 font-semibold text-brand sm:mt-0">🪑 {ru ? "Офисная мебель →" : "Ofis mebellari →"}</Link></div></section>
+      <section className="mx-auto mt-8 max-w-6xl px-4 pb-10"><div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-dark to-[#0f4c5c] p-6 text-white sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-10"><SofaSticker uid="sofa-cta" className="pointer-events-none absolute -bottom-6 -right-4 h-32 w-32 opacity-25 sm:static sm:order-first sm:h-28 sm:w-28 sm:opacity-100" /><div className="relative"><h2 className="text-2xl font-bold">{ru ? "Нужна мебель для офиса?" : "Ofisingizga mebel kerakmi?"}</h2><p className="mt-3 max-w-2xl text-blue-100">{ru ? "Столы, кресла, шкафы — готовые и на заказ. Компании-производители и продавцы в одном разделе." : "Stol, kreslo, shkaf — tayyor va buyurtma asosida. Ishlab chiqaruvchi va sotuvchi firmalar bitta bo‘limda."}</p></div><Link href="/mebel" className="relative mt-5 inline-block shrink-0 rounded-xl bg-white px-5 py-3 font-semibold text-brand sm:mt-0">{ru ? "Офисная мебель →" : "Ofis mebellari →"}</Link></div></section>
       <section className="bg-slate-50 border-y border-slate-200">
         <div className="mx-auto max-w-6xl px-4 py-8 grid gap-4 sm:grid-cols-3 text-sm">
           {[[t("home.s1"), t("home.s1b")], [t("home.s2"), t("home.s2b")], [t("home.s3"), t("home.s3b")]].map(([a, b]) => (
@@ -124,7 +125,7 @@ function Rail({ title, sub, href, more, children }: { title: string; sub?: strin
   return (
     <section className="mx-auto max-w-6xl px-4 pt-6">
       <RailHead title={title} sub={sub} href={href} more={more} />
-      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2">{children}</div>
+      <div className="-mx-4 flex snap-x snap-mandatory gap-3 no-scrollbar overflow-x-auto scroll-px-4 px-4 pb-2">{children}</div>
     </section>
   );
 }

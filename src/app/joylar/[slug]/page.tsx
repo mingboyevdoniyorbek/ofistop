@@ -25,6 +25,7 @@ import { favState } from "@/lib/favorites";
 import ShareButton from "@/components/ShareButton";
 import { cache } from "react";
 import { memo } from "@/lib/memo";
+import { showViewCounts } from "@/lib/site-info";
 const listImagesCached = cache((id: string) => listImages(id));
 
 export const dynamic = "force-dynamic";
@@ -117,7 +118,7 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
           {sale && <span className="mt-2 inline-block rounded bg-emerald-100 px-2 py-0.5 text-sm font-semibold text-emerald-800">{ru ? "Продаётся" : "Sotiladi"}</span>}
           <p className="text-brand text-2xl font-bold mt-2">{primaryPrice(price, l.areaM2, locale)}</p>
           {total && <p className="text-sm text-slate-600">{priceLabel(price, locale)}</p>}
-          <div className="mt-3 flex flex-wrap items-center gap-2"><span title={ru ? "Администратор проверил объявление. Это не техническая проверка здания." : "Administrator e’lon ma’lumotlarini ko‘rib chiqqan. Bu binoning texnik tekshiruvi emas."} className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-brand">✓ {ru ? "Объявление проверено" : "E’lon tekshirilgan"}</span>{l.availabilityConfirmedAt && visible && <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs text-green-800">{ru ? "Доступность подтверждена" : "Bo‘shligi tasdiqlangan"}: {fmtDate(l.availabilityConfirmedAt, locale)}</span>}{visible && <CompareButton id={l.id} />}<span className="text-xs text-slate-500">{ru ? "Просмотры" : "Ko‘rishlar"}: {l.viewCount}</span></div>
+          <div className="mt-3 flex flex-wrap items-center gap-2"><span title={ru ? "Администратор проверил объявление. Это не техническая проверка здания." : "Administrator e’lon ma’lumotlarini ko‘rib chiqqan. Bu binoning texnik tekshiruvi emas."} className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-brand">✓ {ru ? "Объявление проверено" : "E’lon tekshirilgan"}</span>{l.availabilityConfirmedAt && visible && <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs text-green-800">{ru ? "Доступность подтверждена" : "Bo‘shligi tasdiqlangan"}: {fmtDate(l.availabilityConfirmedAt, locale)}</span>}{visible && <CompareButton id={l.id} />}{showViewCounts() && <span className="text-xs text-slate-500">{ru ? "Просмотры" : "Ko‘rishlar"}: {l.viewCount}</span>}</div>
           <dl className="mt-4 grid grid-cols-[150px_1fr] gap-y-1.5 text-sm">
             {rows.filter(([, v]) => v).map(([k, v]) => <div key={k} className="contents"><dt className="text-slate-500">{k}</dt><dd>{v}</dd></div>)}
           </dl>

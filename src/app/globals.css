@@ -14,3 +14,10 @@ body { font-family: var(--font-sans); color: #0f172a; background: #fff; }
 .ofistop-cluster span { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; color: white; background: #12308a; box-shadow: 0 2px 10px #0b1f5c40; font-size: 13px; font-weight: 700; }
 .ofistop-cluster:hover span, .ofistop-cluster:focus-visible span { background: #16a34a; }
 @keyframes bell { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-16deg); } 75% { transform: rotate(16deg); } }
+
+/* Gorizontal aylanuvchi qatorlar (tugmachalar, e'lon qatorlari): barmoq/sichqoncha bilan suriladi, chiziq ko'rinmaydi */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
+}

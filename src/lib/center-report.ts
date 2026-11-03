@@ -1,4 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
+import { showViewCounts } from "./site-info";
 import { db, schema as s, queryClient } from "@/db/client";
 import { notify } from "./staff";
 import { hit } from "./ratelimit";
@@ -47,8 +48,9 @@ export async function sendMonthlyCenterReports(now = new Date()) {
     const members = await db().select({ userId: s.businessCenterMemberships.userId }).from(s.businessCenterMemberships)
       .innerJoin(s.users, and(eq(s.users.id, s.businessCenterMemberships.userId), sql`NOT ${s.users.isBlocked}`)).where(eq(s.businessCenterMemberships.centerId, c.id));
     for (const mbr of members) {
-      await notify(mbr.userId, `Oylik hisobot: ${c.name}`,
-        `${label}: markaz sahifasi ${st.centerViews} marta, xonalar ${st.roomViews} marta ko‘rildi; telefon ${st.phone}, Telegram ${st.telegram}, saqlanganlar ${st.favorites}.`,
+      await notify(mbr.userId, `Oylik hisobot: ${c.name}`, showViewCounts()
+        ? `${label}: markaz sahifasi ${st.centerViews} marta, xonalar ${st.roomViews} marta ko‘rildi; telefon ${st.phone}, Telegram ${st.telegram}, saqlanganlar ${st.favorites}.`
+        : `${label}: telefon ${st.phone}, Telegram ${st.telegram}, saqlanganlar ${st.favorites}.`,
         `/kabinet/markazlar/${c.id}`);
       sent++;
     }
