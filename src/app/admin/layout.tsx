@@ -14,6 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     (SELECT count(*) FROM listings WHERE moderation_status='pending')::int AS listings,
     (SELECT count(*) FROM reports WHERE status='open')::int AS reports,
     (SELECT count(*) FROM center_applications WHERE status='pending')::int AS apps,
+    (SELECT count(*) FROM furniture_firms WHERE status='pending')::int AS furniture,
     (SELECT count(*) FROM business_centers WHERE pending_changes IS NOT NULL OR EXISTS (SELECT 1 FROM business_center_images i WHERE i.center_id = business_centers.id AND i.pending))::int AS edits`);
   const admin = u.role === "admin";
   const items: (AdminNavItem & { adminOnly?: boolean })[] = [
@@ -22,6 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/shikoyatlar", label: t("adm.nav.reports"), icon: "reports", badge: c.reports },
     { href: "/admin/arizalar", label: ru ? "Заявки центров" : "Markaz arizalari", icon: "apps", badge: c.apps, adminOnly: true },
     { href: "/admin/markazlar", label: t("adm.nav.centers"), icon: "centers", badge: c.edits, adminOnly: true },
+    { href: "/admin/mebel", label: ru ? "Мебельные компании" : "Mebel firmalari", icon: "apps", badge: c.furniture, adminOnly: true },
     { href: "/admin/foydalanuvchilar", label: t("adm.nav.users"), icon: "users", adminOnly: true },
     { href: "/admin/hududlar", label: t("adm.nav.geo"), icon: "geo", adminOnly: true },
     { href: "/admin/audit", label: t("adm.nav.audit"), icon: "audit", adminOnly: true },

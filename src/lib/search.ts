@@ -9,8 +9,8 @@ export const PAGE_SIZE = Number(process.env.PAGE_SIZE ?? 12);
 export type Sort = "new" | "price_asc" | "price_desc" | "area_asc" | "area_desc";
 export interface Filters {
   q?: string; region?: number; district?: number; category?: string; center?: string;
-  /** Ijara yoki sotuv; berilmasa — hammasi. Narx filtri/saralashi esa doim bitta turda (berilmasa — ijara). */
-  deal?: "rent" | "sale";
+  /** Ijara yoki sotuv. Sayt asosan ijara uchun: berilmasa — ijara (sotuv faqat deal=sale bilan, narxlar aralashmaydi). */
+  deal: "rent" | "sale";
   currency: "UZS" | "USD"; period: "month" | "day" | "hour" | "once"; basis: "whole" | "per_m2" | "per_seat";
   priceMin?: string; priceMax?: string; areaMin?: string; areaMax?: string; floor?: number;
   furnished?: "1" | "0"; poster?: string; commission?: "none" | "any"; availableBy?: string;
@@ -25,7 +25,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export function parseFilters(sp: Record<string, string | string[] | undefined>): Filters {
   const sort = one(sp.sort);
-  const deal = one(sp.deal) === "sale" ? "sale" as const : one(sp.deal) === "rent" ? "rent" as const : undefined;
+  const deal = one(sp.deal) === "sale" ? "sale" as const : "rent" as const;
   const cur = one(sp.currency), per = one(sp.period), bas = one(sp.basis);
   const errors: string[] = [];
   const bounds = parseBounds(one(sp.bbox));
@@ -72,7 +72,7 @@ export function buildWhere(f: Filters) {
   const L = s.listings;
   const conds: (SQL | undefined)[] = [publicCond()];
   if (f.errors?.length) conds.push(sql`false`);
-  if (f.deal) conds.push(eq(L.dealType, f.deal));
+  conds.push(eq(L.dealType, f.deal));
   if (f.currencyFilter) conds.push(eq(L.currency, f.currency));
   if (f.periodFilter) conds.push(eq(L.pricePeriod, f.period));
   if (f.basisFilter) conds.push(eq(L.priceBasis, f.basis));
@@ -127,6 +127,14 @@ export async function topDistrictCounts(limit = 4) {
   const rows = await db().select({ n: sql<number>`count(*)::int` }).from(s.listings).where(publicCond())
     .groupBy(s.listings.districtId).orderBy(desc(sql`count(*)`)).limit(limit);
   return rows.map((r) => r.n);
+}
+
+/** Bosh sahifa qatorlari uchun: ijara e'lonlari eng ko'p tumanlar (nomi bilan). */
+export async function topDistricts(locale: "uz" | "ru", limit = 3, min = 2) {
+  const rows = await db().select({ id: s.districts.id, name: locale === "ru" ? s.districts.nameRu : s.districts.nameUz, n: sql<number>`count(*)::int` })
+    .from(s.listings).innerJoin(s.districts, eq(s.districts.id, s.listings.districtId))
+    .where(and(publicCond(), eq(s.listings.dealType, "rent"))).groupBy(s.districts.id).orderBy(desc(sql`count(*)`)).limit(limit);
+  return rows.filter((r) => r.n >= min);
 }
 
 /** Karta uchun umumiy select (qidiruv, sevimlilar va boshqalar). */

@@ -71,6 +71,13 @@
       "when": 1793729766967,
       "tag": "0009_image_medium",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793732451977,
+      "tag": "0010_furniture_firms",
+      "breakpoints": true
     }
   ]
 }

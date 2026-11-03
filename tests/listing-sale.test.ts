@@ -38,7 +38,7 @@ describe("sotuv e'lonlari", () => {
   it("filtr: deal=sale narx davrini 'once' qiladi", () => {
     const f = parseFilters({ deal: "sale", period: "month", priceMax: "100" });
     expect(f.deal).toBe("sale"); expect(f.period).toBe("once"); expect(f.periodFilter).toBe(false);
-    expect(parseFilters({}).deal).toBeUndefined();
-    expect(parseFilters({ deal: "x" }).deal).toBeUndefined();
+    expect(parseFilters({}).deal).toBe("rent"); // sukut bo'yicha faqat ijara
+    expect(parseFilters({ deal: "x" }).deal).toBe("rent");
   });
 });

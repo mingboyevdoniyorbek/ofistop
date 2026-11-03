@@ -241,3 +241,18 @@ test('promo alone cannot create anonymous accounts after identity login rollout'
   expect((await create(req(),ctx())).status).toBe(401);
  }finally{state.user=previous;vi.unstubAllEnvs();}
 });
+test('furniture firm: application, validation, admin approval, public list and removal',async()=>{
+ const { createFirmApplication, reviewFirm, listFirms }=await import('../src/lib/furniture');
+ const [applicant]=await state.db.insert(schema.users).values({phone:'+998901112299'}).returning();
+ const [region]=await state.db.select().from(schema.regions).limit(1);
+ await expect(createFirmApplication(applicant.id,{name:'Mebel',kind:'ready',regionId:region.id,contactName:'Ali',phone:'123'})).rejects.toMatchObject({status:422});
+ const id=await createFirmApplication(applicant.id,{name:'Ofis Mebel Lux',kind:'custom',products:['desks','chairs','desks'],regionId:region.id,contactName:'Ali',phone:'+998901234567',telegramUsername:'@ofis_mebel'});
+ expect(await listFirms('uz')).toHaveLength(0); // tasdiqlanmagan — ko'rinmaydi
+ await expect(reviewFirm(id,staff,'reject')).rejects.toMatchObject({status:422});
+ await reviewFirm(id,staff,'approve');
+ const list=await listFirms('uz');expect(list.map((x:any)=>x.f.name)).toEqual(['Ofis Mebel Lux']);expect(list[0].f.products).toEqual(['desks','chairs']);expect(list[0].f.telegramUsername).toBe('ofis_mebel');
+ expect(await listFirms('uz',{product:'storage'})).toHaveLength(0);expect(await listFirms('uz',{kind:'custom'})).toHaveLength(1);expect(await listFirms('uz',{kind:'ready'})).toHaveLength(0);
+ const notes=(await state.db.select().from(schema.notifications).where(eq(schema.notifications.userId,applicant.id)));expect(notes[0].title).toContain('Ofis Mebel Lux');
+ await expect(reviewFirm(id,staff,'approve')).rejects.toMatchObject({status:409});
+ await reviewFirm(id,staff,'remove');expect(await listFirms('uz')).toHaveLength(0);
+});
