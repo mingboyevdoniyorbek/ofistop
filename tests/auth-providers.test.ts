@@ -22,6 +22,7 @@ import { resolveIdentity } from '../src/lib/identity-login';
 import { startChallenge } from '../src/lib/login-challenge';
 import { bootstrap } from '../src/db/bootstrap';
 import { POST as newListing } from '../src/app/api/listings/route';
+import { GET as telegramReturn } from '../src/app/api/auth/telegram/return/route';
 
 const ctx = {params:Promise.resolve({})};
 const req = (body:object, path='/api', origin='http://localhost:3000') => new Request(`http://localhost:3000${path}`, {method:'POST',headers:{'content-type':'application/json',origin},body:JSON.stringify(body)});
@@ -106,6 +107,24 @@ test('Telegram rejects foreign contacts and confirms a new owner contact automat
   await handleUpdate(msg(100,{contact:{phone_number:'998901112233',user_id:100}}));
   expect((await (await status(req({id:flow.id}),ctx)).json()).status).toBe('complete');
   expect((await getCurrentUser())!.phone).toBe('+998901112233');
+});
+test('after approval the bot sends a one-time "return to site" link that signs in any browser once',async()=>{
+  const flow=await (await telegramStart(req({}),ctx)).json();
+  vi.stubEnv('APP_URL','https://ofistop.test'); // bot tugmasi faqat https manzilga havola qiladi
+  await handleUpdate(msg(100,{text:`/start ${new URL(flow.botUrl).searchParams.get('start')}`}));
+  await handleUpdate(msg(100,{contact:{phone_number:'998901112233',user_id:100}}));
+  const button=messages.at(-1)!.body.reply_markup.inline_keyboard[0][0];
+  expect(button.url).toMatch(/^https:\/\/ofistop\.test\/api\/auth\/telegram\/return\?id=[0-9a-f-]{36}&t=[A-Za-z0-9_-]{43}$/);
+  // Telegram ichidagi brauzer: sayt cookie'si yo'q — havola baribir kiritadi
+  state.cookies.clear();
+  const res=await telegramReturn(new Request(button.url));expect(res.status).toBe(307);expect(res.headers.get('location')).toBe('https://ofistop.test/kabinet');
+  expect((await getCurrentUser())!.phone).toBe('+998901112233');
+  // Bir martalik: boshqa brauzerda qayta ochilsa ishlamaydi
+  state.cookies.clear();
+  const again=await telegramReturn(new Request(button.url));expect(again.headers.get('location')).toBe('https://ofistop.test/kirish?xato=telegram');
+  expect(await getCurrentUser()).toBeNull();
+  // Soxta token ishlamaydi
+  const fake=await telegramReturn(new Request(button.url.replace(/t=[^&]+/,'t='+'A'.repeat(43))));expect(fake.headers.get('location')).toBe('https://ofistop.test/kirish?xato=telegram');
 });
 test('returning Telegram users must confirm and another Telegram account cannot approve',async()=>{
   await handleUpdate(msg(100,{text:'/start'}));expect(messages.at(-1)!.body.reply_markup.keyboard).toBeTruthy();

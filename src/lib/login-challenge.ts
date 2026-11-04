@@ -92,3 +92,30 @@ export async function consumeChallenge(id: string, code?: string, googleProof?: 
   if ("error" in result && result.error) throw new HttpError(result.httpStatus ?? 400, result.error);
   return result;
 }
+
+/**
+ * Botdagi "Saytga qaytish" havolasi: bir martalik token (tokenHash payload.returnHash'da), faqat tasdiqlangan
+ * va muddati o'tmagan Telegram kirishi uchun. Qaysi brauzerda ochilsa, o'sha yerda sessiya yaratiladi
+ * (havola faqat raqami tasdiqlangan Telegram akkauntiga yuborilgan). Qaytadi: yo'naltiriladigan sahifa yoki null.
+ */
+export async function consumeTelegramReturn(id: string, token: string): Promise<string | null> {
+  if (!/^[0-9a-f-]{36}$/.test(id) || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
+  const current = await getSessionUser();
+  return db().transaction(async (tx) => {
+    const [row] = await tx.select().from(s.authChallenges).where(and(eq(s.authChallenges.id, id), gt(s.authChallenges.expiresAt, new Date()))).for("update");
+    if (!row || row.method !== "telegram" || !row.approvedAt || !row.payload.returnHash || !safeEqual(row.payload.returnHash, tokenHash(token))) return null;
+    if (row.payload.returnUsed) return current && current.id === row.payload.completedUserId ? row.next : null;
+    if (current?.blocked) return null;
+    let userId = row.payload.completedUserId;
+    if (!row.consumedAt) {
+      const guestId = current && isGuestPhone(current.phone) && current.id === row.payload.guestId ? current.id : undefined;
+      userId = await resolveIdentity(tx, { provider: "telegram", subject: row.payload.telegramId, phone: row.identifier }, guestId);
+    }
+    if (!userId) return null;
+    const [u] = await tx.select({ blocked: s.users.isBlocked }).from(s.users).where(eq(s.users.id, userId));
+    if (!u || u.blocked) return null;
+    await tx.update(s.authChallenges).set({ consumedAt: row.consumedAt ?? new Date(), payload: { ...row.payload, completedUserId: userId, returnUsed: "1" } }).where(eq(s.authChallenges.id, row.id));
+    if (!current || current.id !== userId) await createSession(userId, false, tx);
+    return row.next;
+  });
+}

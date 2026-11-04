@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { hit } from "./ratelimit";
@@ -8,7 +9,20 @@ interface TgMessage { chat?: { id: number; type: string }; from?: { id: number }
 interface Update { message?: TgMessage; callback_query?: { id: string; from: { id: number }; data?: string; message?: TgMessage } }
 const remove = { remove_keyboard: true };
 const ask = (chat: number) => tgSend(chat, "OfisTop’ga kirish uchun o‘zingizning kontaktingizni yuboring.\nДля входа в OfisTop отправьте свой контакт.", { keyboard: [[{ text: "📱 Kontaktni ulashish / Отправить контакт", request_contact: true }]], resize_keyboard: true, one_time_keyboard: true });
-const done = (chat: number) => tgSend(chat, "✅ Kirish tasdiqlandi. Saytdagi avvalgi oynaga qayting — u avtomatik ochiladi.\nВход подтверждён. Вернитесь в прежнее окно сайта.", remove);
+/**
+ * Tasdiqlangach: "Saytga qaytish" tugmasi — bir martalik havola (10 daqiqa, kirish so'rovi muddati bilan).
+ * U faqat raqami tasdiqlangan shu Telegram akkauntiga yuboriladi; bosilganda sayt kirgan holda ochiladi
+ * (Telegram ichidagi brauzerda ham). Avvalgi oyna ham avvalgidek o'zi ochiladi.
+ */
+async function done(chat: number, challengeId: string) {
+  await tgSend(chat, "✅ Raqam tasdiqlandi.\nВход подтверждён.", remove); // kontakt klaviaturasini yopish
+  const base = (process.env.APP_URL ?? "").replace(/\/+$/, "");
+  if (!/^https:\/\//.test(base)) return void await tgSend(chat, "Saytdagi avvalgi oynaga qayting — u avtomatik ochiladi.\nВернитесь в прежнее окно сайта.");
+  const token = randomBytes(32).toString("base64url");
+  await db().update(s.authChallenges).set({ payload: sql`${s.authChallenges.payload} || ${JSON.stringify({ returnHash: tokenHash(token) })}::jsonb` }).where(eq(s.authChallenges.id, challengeId));
+  await tgSend(chat, "OfisTop’ga qaytish uchun tugmani bosing.\nНажмите кнопку, чтобы вернуться на сайт.",
+    { inline_keyboard: [[{ text: "🌐 Saytga qaytish / Вернуться на сайт", url: `${base}/api/auth/telegram/return?id=${challengeId}&t=${token}` }]] });
+}
 const live = () => and(eq(s.authChallenges.method, "telegram"), isNull(s.authChallenges.consumedAt), gt(s.authChallenges.expiresAt, new Date()));
 
 export async function handleUpdate(update: Update | null) {
@@ -24,7 +38,7 @@ export async function handleUpdate(update: Update | null) {
       return true;
     });
     await tgCall("answerCallbackQuery", { callback_query_id: cb.id, text: approved ? "Tasdiqlandi / Подтверждено" : "Havola eskirgan / Ссылка устарела" });
-    if (approved) await done(uid);
+    if (approved) await done(uid, id);
     return;
   }
   const m = update?.message;
@@ -41,11 +55,11 @@ export async function handleUpdate(update: Update | null) {
       await tx.delete(s.telegramLinks).where(eq(s.telegramLinks.phone, phone));
       await tx.insert(s.telegramLinks).values({ telegramUserId: uid, chatId: chat, phone }).onConflictDoUpdate({ target: s.telegramLinks.telegramUserId, set: { phone, chatId: chat } });
       const [pending] = await tx.select().from(s.authChallenges).where(and(live(), isNull(s.authChallenges.approvedAt), sql`${s.authChallenges.payload}->>'telegramId' = ${String(uid)}`)).orderBy(desc(s.authChallenges.createdAt)).limit(1).for("update");
-      if (!pending) return false;
+      if (!pending) return null;
       await tx.update(s.authChallenges).set({ identifier: phone, approvedAt: new Date() }).where(eq(s.authChallenges.id, pending.id));
-      return true;
+      return pending.id;
     });
-    if (approved) await done(chat);
+    if (approved) await done(chat, approved);
     else await tgSend(chat, "✅ Raqamingiz saqlandi. Endi saytda Telegram orqali kiring yoki telefon raqamingiz bilan kod so‘rang.\nНомер сохранён. Вернитесь на сайт и войдите через Telegram или запросите код по номеру.", remove);
     return;
   }
