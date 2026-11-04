@@ -1,3 +1,5 @@
+> ⚠️ **Eskirgan:** sayt endi Vercel’da. Railway faqat **Telegram bot** uchun ishlatiladi — sozlash: [BOT-SERVER.md](BOT-SERVER.md#railway-hozir-ishlatilmoqda). Quyidagi qo‘llanma saytni Railway’da joylash uchun edi.
+
 # OfisTop — Railway va ofistop.uz domeni
 
 > Yangi asosiy domen `https://ofistop.uz`. Domen ko‘chirish: [OFISTOP-DOMAIN.md](OFISTOP-DOMAIN.md). Google va Telegram uchun [AUTH-SETUP.md](AUTH-SETUP.md)ga qarang.

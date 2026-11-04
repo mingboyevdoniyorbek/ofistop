@@ -25,7 +25,15 @@
 | `APP_URL=https://ofistop.uz` | ✅ (xabardagi "OfisTop'da ochish" havolasi uchun) | ✅ |
 | R2, Google, admin paroli | — kerak emas | ✅ |
 
-## 1-variant: Render (eng oson)
+## Railway (hozir ishlatilmoqda)
+Repodagi `railway.json` Railway'ga **faqat botni** qurishni aytadi (`Dockerfile.bot`, health check `/health`). Sayt Vercel'da qoladi.
+1. Railway → service → **Settings → Networking → Generate Domain** (masalan `ofistop-bot.up.railway.app`). Port so'rasa: `10000`.
+2. **Variables**: `DATABASE_URL` (Vercel'dagi bilan aynan bir xil Neon manzil), `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET` (Vercel'dagi bilan bir xil), `APP_URL=https://ofistop.uz`, `PORT=10000`. `BOT_PUBLIC_URL` shart emas — Railway domeni avtomatik olinadi.
+3. Railway'da **PostgreSQL qo'shmang** — baza Neon'da, sayt bilan bitta.
+4. Vercel'da: `TELEGRAM_BOT_HOST=render` (saytdagi eski webhookni o'chiradi) → Redeploy.
+5. Deploy loglarida `OfisTop bot ready: webhook https://…/telegram/webhook registered` chiqsa — tayyor.
+
+## 1-variant: Render
 1. Render → **New → Web Service** → GitHub → `ofistop` repo.
 2. Build: `npm ci --include=dev`, Start: `npm run bot:start`, Health check: `/health`.
 3. Yuqoridagi jadvaldagi bot o'zgaruvchilarini kiriting (`BOT_PUBLIC_URL` shart emas — Render manzilni o'zi beradi).

@@ -8,7 +8,9 @@ import { flushTelegramNotifications, telegramNotifyEnabled } from "../src/lib/te
 async function main() {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET ?? "";
   if (!telegramEnabled() || !/^[A-Za-z0-9_-]{32,256}$/.test(secret)) throw new Error("Telegram settings missing");
-  const origin = new URL(process.env.RENDER_EXTERNAL_URL ?? process.env.BOT_PUBLIC_URL ?? "");
+  // Ommaviy HTTPS manzil: Render o'zi beradi (RENDER_EXTERNAL_URL), Railway — RAILWAY_PUBLIC_DOMAIN ("Generate Domain"dan keyin), yoki qo'lda BOT_PUBLIC_URL.
+  const railway = process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : undefined;
+  const origin = new URL(process.env.BOT_PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || railway || "");
   if (origin.protocol !== "https:") throw new Error("Bot HTTPS URL required");
   await getPool().query("SELECT 1 FROM telegram_links LIMIT 0");
   let ready = false;
@@ -30,4 +32,5 @@ async function main() {
   const stop = () => { ready = false; if (notifyTimer) clearInterval(notifyTimer); server.close(() => { void getPool().end().then(() => process.exit(0)); }); setTimeout(() => process.exit(0), 15000).unref(); };
   process.once("SIGTERM", stop); process.once("SIGINT", stop);
 }
-main().catch(() => { console.error("Bot startup failed: check DATABASE_URL, TELEGRAM_* and RENDER_EXTERNAL_URL. Secrets are not logged."); process.exit(1); });
+// Sabab logga chiqadi (xabarlarda token yoki parol yo'q: tgCall URL'ni xabarga qo'shmaydi).
+main().catch((e) => { console.error(`Bot startup failed: ${(e as Error)?.message ?? e}. Check DATABASE_URL, TELEGRAM_* and the public URL (Railway: Generate Domain; or BOT_PUBLIC_URL).`); process.exit(1); });
