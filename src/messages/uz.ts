@@ -1,7 +1,7 @@
 // Interfeys matnlari (o'zbek, lotin). Yangi kalit qo'shilsa ru.ts da ham bo'lishi shart (tip tekshiruvi buni majburlaydi).
 export const uz = {
-  "site.title": "OfisTop — ofis va tijorat joylari ijarasi",
-  "site.desc": "O'zbekistonda ofis, do'kon, ombor va boshqa tijorat joylarini ijaraga qidiring yoki e'lon bering.",
+  "site.title": "OfisTop — Toshkentda ofis ijarasi, biznes markazlar va tijorat joylari",
+  "site.desc": "Toshkent va O‘zbekiston bo‘ylab ofis, biznes markazdagi xona, do‘kon, ombor va kovorking ijarasi. Egasidan e’lonlar, narxlar, rasmlar va xarita. E’lon joylash bepul.",
   "nav.aria": "Asosiy", "nav.search": "Joy qidirish", "nav.centers": "Biznes markazlar", "nav.admin": "Admin",
   "nav.notifications": "Bildirishnomalar", "nav.favorites": "Sevimlilar", "nav.cabinet": "Kabinet", "nav.login": "Kirish", "nav.logout": "Chiqish", "nav.newListing": "E'lon berish",
   "lang.aria": "Til",
