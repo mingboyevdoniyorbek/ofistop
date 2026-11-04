@@ -10,6 +10,7 @@ import ListingMap from "@/components/ListingMap";
 import { getT } from "@/lib/i18n";
 import SearchTools from "@/components/SearchTools";
 import SearchRestore from "@/components/SearchRestore";
+import MobileCatalogBar from "@/components/MobileCatalogBar";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -60,37 +61,44 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
   };
   const deals = [["", ru ? "Аренда" : "Ijara"], ["sale", ru ? "Продажа" : "Sotuv"]] as const;
   const dealKey = f.deal === "sale" ? "sale" : "";
+  const barQuery = (() => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(sp)) { if (k === "page" || k === "filtr") continue; for (const x of Array.isArray(v) ? v : v ? [v] : []) u.append(k, x); } return u.toString(); })();
+  const filterCount = [f.region || f.district, f.category, f.priceMin || f.priceMax, f.areaMin || f.areaMax, f.floor !== undefined, f.furnished, f.poster, f.commission, f.availableBy, f.amenities.length > 0].filter(Boolean).length;
   const sorts = (["new", "price_asc", "price_desc", "area_asc", "area_desc"] as const).map((k) => [k, t(`sort.${k}`)] as [string, string]);
 
   return (
     <div className={`mx-auto max-w-[1440px] px-3 py-5 sm:px-6 ${view === "map" ? "space-y-4" : "grid gap-6 lg:grid-cols-[280px_1fr]"}`}>
       <SearchRestore/>
-      <aside>
-        <details className={`${view === "map" ? "" : "lg:hidden"} rounded-2xl border border-slate-200 bg-white p-3`} open={sp.filtr === "1"}>
+      <aside className="hidden lg:block">
+        {/* Telefonda filtr — MobileCatalogBar'dagi to'liq ekranli oynada; bu blok faqat kompyuterdagi xarita ko'rinishi uchun */}
+        <details className={`${view === "map" ? "hidden lg:block" : "hidden"} rounded-2xl border border-slate-200 bg-white p-3`}>
           <summary className="cursor-pointer font-medium">{t("cat.filters")}</summary>
           <div className="mt-3"><FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} /></div>
         </details>
         {view !== "map" && <div className="hidden rounded-2xl border border-slate-200 bg-white p-4 lg:block"><FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} /></div>}
       </aside>
       <section className="min-w-0">
-        <h1 className="mb-3 text-2xl font-bold text-brand-dark">{locale === "ru" ? "Найдите место для бизнеса" : "Biznesingizga mos joyni toping"}</h1>
-        <nav aria-label={ru ? "Тип сделки" : "Bitim turi"} className="mb-4 inline-flex rounded-xl bg-slate-100 p-1 text-sm font-semibold">
+        <MobileCatalogBar query={barQuery} q={f.q ?? ""} deal={f.deal} view={view} sort={f.sort} sorts={sorts} filterCount={filterCount} openFilters={sp.filtr === "1"}>
+          <FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} />
+        </MobileCatalogBar>
+        <div className="lg:hidden"><SearchTools key={`m${mapQuery}`} query={`${mapQuery}&view=${view}`} regions={regions} districts={districts} amenities={amenities} chipsOnly /></div>
+        <h1 className="sr-only lg:not-sr-only lg:mb-3 lg:block lg:text-2xl lg:font-bold lg:text-brand-dark">{locale === "ru" ? "Найдите место для бизнеса" : "Biznesingizga mos joyni toping"}</h1>
+        <nav aria-label={ru ? "Тип сделки" : "Bitim turi"} className="mb-4 hidden rounded-xl lg:inline-flex bg-slate-100 p-1 text-sm font-semibold">
           {deals.map(([k, v]) => <Link key={k} href={dealHref(k)} aria-current={dealKey === k ? "page" : undefined}
             className={`rounded-lg px-4 py-1.5 ${dealKey === k ? "bg-white text-brand shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>{v}</Link>)}
         </nav>
-        <SearchTools key={mapQuery} query={`${mapQuery}&view=${view}`} regions={regions} districts={districts} amenities={amenities}/>
+        <div className="hidden lg:block"><SearchTools key={mapQuery} query={`${mapQuery}&view=${view}`} regions={regions} districts={districts} amenities={amenities}/></div>
         {!!f.errors?.length && <p role="alert" className="mb-3 rounded bg-red-50 p-3 text-red-800">{locale === "ru" ? "Проверьте диапазоны чисел и дату" : f.errors.join(". ")}</p>}
         {data === null ? (
           <div role="alert" className="rounded border border-red-300 bg-red-50 p-4 text-red-800">{t("cat.loadFail")} <Link href="/joylar" className="underline">{t("cat.retry")}</Link>.</div>
         ) : (<>
-          <div className="flex gap-1.5 mb-3 text-sm" role="group" aria-label={t("cat.view")}>
+          <div className="mb-3 hidden gap-1.5 text-sm lg:flex" role="group" aria-label={t("cat.view")}>
             <Link href={qs({ view: "list" })} aria-current={view === "list"} className={`rounded border px-3 py-1.5 ${view === "list" ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t("cat.list")}</Link>
             <Link href={qs({ view: "map" })} aria-current={view === "map"} className={`rounded border px-3 py-1.5 ${view === "map" ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t("cat.map")}<span className="hidden lg:inline"> + {ru ? "список" : "ro‘yxat"}</span></Link>
           </div>
           {view === "map" ? <ListingMap query={mapQuery} listHref={qs({ view: "list" })}><p className="mb-3 font-semibold">{t("cat.results", { n: data.total })}</p><div className="space-y-3">{data.items.map(it => <ListingCard key={it.id} it={it}/>)}</div>{data.pages > 1 && <Link className="mt-4 block text-brand underline" href={qs({ view: "list", page: "1" })}>{locale === "ru" ? "Все результаты" : "Barcha natijalar"}</Link>}</ListingMap> : <>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-sm">
             <p>{t("cat.results", { n: data.total })}</p>
-            <div className="flex flex-wrap gap-1.5" aria-label={t("cat.sortAria")}>
+            <div className="hidden flex-wrap gap-1.5 lg:flex" aria-label={t("cat.sortAria")}>
               {sorts.map(([k, v]) => <Link key={k} href={qs({ sort: k, page: "1" })} aria-current={f.sort === k} className={`rounded-full border px-2.5 py-1 ${f.sort === k ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{v}</Link>)}
             </div>
           </div>

@@ -44,7 +44,7 @@ export default async function Home() {
         <form action="/joylar" method="get" role="search" className="flex gap-2">
           <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 shadow-[0_2px_12px_rgba(15,23,42,0.08)] focus-within:ring-2 focus-within:ring-brand">
             <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 shrink-0 stroke-slate-500" fill="none" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-            <input name="q" aria-label={t("home.kw")} placeholder={ru ? "Метро, район или адрес" : "Metro, tuman yoki manzil"} className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-slate-500" />
+            <input name="q" type="search" enterKeyHint="search" autoComplete="off" aria-label={t("home.kw")} placeholder={ru ? "Метро, район или адрес" : "Metro, tuman yoki manzil"} className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-slate-500 focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden" />
           </label>
           <Link href="/joylar?filtr=1" aria-label={ru ? "Фильтры" : "Filtrlar"} className="grid h-[50px] w-[50px] shrink-0 place-items-center rounded-full border border-slate-200 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.08)]">
             <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 stroke-slate-700" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></svg>
