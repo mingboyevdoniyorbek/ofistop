@@ -32,8 +32,14 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: t("site.title"), template: "%s | OfisTop" },
     description: t("site.desc"),
     // Google Search Console / Yandex Webmaster tasdiqlash kodlari (ixtiyoriy).
-    verification: { google: process.env.GOOGLE_SITE_VERIFICATION || undefined, yandex: process.env.YANDEX_VERIFICATION || undefined },
+    verification: { google: verificationCode(process.env.GOOGLE_SITE_VERIFICATION), yandex: verificationCode(process.env.YANDEX_VERIFICATION) },
   };
+}
+
+/** Kod o'rniga butun `<meta name=".." content="KOD" />` tegi qo'yilgan bo'lsa ham faqat KOD olinadi. */
+function verificationCode(raw?: string) {
+  const v = raw?.trim(); if (!v) return undefined;
+  return v.match(/content=["']([^"']+)["']/i)?.[1]?.trim() || v.replace(/^["']|["']$/g, "");
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

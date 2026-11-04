@@ -19,10 +19,15 @@ export default function MobileCatalogBar({ query, q, deal, view, sort, sorts, fi
   const [geoErr, setGeoErr] = useState("");
   useEffect(() => {
     if (!open) return;
+    // Oyna faqat telefonda (lg dan kichik) ko'rinadi. Kompyuterda ochiq qolsa sahifa aylanmay qolardi — yopamiz.
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    if (desktop.matches) { setOpen(false); return; }
+    const toDesktop = (e: MediaQueryListEvent) => { if (e.matches) setOpen(false); };
+    desktop.addEventListener("change", toDesktop);
     const prev = document.body.style.overflow; document.body.style.overflow = "hidden";
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("keydown", esc);
-    return () => { document.body.style.overflow = prev; document.removeEventListener("keydown", esc); };
+    return () => { document.body.style.overflow = prev; document.removeEventListener("keydown", esc); desktop.removeEventListener("change", toDesktop); };
   }, [open]);
   const href = (over: Record<string, string | null>) => {
     const u = new URLSearchParams(query);
