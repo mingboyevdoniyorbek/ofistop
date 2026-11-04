@@ -8,7 +8,7 @@ import ListingCard from "@/components/ListingCard";
 import GuestFavsLoader from "@/components/GuestFavsLoader";
 
 export const dynamic = "force-dynamic";
-export const metadata = { robots: { index: false } };
+export const metadata = { title: "Sevimlilar", robots: { index: false } };
 /** Kirmagan foydalanuvchi sevimlilari: ID'lar brauzerdan URL'ga olinadi va server kartalarni chizadi. */
 export default async function GuestFavs({ searchParams }: { searchParams: Promise<{ ids?: string }> }) {
   if (await getCurrentUser().catch(() => null)) redirect("/kabinet/sevimlilar");

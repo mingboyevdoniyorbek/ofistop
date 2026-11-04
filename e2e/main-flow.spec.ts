@@ -309,10 +309,11 @@ test("15. Mobil: navigatsiya, filtr paneli, tafsilot va forma gorizontal skrolls
   await p.goto("/");
   await shot(p, "09-mobil-bosh");
   await p.goto("/joylar");
-  const sum = p.locator("summary").filter({ hasText: new RegExp(`^${uz["cat.filters"]}$`) }); // "Qo‘shimcha filtrlar" emas
-  await expect(sum).toBeVisible();
-  await sum.click();
-  await expect(p.locator("details[open]").getByLabel(uz["f.region"])).toBeVisible();
+  // Telefonda filtr — qidiruv yonidagi tugma, to'liq ekranli oyna
+  const filterBtn = p.getByRole("button", { name: "Filtrlar" });
+  await expect(filterBtn).toBeVisible();
+  await filterBtn.click();
+  await expect(p.getByRole("dialog", { name: "Filtrlar" }).getByLabel(uz["f.region"])).toBeVisible();
   await shot(p, "10-mobil-filtr");
   await p.goto(detailUrl.replace(/\/joylar\/.*/, "/joylar"));
   await p.locator("main a[href^='/joylar/']").first().click();

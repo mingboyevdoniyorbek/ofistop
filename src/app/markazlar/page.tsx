@@ -59,7 +59,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
       {/* Tez qidiruv doim ko'rinadi; qolgan filtrlar yig'iladigan "Filtrlar" ichida (faol filtr bo'lsa ochiq) */}
       <form action="/markazlar" className="space-y-3">
         <div className="flex gap-2">
-          <input name="q" defaultValue={q} aria-label={ru ? "Название, район или ориентир" : "Markaz nomi, tuman yoki mo‘ljal"} className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5" placeholder={ru ? "Название центра, район…" : "Markaz nomi, tuman…"} />
+          <input name="q" type="search" enterKeyHint="search" defaultValue={q} aria-label={ru ? "Название, район или ориентир" : "Markaz nomi, tuman yoki mo‘ljal"} className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5" placeholder={ru ? "Название центра, район…" : "Markaz nomi, tuman…"} />
           <button className="shrink-0 rounded-xl bg-brand px-5 py-2.5 font-semibold text-white hover:bg-brand-dark">{t("home.search")}</button>
         </div>
         <details className="group rounded-2xl border border-slate-200 bg-white" open={filterCount > 0}>

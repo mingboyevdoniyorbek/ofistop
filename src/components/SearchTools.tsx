@@ -5,7 +5,7 @@ import { useLocale } from "./I18nProvider";
 import { SaveSearch } from "./SavedSearch";
 import { labels } from "@/lib/format";
 import FormSelect from "./FormSelect";
-export default function SearchTools({ query, regions, districts, amenities = [] }: { query: string; regions: {id:number;name:string}[]; districts:{id:number;name:string}[]; amenities?:{code:string;name:string}[] }) {
+export default function SearchTools({ query, regions, districts, amenities = [], chipsOnly = false }: { query: string; regions: {id:number;name:string}[]; districts:{id:number;name:string}[]; amenities?:{code:string;name:string}[]; chipsOnly?: boolean }) {
   const locale = useLocale(), ru = locale === "ru", L = labels(locale), params = new URLSearchParams(query);
   const [error, setError] = useState("");
   const [radius, setRadius] = useState(params.get("radius") ?? "1000");
@@ -22,6 +22,8 @@ export default function SearchTools({ query, regions, districts, amenities = [] 
     return value;
   }
   function without(key: string, value: string) { const u = new URLSearchParams(query); if (key === "amenities") { const others = u.getAll(key).filter(v => v !== value); u.delete(key); others.forEach(v => u.append(key, v)); } else u.delete(key); if (key === "region") u.delete("district"); if (key === "lat") { u.delete("lng"); u.delete("radius"); } u.delete("page"); return `/joylar?${u}`; }
+  const chips = [...params].filter(([k,v]) => names[k] && v);
+  if (chipsOnly) return chips.length ? <div className="no-scrollbar -mx-3 mb-3 flex gap-2 overflow-x-auto px-3 sm:-mx-6 sm:px-6">{chips.map(([k, v], i) => <Link key={`${k}-${i}`} href={without(k, v)} className="shrink-0 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-medium text-brand" aria-label={`${ru ? "Убрать" : "Olib tashlash"}: ${names[k]}`}>{names[k]}{!["bbox","lat","commission","center"].includes(k) && `: ${display(k,v)}`} ×</Link>)}</div> : null;
   return <div className="mb-4 space-y-3"><div className="flex flex-wrap gap-2">{[...params].filter(([k,v]) => names[k] && v).map(([k, v], i) => <Link key={`${k}-${i}`} href={without(k, v)} className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-brand" aria-label={`${ru ? "Убрать" : "Olib tashlash"}: ${names[k]}`}>{names[k]}{!["bbox","lat","commission","center"].includes(k) && `: ${display(k,v)}`} ×</Link>)}</div>
     <div className="flex flex-wrap items-start gap-2"><SaveSearch query={query}/><div className="flex gap-1"><FormSelect value={radius} onChange={e=>setRadius(e.target.value)} aria-label={ru ? "Радиус поиска" : "Qidirish masofasi"} className="rounded-full border px-2 py-2 text-sm"><option value="1000">1 km</option><option value="3000">3 km</option><option value="5000">5 km</option></FormSelect><button className="rounded-full border bg-white px-4 py-2 text-sm" onClick={() => { setError(""); if (!navigator.geolocation) { setError(ru ? "Геолокация недоступна" : "Joylashuv aniqlanmadi"); return; } navigator.geolocation.getCurrentPosition(p => { const u = new URLSearchParams(query); u.set("lat", String(p.coords.latitude)); u.set("lng", String(p.coords.longitude)); u.set("radius", radius); u.delete("bbox"); u.delete("page"); location.assign(`/joylar?${u}`); }, () => setError(ru ? "Разрешите геолокацию или выберите район." : "Joylashuvga ruxsat bering yoki tumanni tanlang."), { timeout: 10000, maximumAge: 60000 }); }}>⌖ {ru ? "Рядом со мной" : "Menga yaqin"}</button></div></div>{error && <p role="alert" className="text-sm text-red-700">{error}</p>}
   </div>;

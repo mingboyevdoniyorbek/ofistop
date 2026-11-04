@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "./I18nProvider";
-export function SaveSearch({ query }: { query: string }) {
-  const ru = useLocale() === "ru", [open, setOpen] = useState(false), [name, setName] = useState(""), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
-  return <div><button className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm" onClick={() => setOpen(!open)}>☆ {ru ? "Сохранить поиск" : "Qidiruvni saqlash"}</button>{open && <form className="mt-2 flex flex-wrap gap-2 rounded-2xl bg-slate-50 p-3" onSubmit={async e => {
+export function SaveSearch({ query, startOpen = false }: { query: string; startOpen?: boolean }) {
+  const ru = useLocale() === "ru", [open, setOpen] = useState(startOpen), [name, setName] = useState(""), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
+  return <div>{!startOpen && <button className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm" onClick={() => setOpen(!open)}>☆ {ru ? "Сохранить поиск" : "Qidiruvni saqlash"}</button>}{open && <form className="mt-2 flex flex-wrap gap-2 rounded-2xl bg-slate-50 p-3" onSubmit={async e => {
     e.preventDefault(); setBusy(true); setMessage("");
     try { const r = await fetch("/api/saved-searches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, query }) });
       if (r.status === 401) { location.assign(`/kirish?next=${encodeURIComponent(location.pathname + location.search)}`); return; }
