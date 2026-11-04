@@ -6,12 +6,15 @@ import { handle, requireUser, HttpError, managedCenterIds, isUuid } from "@/lib/
 import { hit } from "@/lib/ratelimit";
 import { getOrCreateGuest } from "@/lib/guest";
 import { isGuestPhone } from "@/lib/launch-mode";
+import { purgeStaleDrafts } from "@/lib/drafts";
 
 // Bo'sh qoralama yaratadi. GET emas, POST: prefetch/crawler bo'sh qoralama yaratmasin.
 export const POST = handle(async (req) => {
   const user = await getOrCreateGuest(req);
   if (!(await hit(`draft:${user.id}`, 20, 3600))) throw new HttpError(429, "Juda ko'p yangi qoralama. Keyinroq urinib ko'ring.");
   const d = db();
+  // Kunlik cron'ni kutmasdan: yangi qoralama yaratilganda 24 soatdan eski qoralamalar (hammaniki) tozalanadi.
+  await purgeStaleDrafts().catch((e) => console.error("[drafts]", (e as Error).message));
   const body = await req.json().catch(() => ({}));
   let center: typeof s.businessCenters.$inferSelect | undefined;
   if (body?.centerId) {

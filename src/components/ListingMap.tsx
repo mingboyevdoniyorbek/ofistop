@@ -114,7 +114,7 @@ export default function ListingMap({ query, listHref, children }: { query: strin
       <button className="mb-3 w-full rounded-xl bg-slate-100 p-2 text-sm lg:hidden" onClick={() => setSheet(false)}>{ru ? "Свернуть ↓" : "Yopish ↓"}</button>
       {selected.length ? <div className="space-y-3"><button className="text-sm text-brand" onClick={() => { setSelected([]); setGroupTotal(0); }}>{ru ? "← Все результаты" : "← Barcha natijalar"}</button>{groupTotal > 1 && <p>{groupTotal} {ru ? "объявлений здесь" : "ta e’lon shu joyda"}</p>}{cards}</div> : children}
     </aside>
-    <div className={`relative ${fullscreen ? "h-[calc(100dvh-16px)]" : "h-[76dvh] min-h-[420px]"} overflow-hidden rounded-3xl border border-slate-200 bg-slate-100`}>
+    <div className={`relative isolate z-0 ${fullscreen ? "h-[calc(100dvh-16px)]" : "h-[76dvh] min-h-[420px]"} overflow-hidden rounded-3xl border border-slate-200 bg-slate-100`}>
       <div ref={box} className="absolute inset-0" aria-label={ru ? "Карта объявлений" : "E’lonlar xaritasi"}/>
       <button aria-pressed={fullscreen} aria-label={fullscreen ? (ru ? "Закрыть полноэкранную карту" : "To‘liq ekran xaritasini yopish") : (ru ? "Карта на весь экран" : "Xaritani to‘liq ekranda ochish")} onClick={()=>setFullscreen(x=>!x)} className="absolute left-3 top-24 z-[500] grid h-10 w-10 place-items-center rounded-xl bg-white text-xl shadow">{fullscreen ? "✕" : "⛶"}</button>
       <div className="pointer-events-none absolute left-14 right-3 top-3 z-[500] flex flex-wrap justify-center gap-2">

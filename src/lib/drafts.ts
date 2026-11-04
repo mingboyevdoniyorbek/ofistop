@@ -2,8 +2,8 @@ import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { deleteObject } from "./storage";
 
-/** Qoralama oxirgi tahrirdan keyin shuncha kun o'tgach avtomatik o'chiriladi. */
-export const DRAFT_TTL_DAYS = 7;
+/** Qoralama oxirgi tahrirdan keyin shuncha soat o'tgach avtomatik o'chiriladi (24 soat). */
+export const DRAFT_TTL_HOURS = 24;
 
 /**
  * Qoralamalarni rasmlari bilan birga o'chiradi. Faqat hech qachon chop etilmagan qoralamalar
@@ -32,4 +32,4 @@ export const deleteDraft = (id: string, ownerId: string | null) =>
 
 /** Muddati o'tgan qoralamalar (ixtiyoriy: faqat bitta foydalanuvchiniki). */
 export const purgeStaleDrafts = (ownerId?: string) =>
-  removeDrafts(and(lt(s.listings.updatedAt, sql`now() - make_interval(days => ${DRAFT_TTL_DAYS})`), ownerId ? eq(s.listings.ownerId, ownerId) : undefined));
+  removeDrafts(and(lt(s.listings.updatedAt, sql`now() - make_interval(hours => ${DRAFT_TTL_HOURS})`), ownerId ? eq(s.listings.ownerId, ownerId) : undefined));

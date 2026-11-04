@@ -130,8 +130,8 @@ test("center totals use full rent, exclude pending rooms, and cover reorder reje
 
 import { DELETE as deleteListing } from "../src/app/api/listings/[id]/route";
 import { purgeStaleDrafts } from "../src/lib/drafts";
-test("qoralama: egasi o'chiradi, chop etilgan e'lon o'chmaydi, 7 kundan eski qoralamalar avtomatik o'chadi",async()=>{
- const old=new Date(Date.now()-8*86400000), fresh=new Date(Date.now()-2*86400000);
+test("qoralama: egasi o'chiradi, chop etilgan e'lon o'chmaydi, 24 soatdan eski qoralamalar avtomatik o'chadi",async()=>{
+ const old=new Date(Date.now()-25*3600000), fresh=new Date(Date.now()-20*3600000);
  const [d1,d2,d3,pub,othersDraft]=await state.db.insert(schema.listings).values([
   {...base("draft-manual"),moderationStatus:"draft",publishedAt:null},
   {...base("draft-old"),moderationStatus:"draft",publishedAt:null,updatedAt:old},

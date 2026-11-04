@@ -141,7 +141,8 @@ export default function PickMap({ lat, lng, onPick, disabled, focus }: {
         </div>
       )}
       {/* Xarita va uning tugmalari bitta blokda: tugmalar xarita ichida, pastki izoh matniga tushmaydi */}
-      <div className={full ? "relative h-full w-full" : "relative h-72 overflow-hidden rounded border border-slate-200"}>
+      {/* isolate: Leaflet ichki z-index'lari (400–1000) shu blokdan chiqmaydi — pastki tugmalar paneli xarita ustida qoladi */}
+      <div className={full ? "relative h-full w-full" : "relative isolate z-0 h-72 overflow-hidden rounded-2xl border border-slate-200"}>
       {/* className o'zgarmasin: Leaflet bu elementga o'z klasslarini (leaflet-container) qo'shadi, React className'ni almashtirsa ular o'chib, xarita oq bo'lib qoladi */}
       <div ref={box} role="region" aria-label={t("wiz.mapAria")} data-testid="pick-map" data-focus={focusKey} className="h-full w-full bg-slate-100" />
       <div className="absolute bottom-8 right-3 z-[1000] flex flex-col gap-2">
