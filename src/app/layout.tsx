@@ -31,6 +31,10 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: { siteName: "OfisTop", locale: locale === "ru" ? "ru_RU" : "uz_UZ", type: "website" },
     title: { default: t("site.title"), template: "%s | OfisTop" },
     description: t("site.desc"),
+    applicationName: "OfisTop",
+    keywords: locale === "ru"
+      ? ["OfisTop", "аренда офиса Ташкент", "аренда офиса", "бизнес-центр Ташкент", "коммерческая недвижимость Ташкент", "аренда магазина", "аренда склада", "коворкинг Ташкент", "продажа здания", "офис без посредников"]
+      : ["OfisTop", "ofistop.uz", "ofis ijarasi", "Toshkentda ofis ijarasi", "ofis ijaraga", "biznes markaz", "tijorat joyi ijarasi", "do‘kon ijarasi", "ombor ijarasi", "kovorking Toshkent", "bino sotiladi", "egasidan ofis"],
     // Google Search Console / Yandex Webmaster tasdiqlash kodlari (ixtiyoriy).
     verification: { google: verificationCode(process.env.GOOGLE_SITE_VERIFICATION), yandex: verificationCode(process.env.YANDEX_VERIFICATION) },
   };
