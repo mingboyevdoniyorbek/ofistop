@@ -16,9 +16,7 @@ export default async function KabinetLayout({ children }: { children: React.Reac
         <Link href="/kabinet" className="hover:underline">{t("cab.nav.listings")}</Link>
         <Link href="/kabinet/markazlar" className="hover:underline">{locale === "ru" ? "Мои бизнес-центры" : "Biznes markazlarim"}</Link>
         <Link href="/kabinet/qidiruvlar" className="hover:underline">{locale === "ru" ? "Сохранённые поиски" : "Saqlangan qidiruvlar"}</Link>
-        <Link href="/kabinet/sevimlilar" className="hover:underline">{t("cab.nav.favorites")}</Link>
         <Link href="/kabinet/profil" className="hover:underline">{t("cab.nav.profile")}</Link>
-        <Link href="/kabinet/bildirishnomalar" className="hover:underline">{t("cab.nav.notifications")}</Link>
       </CabinetNav>
       {children}
     </div>

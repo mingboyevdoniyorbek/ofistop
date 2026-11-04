@@ -68,7 +68,7 @@ export default async function Home() {
       <RecentlyViewed />
 
       {/* Qolgan e'lonlar: telefonda 2 ustun, pastga qarab */}
-      <section className="mx-auto max-w-6xl px-4 pt-8" aria-labelledby="all-h">
+      <section className="mx-auto max-w-6xl px-4 pt-6" aria-labelledby="all-h">
         <RailHead id="all-h" title={ru ? "Все объявления" : "Barcha e’lonlar"} href="/joylar" more={t("home.all")} />
         {rest === null ? <p className="text-red-700">{t("home.loadFail")}</p>
           : <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-4">{rest.map((it) => <ListingCard key={it.id} it={it} />)}</div>}
@@ -76,7 +76,7 @@ export default async function Home() {
       </section>
 
       {/* Urg'u — biznes markazlar va "Biz ijaraga beramiz" xizmati */}
-      <section className="mx-auto mt-10 grid max-w-6xl gap-4 px-4 pb-10 lg:grid-cols-2">
+      <section className="mx-auto mt-10 grid max-w-6xl gap-4 px-4 pb-10 md:grid-cols-2 lg:grid-cols-3">
         <div className="relative overflow-hidden rounded-3xl bg-brand-dark p-6 text-white sm:p-8">
           <CenterSticker uid="bc-cta" className="pointer-events-none absolute -bottom-4 -right-3 h-32 w-32 opacity-30" />
           <h2 className="relative text-2xl font-bold">{ru ? "Все помещения вашего центра — на одной странице" : "Markazingizdagi barcha xonalar — bitta sahifada"}</h2>
@@ -88,6 +88,12 @@ export default async function Home() {
           <h2 className="relative text-2xl font-bold">{ru ? "Нет времени на арендаторов?" : "Ijarachilarga vaqtingiz yo‘qmi?"}</h2>
           <p className="relative mt-3 max-w-xl text-green-50">{ru ? "Сдадим помещение за вас: примем звонки, покажем помещение, вы только подпишете договор." : "Joyingizni biz ijaraga beramiz: qo‘ng‘iroqlarni qabul qilamiz, joyni ko‘rsatamiz, siz faqat shartnoma tuzasiz."}</p>
           <Link href="/xizmat" className="relative mt-5 inline-block rounded-xl bg-white px-5 py-3 font-semibold text-green-800">{ru ? "Подробнее →" : "Batafsil →"}</Link>
+        </div>
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#134e4a] to-[#0d9488] p-6 text-white sm:p-8 md:col-span-2 lg:col-span-1">
+          <SofaSticker uid="sofa-cta" className="pointer-events-none absolute -bottom-3 -right-2 h-32 w-32 opacity-40" />
+          <h2 className="relative text-2xl font-bold">{ru ? "Мебель для офиса" : "Ofisingiz uchun mebel"}</h2>
+          <p className="relative mt-3 max-w-xl text-teal-50">{ru ? "Столы, кресла и шкафы — готовые и на заказ от проверенных компаний." : "Stol, kreslo va shkaflar — tayyor yoki buyurtma asosida, ishonchli firmalardan."}</p>
+          <div className="relative mt-5 flex flex-wrap gap-3"><Link href="/mebel" className="rounded-xl bg-white px-5 py-3 font-semibold text-teal-800">{ru ? "Смотреть мебель" : "Mebellarni ko‘rish"}</Link><Link href="/mebel/ariza" className="rounded-xl bg-white/15 px-5 py-3 font-semibold text-white ring-1 ring-white/40">{ru ? "Я производитель" : "Men mebelchiman"}</Link></div>
         </div>
       </section>
       <section className="bg-slate-50 border-y border-slate-200">

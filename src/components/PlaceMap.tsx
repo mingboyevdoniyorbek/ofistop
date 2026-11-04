@@ -21,6 +21,6 @@ export default function PlaceMap({ lat, lng, approx, radiusM }: { lat: number; l
     return () => { dead = true; map?.remove(); };
   }, [lat, lng, approx, radiusM]);
   if (failed) return <p className="text-sm text-slate-500">{t("map.placeFail")}</p>;
-  return (<div><div ref={box} role="region" aria-label={t("map.region")} className="h-64 rounded border border-slate-200 bg-slate-100" />
+  return (<div><div ref={box} role="region" aria-label={t("map.region")} className="relative isolate z-0 h-64 rounded-2xl border border-slate-200 bg-slate-100" />
     {approx && <p className="mt-1 text-xs text-slate-500">{t("map.approx")}</p>}</div>);
 }

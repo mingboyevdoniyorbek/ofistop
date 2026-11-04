@@ -7,7 +7,7 @@ import { backfillMediumImages } from "@/lib/listing-images";
 
 /**
  * Kunlik xizmat ishi (Vercel Cron, vercel.json). Vercel `Authorization: Bearer $CRON_SECRET` yuboradi.
- * 7 kundan beri tahrirlanmagan qoralamalarni o'chiradi; oyning 1-kuni markaz vakillariga oylik hisobot yuboradi.
+ * 24 soatdan beri tahrirlanmagan qoralamalarni o'chiradi; oyning 1-kuni markaz vakillariga oylik hisobot yuboradi.
  */
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;

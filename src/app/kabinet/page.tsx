@@ -11,7 +11,7 @@ import type { MsgKey } from "@/messages/uz";
 import { mediaUrl } from "@/lib/storage";
 import ListingActions from "@/components/ListingActions";
 import DeleteDraftButton from "@/components/DeleteDraftButton";
-import { purgeStaleDrafts, DRAFT_TTL_DAYS } from "@/lib/drafts";
+import { purgeStaleDrafts, DRAFT_TTL_HOURS } from "@/lib/drafts";
 import NewListingButton from "@/components/NewListingButton";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,7 @@ export default async function Kabinet({ searchParams }: { searchParams: Promise<
   const { locale, t } = await getT();
   const L = labels(locale);
   const d = db();
-  // 7 kundan beri tahrirlanmagan o'z qoralamalari shu yerda ham tozalanadi (kunlik cron'ni kutmasdan).
+  // 24 soatdan beri tahrirlanmagan o'z qoralamalari shu yerda ham tozalanadi (kunlik cron'ni kutmasdan).
   await purgeStaleDrafts(user.id).catch(() => 0);
   const managed = await managedCenterIds(user.id);
   const rows = await d.select().from(s.listings).where(or(eq(s.listings.ownerId, user.id), managed.length ? inArray(s.listings.centerId, managed) : undefined)).orderBy(desc(s.listings.updatedAt));
@@ -60,7 +60,7 @@ export default async function Kabinet({ searchParams }: { searchParams: Promise<
                 {r.isSuspended && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-800">{locale === "ru" ? "Заблокировано модератором" : "Moderator tomonidan bloklangan"}: {r.suspensionReason}</p>}
                 {st === "rejected" && <p role="status" className="rounded bg-red-50 p-2 text-sm text-red-800"><strong>{t("cab.rejectReason")}</strong> {r.rejectionReason}</p>}
                 {st === "pending" && <p className="text-sm text-slate-600">{t("cab.pendingNote")}</p>}
-                {st === "draft" && !r.publishedAt && (() => { const left = Math.max(1, Math.ceil((r.updatedAt.getTime() + DRAFT_TTL_DAYS * 864e5 - Date.now()) / 864e5)); return <p className="text-xs text-amber-800">{locale === "ru" ? `Черновик будет автоматически удалён через ${left} дн., если его не редактировать.` : `Qoralama tahrirlanmasa ${left} kundan keyin avtomatik o‘chiriladi.`}</p>; })()}
+                {st === "draft" && !r.publishedAt && (() => { const left = Math.max(1, Math.ceil((r.updatedAt.getTime() + DRAFT_TTL_HOURS * 36e5 - Date.now()) / 36e5)); return <p className="text-xs text-amber-800">{locale === "ru" ? `Черновик будет автоматически удалён через ${left} ч., если его не дописать и не отправить.` : `Qoralama to‘ldirilib yuborilmasa, ${left} soatdan keyin avtomatik o‘chiriladi.`}</p>; })()}
                 {st === "active" && r.availabilityConfirmedAt && Date.now() - r.availabilityConfirmedAt.getTime() > 7*86400000 && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{locale === "ru" ? "Помещение ещё свободно? Подтвердите доступность или отметьте, что оно сдано." : "Joyingiz hali ham bo‘shmi? Bo‘shligini tasdiqlang yoki ijaraga berilganini belgilang."}</p>}
                 {r.moderationStatus === "approved" && <p className="text-xs text-slate-500">{showViewCounts() ? `${locale === "ru" ? "Просмотры" : "Ko‘rishlar"}: ${r.viewCount} · ` : ""}{t("cab.stats", { phone: x.phone, tg: x.tg, fav: x.fav })}</p>}
                 <div className="flex flex-wrap items-center gap-3 pt-1">

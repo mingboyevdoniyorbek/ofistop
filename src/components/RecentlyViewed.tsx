@@ -31,14 +31,14 @@ export default function RecentlyViewed() {
   if (!items.length) return null;
   const clear = () => { try { localStorage.removeItem(KEY); } catch {} setItems([]); };
   return (
-    <section className="mx-auto max-w-6xl px-4 pb-8" aria-labelledby="recent-h">
+    <section className="mx-auto max-w-6xl px-4 pt-6" aria-labelledby="recent-h">
       <div className="mb-3 flex items-baseline justify-between">
         <h2 id="recent-h" className="text-lg font-semibold">{ru ? "Недавно просмотренные объявления" : "Oxirgi ko‘rilgan e’lonlar"}</h2>
         <button type="button" onClick={clear} className="text-sm text-slate-500 hover:underline">{ru ? "Очистить" : "Tozalash"}</button>
       </div>
       <div className="-mx-4 flex snap-x snap-mandatory gap-3 no-scrollbar overflow-x-auto scroll-px-4 px-4 pb-2">
         {items.map((it) => (
-          <Link key={it.id} href={it.href} className="group flex w-[44vw] max-w-[220px] shrink-0 snap-start flex-col">
+          <Link key={it.id} href={it.href} className="group flex w-[calc((100vw-2.75rem)/2)] max-w-[270px] shrink-0 snap-start flex-col">
             <div className="overflow-hidden rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_14px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5">
               <ListingPhoto thumb={it.thumb} full={it.full} alt={it.title} sizes="220px" fit="cover" className="aspect-square transition-transform duration-300 group-hover:scale-[1.03]" />
             </div>
