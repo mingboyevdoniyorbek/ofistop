@@ -17,10 +17,10 @@ export default function MobileMenu({ label, children }: { label: string; childre
   }, []);
   return (
     <details ref={ref} className="relative md:hidden">
-      <summary aria-label={label} className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded border border-slate-300 text-lg [&::-webkit-details-marker]:hidden">
+      <summary aria-label={label} className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full border border-slate-200 text-lg [&::-webkit-details-marker]:hidden">
         <span aria-hidden="true">☰</span>
       </summary>
-      <div className="absolute right-0 top-full z-30 mt-2 flex w-60 flex-col gap-1 rounded-lg border border-slate-200 bg-white p-2 shadow-lg [&>a]:rounded [&>a]:px-3 [&>a]:py-2 [&>a:hover]:bg-slate-50">{children}</div>
+      <div className="absolute right-0 top-full z-30 mt-2 flex w-64 flex-col gap-0.5 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl [&>a]:flex [&>a]:items-center [&>a]:gap-3 [&>a]:rounded-xl [&>a]:px-3 [&>a]:py-2.5 [&>a]:text-slate-700 [&>a:hover]:bg-slate-50 [&>a>svg]:text-brand">{children}</div>
     </details>
   );
 }

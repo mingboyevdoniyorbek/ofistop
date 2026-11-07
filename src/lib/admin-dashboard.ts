@@ -36,8 +36,13 @@ export async function adminDashboard(locale: "uz" | "ru") {
     region: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, district: locale === "ru" ? s.districts.nameRu : s.districts.nameUz })
     .from(L).innerJoin(s.regions, eq(s.regions.id, L.regionId)).leftJoin(s.districts, eq(s.districts.id, L.districtId))
     .where(eq(L.moderationStatus, "pending")).orderBy(sql`${L.updatedAt} ASC`).limit(6);
+  // Oxirgi qo'shilgan e'lonlar (tekshiruvdagilar bo'lmasa ham panel bo'sh qolmasin).
+  const latestRows = await db().select({ id: L.id, slug: L.slug, title: L.title, status: L.moderationStatus, createdAt: L.createdAt, amount: L.priceAmountMinor, currency: L.currency, period: L.pricePeriod, basis: L.priceBasis, negotiable: L.priceNegotiable,
+    region: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, district: locale === "ru" ? s.districts.nameRu : s.districts.nameUz })
+    .from(L).innerJoin(s.regions, eq(s.regions.id, L.regionId)).leftJoin(s.districts, eq(s.districts.id, L.districtId))
+    .where(sql`${L.moderationStatus} <> 'draft'`).orderBy(desc(L.createdAt)).limit(5);
   return {
-    k: k as Record<string, number>,
+    k: k as Record<string, number>, latestRows,
     days: (days as { day: Date | string; views: number; created: number }[]).map((d) => ({ day: new Date(d.day).toISOString().slice(0, 10), views: d.views, created: d.created })),
     recent, pendingRows,
   };

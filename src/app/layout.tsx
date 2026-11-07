@@ -16,6 +16,7 @@ import { guestAccessEnabled, isGuestPhone } from "@/lib/launch-mode";
 import { siteInfo } from "@/lib/site-info";
 import { siteJsonLd } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
+import HeaderNav, { NavIcon } from "@/components/HeaderNav";
 import SiteContacts from "@/components/SiteContacts";
 import Analytics from "@/components/Analytics";
 import VisitTracker from "@/components/VisitTracker";
@@ -62,28 +63,33 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <VisitTracker />
         <I18nProvider locale={locale}>
         <header className="border-b border-slate-200 bg-white sticky top-0 z-20">
-          <nav className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3 md:gap-4 text-sm" aria-label={t("nav.aria")}>
-            <Link href="/" className="flex items-center gap-1.5 font-bold text-lg text-brand">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/logo.webp" alt="" width={36} height={36} className="h-9 w-9" />Ofis<span className="-ml-1.5 text-accent">Top</span></Link>
-            <Link href="/joylar" className="hidden md:inline hover:underline">{t("nav.search")}</Link>
-            <Link href="/markazlar" className="hidden md:inline hover:underline">{t("nav.centers")}</Link>
-            <Link href="/mebel" className="hidden md:inline hover:underline">{locale === "ru" ? "Мебель" : "Mebel"}</Link>
-            <Link href="/xizmat" className="hidden lg:inline hover:underline">{locale === "ru" ? "Сдадим за вас" : "Biz ijaraga beramiz"}</Link>
+          <nav className="mx-auto max-w-6xl px-4 h-16 flex items-center gap-3 text-sm" aria-label={t("nav.aria")}>
+            <Link href="/" className="mr-2 flex shrink-0 items-center gap-1.5 font-bold text-lg text-brand">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/logo.webp" alt="" width={36} height={36} className="h-9 w-9" />Ofis<span className="-ml-1.5 text-accent">Top</span></Link>
+            <div className="flex items-center gap-0.5">
+              <HeaderNav items={[
+                { href: "/joylar", label: t("nav.search"), icon: "search", also: ["/ijara"] },
+                { href: "/markazlar", label: t("nav.centers"), icon: "building" },
+                { href: "/mebel", label: locale === "ru" ? "Мебель" : "Mebel", icon: "sofa", from: "lg" },
+                { href: "/xizmat", label: locale === "ru" ? "Сдадим за вас" : "Biz ijaraga beramiz", icon: "key", from: "xl" },
+              ]} />
+            </div>
             <span className="flex-1" />
-            <div className="hidden md:flex items-center gap-4">
-              {user && <><Link href="/kabinet/sevimlilar" className="hover:underline">{t("nav.favorites")}</Link><Link href="/kabinet" className="hover:underline">{t("nav.cabinet")}</Link></>}
-              {!user && <Link href="/sevimlilar" className="hover:underline">{t("nav.favorites")}</Link>}
-              <LangSwitch />
+            <div className="hidden md:flex items-center gap-0.5">
+              <HeaderNav items={user
+                ? [{ href: "/kabinet/sevimlilar", label: t("nav.favorites"), icon: "heart", iconOnly: true }, { href: "/kabinet", label: t("nav.cabinet"), icon: "user", iconOnly: true }]
+                : [{ href: "/sevimlilar", label: t("nav.favorites"), icon: "heart", iconOnly: true }]} />
+              <span className="ml-2"><LangSwitch /></span>
             </div>
             <span className="hidden md:inline-flex"><NewListingButton loggedIn={!!user} promo={promo} /></span>
             <span className="hidden md:inline">{user ? (!guest && <LogoutButton />) : <Link href="/kirish" className="hover:underline">{loginLabel}</Link>}</span>
             {user && <NotificationBell initialUnread={unread} />}
             <MobileMenu label={t("nav.menu")}>
-              <Link href="/joylar">{t("nav.search")}</Link>
-              <Link href="/markazlar">{t("nav.centers")}</Link>
-              <Link href="/xizmat">{locale === "ru" ? "Сдадим ваше помещение за вас" : "Joyingizni biz ijaraga beramiz"}</Link>
-              <Link href="/mebel">{locale === "ru" ? "Офисная мебель" : "Ofis mebellari"}</Link>
-              {user && <><Link href="/kabinet">{t("nav.cabinet")}</Link><Link href="/kabinet/sevimlilar">{t("nav.favorites")}</Link><Link href="/kabinet/bildirishnomalar">{t("nav.notifications")}</Link></>}
-              {!user && <Link href="/sevimlilar">{t("nav.favorites")}</Link>}
+              <Link href="/joylar"><NavIcon name="search" />{t("nav.search")}</Link>
+              <Link href="/markazlar"><NavIcon name="building" />{t("nav.centers")}</Link>
+              <Link href="/xizmat"><NavIcon name="key" />{locale === "ru" ? "Сдадим ваше помещение за вас" : "Joyingizni biz ijaraga beramiz"}</Link>
+              <Link href="/mebel"><NavIcon name="sofa" />{locale === "ru" ? "Офисная мебель" : "Ofis mebellari"}</Link>
+              {user && <><Link href="/kabinet"><NavIcon name="user" />{t("nav.cabinet")}</Link><Link href="/kabinet/sevimlilar"><NavIcon name="heart" />{t("nav.favorites")}</Link><Link href="/kabinet/bildirishnomalar"><NavIcon name="bell" />{t("nav.notifications")}</Link></>}
+              {!user && <Link href="/sevimlilar"><NavIcon name="heart" />{t("nav.favorites")}</Link>}
               <div className="flex items-center justify-between border-t border-slate-100 px-3 pt-2 mt-1"><LangSwitch />{user ? (!guest && <LogoutButton />) : <Link href="/kirish" className="text-brand hover:underline">{loginLabel}</Link>}</div>
             </MobileMenu>
           </nav>

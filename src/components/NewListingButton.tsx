@@ -12,5 +12,5 @@ export default function NewListingButton({ loggedIn, promo = false, className, c
     if (r?.status === 401) { location.href = "/kirish?next=/kabinet"; return; }
     if (r?.ok) location.href = `/kabinet/elon/${d.id}`; else { setErr(d?.error ?? t("err.generic")); setBusy(false); }
   }
-  return <span className="inline-flex flex-col"><button type="button" onClick={go} disabled={busy} className={className ?? "rounded bg-accent px-3 py-1.5 font-medium text-white hover:bg-green-700 disabled:opacity-60"}>{children ?? (centerId ? (ru ? "+ Добавить помещение" : "+ Xona qo‘shish") : t("nav.newListing"))}</button>{err && <span role="alert" className="text-xs text-red-700">{err}</span>}</span>;
+  return <span className="inline-flex flex-col"><button type="button" onClick={go} disabled={busy} className={className ?? "whitespace-nowrap rounded-full bg-accent px-4 py-2 font-semibold text-white shadow-sm hover:bg-green-700 disabled:opacity-60"}>{children ?? (centerId ? (ru ? "+ Добавить помещение" : "+ Xona qo‘shish") : t("nav.newListing"))}</button>{err && <span role="alert" className="text-xs text-red-700">{err}</span>}</span>;
 }
