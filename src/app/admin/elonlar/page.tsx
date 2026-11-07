@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, desc, eq, gt, inArray, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, inArray, lte, or, sql, type SQL } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { publicCond } from "@/lib/search";
 import { labels, fmtDate, priceLabel, totalLabel } from "@/lib/format";
@@ -13,7 +13,7 @@ import { listingWarnings } from "@/lib/listing-checks";
 const TABS = ["pending", "active", "expired", "rejected", "all"] as const;
 const PAGE = 20;
 
-export default async function AdminListings({ searchParams }: { searchParams: Promise<{ holat?: string; sahifa?: string }> }) {
+export default async function AdminListings({ searchParams }: { searchParams: Promise<{ holat?: string; sahifa?: string; q?: string }> }) {
   await requireStaffPage();
   const sp = await searchParams; const { locale, t } = await getT(); const lb = labels(locale);
   const holat = TABS.find((k) => k === sp.holat) ?? "pending";
@@ -26,18 +26,24 @@ export default async function AdminListings({ searchParams }: { searchParams: Pr
     rejected: eq(L.moderationStatus, "rejected"),
     all: sql`${L.moderationStatus} <> 'draft'`,
   };
+  // Tepadagi qidiruv: sarlavha, telefon yoki e'lon raqami (id boshi) bo'yicha.
+  const q = (sp.q ?? "").trim().slice(0, 80);
+  const like = `%${q.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
+  const digits = q.replace(/\D/g, "");
+  const qCond = q ? or(ilike(L.title, like), ilike(L.address, like), digits.length >= 5 ? ilike(L.contactPhone, `%${digits}%`) : undefined, /^[0-9a-f-]{6,}$/i.test(q) ? sql`${L.id}::text ILIKE ${q + "%"}` : undefined) : undefined;
   const rows = await d.select({ l: L, owner: s.profiles.displayName, ownerType: s.profiles.posterType, region: locale === "ru" ? s.regions.nameRu : s.regions.nameUz, center: s.businessCenters.name })
     .from(L).leftJoin(s.profiles, eq(s.profiles.userId, L.ownerId)).leftJoin(s.regions, eq(s.regions.id, L.regionId)).leftJoin(s.businessCenters, eq(s.businessCenters.id, L.centerId))
-    .where(where[holat]).orderBy(holat === "pending" ? L.updatedAt : desc(L.updatedAt)).limit(PAGE + 1).offset((page - 1) * PAGE);
+    .where(and(where[holat], qCond)).orderBy(holat === "pending" ? L.updatedAt : desc(L.updatedAt)).limit(PAGE + 1).offset((page - 1) * PAGE);
   const more = rows.length > PAGE; const shown = rows.slice(0, PAGE);
   const ids = shown.map((r) => r.l.id);
   const imgs = ids.length ? await d.select().from(s.listingImages).where(inArray(s.listingImages.listingId, ids)).orderBy(s.listingImages.position) : [];
-  const q = (p: number) => `/admin/elonlar?holat=${holat}&sahifa=${p}`;
+  const pageHref = (p: number) => `/admin/elonlar?holat=${holat}&sahifa=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
   return (
     <div>
       <h1 className="mb-3 text-xl font-bold">{t("adm.nav.listings")}</h1>
+      {q && <p className="mb-3 flex flex-wrap items-center gap-2 text-sm text-slate-600">{locale === "ru" ? "Поиск" : "Qidiruv"}: <b className="text-slate-900">«{q}»</b> · {shown.length}{more ? "+" : ""} <Link href={`/admin/elonlar?holat=${holat}`} className="text-brand hover:underline">{locale === "ru" ? "Сбросить" : "Tozalash"} ✕</Link></p>}
       <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label={t("adm.l.status")}>
-        {TABS.map((k) => <Link key={k} href={`/admin/elonlar?holat=${k}`} aria-current={holat === k} className={`rounded-full border px-3 py-1 text-sm ${holat === k ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t(`adm.l.tab.${k}` as MsgKey)}</Link>)}
+        {TABS.map((k) => <Link key={k} href={`/admin/elonlar?holat=${k}${q ? `&q=${encodeURIComponent(q)}` : ""}`} aria-current={holat === k} className={`rounded-full border px-3 py-1 text-sm ${holat === k ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t(`adm.l.tab.${k}` as MsgKey)}</Link>)}
       </div>
       {shown.length === 0 && <p className="rounded border border-dashed border-slate-300 p-6 text-center text-slate-500">{t("adm.l.empty")}</p>}
       <ul className="space-y-3">
@@ -79,7 +85,7 @@ export default async function AdminListings({ searchParams }: { searchParams: Pr
           );
         })}
       </ul>
-      <div className="mt-4 flex gap-3 text-sm">{page > 1 && <Link href={q(page - 1)} className="underline">{t("adm.prev")}</Link>}{more && <Link href={q(page + 1)} className="underline">{t("adm.next")}</Link>}</div>
+      <div className="mt-4 flex gap-3 text-sm">{page > 1 && <Link href={pageHref(page - 1)} className="underline">{t("adm.prev")}</Link>}{more && <Link href={pageHref(page + 1)} className="underline">{t("adm.next")}</Link>}</div>
     </div>
   );
 }

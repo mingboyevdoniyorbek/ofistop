@@ -5,7 +5,7 @@ export default function AdminLogout() {
   const ru = useLocale() === "ru";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
-  return <span><button disabled={busy} className="underline" onClick={async () => {
+  return <span><button disabled={busy} className="hover:text-white hover:underline" onClick={async () => {
     setBusy(true); setError(false);
     try { const r = await fetch("/api/auth/admin-login", { method: "DELETE" }); if (!r.ok) throw new Error(); location.href = "/admin"; }
     catch { setError(true); setBusy(false); }

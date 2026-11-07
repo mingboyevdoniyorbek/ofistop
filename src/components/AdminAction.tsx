@@ -16,6 +16,6 @@ export default function AdminAction({ url, body, label, askReason, confirm, tone
     setBusy(false);
     if (r?.ok) router.refresh(); else setErr(d?.error ?? t("err.generic"));
   }
-  const cls = tone === "primary" ? "border-brand bg-brand text-white" : tone === "danger" ? "border-red-300 text-red-700" : "border-slate-300 hover:border-brand";
-  return (<span className="inline-flex flex-col"><button type="button" disabled={busy} onClick={run} className={`rounded border px-2.5 py-1 text-sm disabled:opacity-60 ${cls}`}>{label}</button>{err && <span role="alert" className="text-xs text-red-700">{err}</span>}</span>);
+  const cls = tone === "primary" ? "border-transparent bg-brand text-white shadow-sm hover:brightness-110" : tone === "danger" ? "border-red-300 text-red-700 hover:bg-red-50" : "border-slate-300 hover:border-brand hover:text-brand";
+  return (<span className="inline-flex flex-col"><button type="button" disabled={busy} onClick={run} className={`rounded-xl border px-3 py-1.5 text-sm font-medium transition disabled:opacity-60 ${cls}`}>{label}</button>{err && <span role="alert" className="text-xs text-red-700">{err}</span>}</span>);
 }

@@ -9,7 +9,7 @@ import NewListingButton from "./NewListingButton";
 const HIDDEN_ON = [/^\/admin/, /^\/joylar\/[^/]+/, /^\/kabinet\/elon\//, /^\/kirish/];
 
 const Icon = ({ d, active }: { d: string; active: boolean }) => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" className={`h-6 w-6 ${active ? "stroke-brand" : "stroke-slate-600"}`} fill="none" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={`h-[22px] w-[22px] ${active ? "fill-brand/10 stroke-brand" : "fill-none stroke-slate-600"}`} strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
 );
 const ICONS = {
   home: "M3.5 10.5 12 4l8.5 6.5V20a1 1 0 0 1-1 1H15v-6h-6v6H4.5a1 1 0 0 1-1-1z",
@@ -51,15 +51,17 @@ export default function BottomNav({ loggedIn, promo }: { loggedIn: boolean; prom
   ];
   return (
     <>
-      <div aria-hidden="true" className="h-16 md:hidden" />
+      <div aria-hidden="true" className="h-[68px] md:hidden" />
       <nav aria-label={ru ? "Нижнее меню" : "Pastki menyu"}
         className={`fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(15,23,42,0.06)] backdrop-blur transition-transform duration-300 md:hidden ${hidden ? "translate-y-full" : "translate-y-0"}`}>
-        <ul className="mx-auto grid h-16 max-w-md grid-cols-5 items-stretch">
+        <ul className="mx-auto grid h-[68px] max-w-md grid-cols-5 items-stretch">
           {items.map((it, i) => it ? (
             <li key={it.href}>
-              <Link href={it.href} aria-current={it.active ? "page" : undefined} className={`relative flex h-full flex-col items-center justify-center gap-0.5 text-[11px] ${it.active ? "font-semibold text-brand" : "text-slate-600"}`}>
-                {it.active && <span aria-hidden="true" className="absolute top-0 h-0.5 w-8 rounded-full bg-brand" />}
-                <Icon d={it.icon} active={it.active} />{it.label}
+              <Link href={it.href} aria-current={it.active ? "page" : undefined} className={`relative flex h-full flex-col items-center justify-center gap-1 text-[11px] ${it.active ? "font-semibold text-brand" : "text-slate-600"}`}>
+                {/* Faol bo'lim: ikonka yumshoq ko'k "tabletka" ichida (zamonaviy ilovalardagidek) */}
+                <span className={`grid h-8 w-14 place-items-center rounded-full transition-colors duration-200 ${it.active ? "bg-gradient-to-br from-[#e0edff] to-[#cfe0ff] shadow-[inset_0_0_0_1px_rgba(18,48,138,.08)]" : ""}`}>
+                  <Icon d={it.icon} active={it.active} />
+                </span>{it.label}
               </Link>
             </li>
           ) : (
