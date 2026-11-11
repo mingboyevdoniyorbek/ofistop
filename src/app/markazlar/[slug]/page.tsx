@@ -58,7 +58,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       <div className="mt-4 grid gap-6 md:grid-cols-[1fr_280px]">
         <div className="space-y-3">
           <Gallery images={pictures.flatMap(p => {const url=mediaUrl(p.storageKey);return url?[{url,thumb:url}]:[];})} alt={r.c.name} fallback={t("ctr.noImg")} />
-          {r.c.lat && r.c.lng && <PlaceMap lat={Number(r.c.lat)} lng={Number(r.c.lng)} approx={false} radiusM={null} />}
+          {r.c.lat && r.c.lng && <PlaceMap lat={Number(r.c.lat)} lng={Number(r.c.lng)} approx={false} radiusM={null} label={r.c.name} />}
           {r.c.description && <section className="py-4"><h2 className="mb-3 text-xl font-semibold">{ru ? "О центре" : "Markaz haqida"}</h2><p className="whitespace-pre-line leading-relaxed text-slate-700">{r.c.description}</p></section>}
           {r.c.amenities.length > 0 && <section><h2 className="mb-3 font-semibold">{t("ctr.common")}</h2><ul className="flex flex-wrap gap-2">{r.c.amenities.map(a => <li key={a} className="rounded-full bg-blue-50 px-3 py-2 text-sm text-brand">✓ {names.get(a) ?? a}</li>)}</ul></section>}
         </div>

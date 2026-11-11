@@ -127,7 +127,7 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
           </dl>
           {l.description && <p className="mt-4 whitespace-pre-line">{l.description}</p>}
           {l.amenities.length > 0 && <p className="mt-4 text-sm"><strong>{t("det.amenities")}:</strong> {l.amenities.map((c) => amNames.get(c) ?? c).join(", ")}</p>}
-          {pt && <section className="mt-4"><h2 className="font-semibold mb-2">{t("det.onMap")}</h2><PlaceMap lat={pt.lat} lng={pt.lng} approx={pt.approx} radiusM={pt.radiusM ?? null} /></section>}
+          {pt && <section className="mt-4"><h2 className="font-semibold mb-2">{t("det.onMap")}</h2><PlaceMap lat={pt.lat} lng={pt.lng} approx={pt.approx} radiusM={pt.radiusM ?? null} label={l.title} /></section>}
           {l.isDemo && <p className="mt-4 text-xs text-amber-800 bg-amber-50 border border-amber-300 rounded p-2">{t("det.demo")}</p>}
         </div>
         <aside id="aloqa" className="space-y-3 md:sticky md:top-20 self-start scroll-mt-20">
