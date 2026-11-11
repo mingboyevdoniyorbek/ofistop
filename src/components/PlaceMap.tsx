@@ -37,7 +37,16 @@ export default function PlaceMap({ lat, lng, approx, radiusM, label }: { lat: nu
   const [sheet, setSheet] = useState(false);
   const zoom = approx ? 15 : 16;
 
+  // Xarita faqat ekranga yaqinlashganda yuklanadi (Yandex'ning kunlik limitini tejash uchun).
+  const [near, setNear] = useState(false);
   useEffect(() => {
+    const el = box.current; if (!el) return;
+    if (!("IntersectionObserver" in window)) { setNear(true); return; }
+    const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { setNear(true); io.disconnect(); } }, { rootMargin: "300px" });
+    io.observe(el); return () => io.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!near) return;
     let dead = false; let cleanup = () => {};
     const leaflet = () => loadLeaflet().then((L) => {
       if (dead || !box.current) return;
@@ -59,7 +68,7 @@ export default function PlaceMap({ lat, lng, approx, radiusM, label }: { lat: nu
     });
     (YANDEX_KEY ? yandex().catch(() => (dead ? undefined : leaflet())) : leaflet()).catch(() => { if (!dead) setFailed(true); });
     return () => { dead = true; cleanup(); };
-  }, [lat, lng, approx, radiusM, zoom]);
+  }, [near, lat, lng, approx, radiusM, zoom]);
 
   useEffect(() => {
     if (!sheet) return;
