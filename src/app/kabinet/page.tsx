@@ -83,7 +83,7 @@ export default async function Kabinet({ searchParams }: { searchParams: Promise<
                 {r.moderationStatus === "approved" && <p className="text-xs text-slate-500">{showViewCounts() ? `${locale === "ru" ? "Просмотры" : "Ko‘rishlar"}: ${r.viewCount} · ` : ""}{t("cab.stats", { phone: x.phone, tg: x.tg, fav: x.fav })}</p>}
                 <div className="flex flex-wrap items-center gap-3 pt-1">
                   {st !== "archived" && <Link href={`/kabinet/elon/${r.id}`} className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">{t("cab.edit")}</Link>}
-                  {r.moderationStatus === "approved" && <Link href={`/joylar/${r.id}-${r.slug}`} className="text-sm text-brand underline">{t("cab.view")}</Link>}
+                  {r.moderationStatus === "approved" && <Link href={`/joylar/${r.id}-${r.slug}`} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-brand hover:border-brand">{t("cab.view")}</Link>}
                   {st === "draft" && !r.publishedAt && <DeleteDraftButton id={r.id} />}
                 </div>
                 {r.moderationStatus === "approved" && !r.isSuspended && st !== "archived" && <ListingActions id={r.id} actions={[

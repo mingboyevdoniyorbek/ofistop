@@ -104,7 +104,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/" className="flex items-center gap-1.5 text-lg font-bold text-brand">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/logo.webp" alt="" width={32} height={32} className="h-8 w-8" />Ofis<span className="-ml-1.5 text-accent">Top</span></Link>
               <p className="mt-2 text-xs leading-relaxed">{t("footer.tagline")}</p>
             </div>
-            <nav aria-label={locale === "ru" ? "Разделы" : "Bo‘limlar"} className="grid grid-cols-2 gap-x-4 gap-y-1.5 content-start">
+            <nav aria-label={locale === "ru" ? "Разделы" : "Bo‘limlar"} className="grid grid-cols-2 gap-x-4 content-start [&>a]:py-1.5">
               <Link href="/joylar" className="hover:underline">{t("nav.search")}</Link>
               <Link href="/markazlar" className="hover:underline">{t("nav.centers")}</Link>
               <Link href="/xizmat" className="font-semibold text-brand hover:underline">{locale === "ru" ? "Сдадим помещение за вас" : "Joyingizni biz ijaraga beramiz"}</Link>
