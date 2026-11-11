@@ -16,12 +16,12 @@ export default function ReportButton({ listingId, loggedIn }: { listingId: strin
     if (r?.ok) { setMsg({ ok: true, t: t("rep.ok") }); setOpen(false); }
     else setMsg({ ok: false, t: d?.error ?? t("rep.fail") });
   }
-  if (!loggedIn) return <a className="text-sm text-slate-600 underline" href={`/kirish?next=${encodeURIComponent(`/joylar/${listingId}`)}`}>{t("rep.loginNeeded")}</a>;
+  if (!loggedIn) return <a className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-red-600 ring-1 ring-red-200 hover:bg-red-50" href={`/kirish?next=${encodeURIComponent(`/joylar/${listingId}`)}`}>{t("rep.loginNeeded")}</a>;
   return (
     <div>
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="text-sm text-slate-600 underline">{t("rep.open")}</button>
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-red-600 ring-1 ring-red-200 hover:bg-red-50">{t("rep.open")}</button>
       {open && (
-        <form onSubmit={submit} className="mt-2 space-y-2 rounded border border-slate-200 p-3 text-sm">
+        <form onSubmit={submit} className="mt-3 space-y-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
           <label className="block">{t("rep.reason")}<FormSelect name="reason" required className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5"><option value="">{t("rep.choose")}</option>{REASONS.map((v) => <option key={v} value={v}>{t(`rep.r.${v}` as const)}</option>)}</FormSelect></label>
           <label className="block">{t("rep.comment")}<textarea name="comment" maxLength={1000} rows={3} className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5" /></label>
           <button disabled={busy} className="rounded bg-brand px-3 py-1.5 text-white disabled:opacity-60">{busy ? t("rep.sending") : t("rep.send")}</button>

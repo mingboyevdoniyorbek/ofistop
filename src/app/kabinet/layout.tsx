@@ -10,14 +10,15 @@ export default async function KabinetLayout({ children }: { children: React.Reac
   const user = await getCurrentUser();
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      {user && isGuestPhone(user.phone) && <p className="mb-4 rounded bg-blue-50 p-3 text-sm text-blue-900">{locale === "ru" ? "Ваши объявления и уведомления доступны в этом браузере 30 дней. Не очищайте данные сайта и не используйте режим инкогнито для своих объявлений." : "E’lonlaringiz va bildirishnomalar shu brauzerda 30 kun davomida ochiladi. Sayt ma’lumotlarini tozalamang va o‘z e’lonlaringiz uchun inkognito rejimdan foydalanmang."}</p>}
-      <CabinetNav label={t("cab.meta")}>
-        {user && isGuestPhone(user.phone) && <Link href="/kirish?next=/kabinet" className="font-semibold text-brand underline">{locale === "ru" ? "Подтвердить аккаунт" : "Hisobni tasdiqlash"}</Link>}
-        <Link href="/kabinet" className="hover:underline">{t("cab.nav.listings")}</Link>
-        <Link href="/kabinet/markazlar" className="hover:underline">{locale === "ru" ? "Мои бизнес-центры" : "Biznes markazlarim"}</Link>
-        <Link href="/kabinet/qidiruvlar" className="hover:underline">{locale === "ru" ? "Сохранённые поиски" : "Saqlangan qidiruvlar"}</Link>
-        <Link href="/kabinet/profil" className="hover:underline">{t("cab.nav.profile")}</Link>
-      </CabinetNav>
+      {user && isGuestPhone(user.phone) && <p className="mb-4 rounded-2xl bg-blue-50 p-3 text-sm text-blue-900">{locale === "ru" ? "Ваши объявления и уведомления доступны в этом браузере 30 дней. Не очищайте данные сайта и не используйте режим инкогнито для своих объявлений." : "E’lonlaringiz va bildirishnomalar shu brauzerda 30 kun davomida ochiladi. Sayt ma’lumotlarini tozalamang va o‘z e’lonlaringiz uchun inkognito rejimdan foydalanmang."}</p>}
+      <CabinetNav label={t("cab.meta")}
+        extra={user && isGuestPhone(user.phone) ? <Link href="/kirish?next=/kabinet" className="inline-flex shrink-0 items-center rounded-2xl bg-accent px-4 py-2.5 text-sm font-semibold text-white">{locale === "ru" ? "Подтвердить аккаунт" : "Hisobni tasdiqlash"}</Link> : null}
+        items={[
+          { href: "/kabinet", label: t("cab.nav.listings"), icon: "list" },
+          { href: "/kabinet/markazlar", label: locale === "ru" ? "Мои бизнес-центры" : "Biznes markazlarim", icon: "building" },
+          { href: "/kabinet/qidiruvlar", label: locale === "ru" ? "Сохранённые поиски" : "Saqlangan qidiruvlar", icon: "bookmark" },
+          { href: "/kabinet/profil", label: t("cab.nav.profile"), icon: "user" },
+        ]} />
       {children}
     </div>
   );

@@ -193,6 +193,7 @@ export const uz = {
   "ctc.call": "Qo'ng'iroq: {phone}",
   "ctc.reveal": "Telefonni ko'rsatish",
   "ctc.callShort": "Qo'ng'iroq",
+  "ctc.writeShort": "Yozish",
   "ctc.tg": "Telegram orqali yozish",
   "ctc.none": "E'lon beruvchi aloqa ma'lumotini kiritmagan.",
   "gal.aria": "Rasmlar",

@@ -27,8 +27,8 @@ export const AdminIcon = ({ name, className = "h-5 w-5" }: { name: keyof typeof 
   <svg viewBox="0 0 24 24" aria-hidden="true" className={`${className} shrink-0`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[name]} /></svg>;
 
 /**
- * Admin panel — qorong'i "shisha" uslubi: chapda ixcham ikonkali menyu (kompyuterda kengaytirsa bo'ladi),
- * tepada sahifa nomi, qidiruv, bildirishnoma va profil. Ichki sahifalar `.adm-dark` mavzusida chiziladi.
+ * Admin panel — saytning o'z ranglarida "shisha" uslub: chapda ixcham ikonkali menyu (kompyuterda kengaytirsa bo'ladi),
+ * tepada sahifa nomi, qidiruv, bildirishnoma va profil. Ichki sahifalar oq shisha kartochka ichida.
  */
 export default function AdminShell({ items, title, role, initials, alerts, logout, children }: {
   items: AdminNavItem[]; title: string; role: string; initials: string; alerts: number; logout: React.ReactNode; children: React.ReactNode;
@@ -49,71 +49,71 @@ export default function AdminShell({ items, title, role, initials, alerts, logou
       <li key={it.href} className="group relative">
         <Link href={it.href} aria-current={on ? "page" : undefined} aria-label={labels ? undefined : it.label}
           className={`relative flex items-center gap-3 rounded-2xl transition ${labels ? "px-3 py-2.5" : "mx-auto h-12 w-12 justify-center"} ${on
-            ? "bg-gradient-to-br from-[#38bdf8] to-[#2563eb] text-white shadow-[0_8px_24px_-6px_rgba(56,189,248,.65)]"
-            : "text-slate-400 hover:bg-white/[.07] hover:text-white"}`}>
+            ? "bg-gradient-to-br from-[#2a78d6] to-[#12308a] text-white shadow-[0_8px_20px_-6px_rgba(18,48,138,.55)]"
+            : "text-slate-500 hover:bg-[#12308a]/[.07] hover:text-brand"}`}>
           <AdminIcon name={it.icon} className={labels ? "h-5 w-5" : "h-[22px] w-[22px]"} />
           {labels && <span className="flex-1 truncate text-sm font-medium">{it.label}</span>}
           {!!it.badge && (labels
             ? <span className="rounded-full bg-[#f43f5e] px-2 py-0.5 text-[11px] font-bold text-white">{it.badge}</span>
-            : <span className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[#f43f5e] px-1 text-[10px] font-bold text-white ring-2 ring-[#0b1424]">{it.badge > 99 ? "99+" : it.badge}</span>)}
+            : <span className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[#f43f5e] px-1 text-[10px] font-bold text-white ring-2 ring-white">{it.badge > 99 ? "99+" : it.badge}</span>)}
         </Link>
-        {!labels && <span role="tooltip" className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#0f1b33]/95 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-xl transition group-hover:opacity-100 group-focus-within:opacity-100">{it.label}</span>}
+        {!labels && <span role="tooltip" className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-50 -translate-y-1/2 whitespace-nowrap rounded-xl bg-brand-dark px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-xl transition group-hover:opacity-100 group-focus-within:opacity-100">{it.label}</span>}
       </li>); })}</ul>
   );
-  const logo = <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/95 shadow-[0_6px_20px_-6px_rgba(56,189,248,.6)]">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/logo.webp" alt="" width={30} height={30} className="h-7 w-7" /></span>;
+  const logo = <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/95 shadow-[0_6px_16px_-6px_rgba(18,48,138,.35)] ring-1 ring-slate-200/70">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/logo.webp" alt="" width={30} height={30} className="h-7 w-7" /></span>;
 
   return (
-    <div className="adm-dark fixed inset-0 z-[60] flex overflow-hidden bg-[#070d1a] text-[#e2e8f0]">
-      {/* Fon: qorong'i ko'k + yumshoq rangli dog'lar (videodagi shisha effekti uchun) */}
+    <div className="adm fixed inset-0 z-[60] flex overflow-hidden bg-[#eef3fb] text-slate-800">
+      {/* Fon: och ko'k + saytning ko'k va yashil ranglaridagi yumshoq dog'lar (shisha effekti uchun) */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#1d4ed8]/35 blur-[120px]" />
-        <div className="absolute right-[-10%] top-[20%] h-[460px] w-[460px] rounded-full bg-[#0ea5e9]/20 blur-[120px]" />
-        <div className="absolute bottom-[-20%] left-[35%] h-[420px] w-[520px] rounded-full bg-[#f59e0b]/[.13] blur-[130px]" />
+        <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#2a78d6]/25 blur-[120px]" />
+        <div className="absolute right-[-10%] top-[20%] h-[460px] w-[460px] rounded-full bg-[#12308a]/[.12] blur-[120px]" />
+        <div className="absolute bottom-[-20%] left-[35%] h-[420px] w-[520px] rounded-full bg-[#16a34a]/[.14] blur-[130px]" />
       </div>
 
-      {open && <button type="button" aria-label="Yopish" onClick={() => setOpen(false)} className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" />}
+      {open && <button type="button" aria-label="Yopish" onClick={() => setOpen(false)} className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden" />}
       {/* Telefon: chapdan chiqadigan menyu */}
-      <aside className={`adm-glass fixed inset-y-2 left-2 z-40 flex w-72 flex-col rounded-3xl !bg-[#0b1424]/95 p-3 transition-transform lg:hidden ${open ? "translate-x-0" : "-translate-x-[110%]"}`}>
-        <Link href="/admin" className="mb-4 flex items-center gap-3 px-2 pt-1">{logo}<span className="font-bold text-white">OfisTop <span className="font-medium text-sky-300">Admin</span></span></Link>
+      <aside className={`adm-glass fixed inset-y-2 left-2 z-40 flex w-72 flex-col rounded-3xl !bg-white/95 p-3 transition-transform lg:hidden ${open ? "translate-x-0" : "-translate-x-[110%]"}`}>
+        <Link href="/admin" className="mb-4 flex items-center gap-3 px-2 pt-1">{logo}<span className="font-bold text-brand">OfisTop <span className="font-medium text-accent">Admin</span></span></Link>
         <nav aria-label="Admin" className="flex-1 overflow-y-auto">{nav(true)}</nav>
-        <Link href="/" className="mt-3 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/[.07] hover:text-white"><AdminIcon name="site" />Saytga o‘tish</Link>
-        <div className="mt-2 flex items-center gap-3 border-t border-white/10 px-3 pt-3 text-sm text-[#cbd5e1]">
-          <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#38bdf8] to-[#2563eb] text-xs font-bold text-white">{initials}</span>
-          <span className="min-w-0 flex-1"><span className="block truncate text-xs text-slate-400">{role}</span>{logout}</span>
+        <Link href="/" className="mt-3 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-slate-500 hover:bg-[#12308a]/[.07] hover:text-brand"><AdminIcon name="site" />Saytga o‘tish</Link>
+        <div className="mt-2 flex items-center gap-3 border-t border-slate-200 px-3 pt-3 text-sm text-slate-700">
+          <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#2a78d6] to-[#12308a] text-xs font-bold text-white">{initials}</span>
+          <span className="min-w-0 flex-1"><span className="block truncate text-xs text-slate-500">{role}</span>{logout}</span>
         </div>
       </aside>
       {/* Kompyuter: ixcham ikonka menyu */}
       <aside className={`adm-glass relative z-20 my-3 ml-3 hidden shrink-0 flex-col rounded-[28px] py-4 transition-[width] duration-300 lg:flex ${wide ? "w-64 px-3" : "w-[84px] px-2"}`}>
-        <Link href="/admin" className={`mb-6 flex items-center gap-3 ${wide ? "px-2" : "justify-center"}`} aria-label="OfisTop Admin">{logo}{wide && <span className="font-bold text-white">OfisTop <span className="font-medium text-sky-300">Admin</span></span>}</Link>
+        <Link href="/admin" className={`mb-6 flex items-center gap-3 ${wide ? "px-2" : "justify-center"}`} aria-label="OfisTop Admin">{logo}{wide && <span className="font-bold text-brand">OfisTop <span className="font-medium text-accent">Admin</span></span>}</Link>
         <nav aria-label="Admin" className={`flex-1 ${wide ? "overflow-y-auto" : ""}`}>{nav(wide)}</nav>
         <div className="mt-3 space-y-1.5">
-          <Link href="/" aria-label="Saytga o‘tish" title="Saytga o‘tish" className={`flex items-center gap-3 rounded-2xl text-slate-400 transition hover:bg-white/[.07] hover:text-white ${wide ? "px-3 py-2.5 text-sm" : "mx-auto h-11 w-11 justify-center"}`}><AdminIcon name="site" />{wide && "Saytga o‘tish"}</Link>
+          <Link href="/" aria-label="Saytga o‘tish" title="Saytga o‘tish" className={`flex items-center gap-3 rounded-2xl text-slate-500 transition hover:bg-[#12308a]/[.07] hover:text-brand ${wide ? "px-3 py-2.5 text-sm" : "mx-auto h-11 w-11 justify-center"}`}><AdminIcon name="site" />{wide && "Saytga o‘tish"}</Link>
           <button type="button" onClick={toggleWide} aria-label={wide ? "Menyuni yig‘ish" : "Menyuni kengaytirish"} title={wide ? "Menyuni yig‘ish" : "Menyuni kengaytirish"}
-            className={`flex items-center gap-3 rounded-2xl text-slate-400 transition hover:bg-white/[.07] hover:text-white ${wide ? "w-full px-3 py-2.5 text-sm" : "mx-auto h-11 w-11 justify-center"}`}><AdminIcon name={wide ? "collapse" : "expand"} />{wide && "Yig‘ish"}</button>
-          <span aria-hidden="true" className={`mt-2 grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#38bdf8] to-[#2563eb] text-sm font-bold text-white ${wide ? "ml-1" : "mx-auto"}`}>{initials}</span>
+            className={`flex items-center gap-3 rounded-2xl text-slate-500 transition hover:bg-[#12308a]/[.07] hover:text-brand ${wide ? "w-full px-3 py-2.5 text-sm" : "mx-auto h-11 w-11 justify-center"}`}><AdminIcon name={wide ? "collapse" : "expand"} />{wide && "Yig‘ish"}</button>
+          <span aria-hidden="true" className={`mt-2 grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#2a78d6] to-[#12308a] text-sm font-bold text-white ${wide ? "ml-1" : "mx-auto"}`}>{initials}</span>
         </div>
       </aside>
 
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <header className="flex shrink-0 flex-wrap items-center gap-3 px-4 pb-2 pt-4 sm:px-6 lg:pt-6">
-          <button type="button" aria-label="Menyu" onClick={() => setOpen(true)} className="adm-glass grid h-11 w-11 place-items-center rounded-2xl text-white lg:hidden"><AdminIcon name="menu" /></button>
+          <button type="button" aria-label="Menyu" onClick={() => setOpen(true)} className="adm-glass grid h-11 w-11 place-items-center rounded-2xl text-brand lg:hidden"><AdminIcon name="menu" /></button>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-xl font-bold tracking-tight text-white sm:text-2xl">{current?.label ?? title}</h1>
-            <p className="truncate text-xs text-slate-400 sm:text-sm">{current?.sub ?? role}</p>
+            <h1 className="truncate text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{current?.label ?? title}</h1>
+            <p className="truncate text-xs text-slate-500 sm:text-sm">{current?.sub ?? role}</p>
           </div>
           <form role="search" onSubmit={(e) => { e.preventDefault(); const v = q.trim(); router.push(v ? `/admin/elonlar?holat=all&q=${encodeURIComponent(v)}` : "/admin/elonlar"); }}
             className="adm-glass order-last flex h-11 w-full items-center gap-2 rounded-2xl px-3.5 sm:order-none sm:w-72">
             <AdminIcon name="search" className="h-4 w-4 text-slate-400" />
             <input value={q} onChange={(e) => setQ(e.target.value)} type="search" enterKeyHint="search" aria-label="E’lonlarni qidirish" placeholder="E’lon, telefon, sarlavha…"
-              className="min-w-0 flex-1 !border-0 !bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none [&::-webkit-search-cancel-button]:hidden" />
+              className="min-w-0 flex-1 !border-0 !bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden" />
           </form>
-          <Link href="/admin" title="Ko‘rib chiqish kutayotganlar" aria-label={`Ko‘rib chiqish kutayotganlar: ${alerts}`} className="adm-glass relative grid h-11 w-11 place-items-center rounded-2xl text-[#e2e8f0] hover:text-white">
+          <Link href="/admin" title="Ko‘rib chiqish kutayotganlar" aria-label={`Ko‘rib chiqish kutayotganlar: ${alerts}`} className="adm-glass relative grid h-11 w-11 place-items-center rounded-2xl text-slate-600 hover:text-brand">
             <AdminIcon name="bell" />
-            {alerts > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#f43f5e] ring-2 ring-[#0b1424]" />}
+            {alerts > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#f43f5e] ring-2 ring-white" />}
           </Link>
           <span className="adm-glass hidden h-11 items-center gap-2 rounded-2xl pl-1.5 pr-3 text-sm sm:flex">
-            <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#38bdf8] to-[#2563eb] text-xs font-bold text-white">{initials}</span>
-            <span className="text-[#cbd5e1]">{logout}</span>
+            <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#2a78d6] to-[#12308a] text-xs font-bold text-white">{initials}</span>
+            <span className="text-slate-600">{logout}</span>
           </span>
         </header>
         <main className="min-w-0 flex-1 overflow-y-auto px-4 pb-8 pt-3 sm:px-6">
