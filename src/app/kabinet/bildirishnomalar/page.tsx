@@ -21,10 +21,18 @@ export default async function Notifications() {
       {telegramEnabled() && <div className="mb-4"><TelegramNotifyToggle initial={me?.notify ?? true} linked={me?.linked != null} bot={botUsername() || null} /></div>}
       {rows.length === 0 && <p className="rounded border border-dashed border-slate-300 p-6 text-center text-slate-500">{t("notif.empty")}</p>}
       <ul className="space-y-2">{rows.map((n) => (
-        <li key={n.id} className={`rounded border p-3 text-sm ${n.readAt ? "border-slate-200" : "border-brand bg-blue-50"}`}>
-          <p className="font-medium">{n.href ? <Link href={n.href} className="underline">{trServer(n.title, locale)}</Link> : trServer(n.title, locale)}</p>
-          {n.body && <p className="text-slate-600">{trServer(n.body, locale)}</p>}
-          <p className="text-xs text-slate-500">{new Date(n.createdAt).toLocaleString(locale === "ru" ? "ru-RU" : "uz-UZ")}</p>
+        <li key={n.id}>{(() => { const body = <>
+          <span className="flex items-start gap-3">
+            <span aria-hidden="true" className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.readAt ? "bg-slate-300" : "bg-brand"}`} />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-slate-900">{trServer(n.title, locale)}</span>
+              {n.body && <span className="block text-slate-600">{trServer(n.body, locale)}</span>}
+              <span className="mt-1 block text-xs text-slate-500">{new Date(n.createdAt).toLocaleString(locale === "ru" ? "ru-RU" : "uz-UZ")}</span>
+            </span>
+            {n.href && <span aria-hidden="true" className="self-center text-slate-400">›</span>}
+          </span></>;
+          const cls = `block rounded-2xl border p-3.5 text-sm ${n.readAt ? "border-slate-200 bg-white" : "border-brand/30 bg-blue-50"}`;
+          return n.href ? <Link href={n.href} className={`${cls} transition hover:border-brand`}>{body}</Link> : <div className={cls}>{body}</div>; })()}
         </li>))}</ul>
     </div>
   );

@@ -78,7 +78,7 @@ export default async function AdminListings({ searchParams }: { searchParams: Pr
               <details className="mt-2 text-sm"><summary className="cursor-pointer text-brand">{t("adm.details")}</summary>
                 <p className="mt-2 whitespace-pre-line">{l.description}</p>
                 <p className="mt-1 text-slate-600">{t("adm.l.addr", { addr: l.address ?? "—", area: l.areaM2 ?? "—", phone: l.contactPhone ?? "—" })}{l.telegramUsername ? ` · @${l.telegramUsername}` : ""}</p>
-                <div className="mt-2 flex flex-wrap gap-2">{my.map((i) => /* eslint-disable-next-line @next/next/no-img-element */ <img key={i.id} src={mediaUrl(i.thumbKey ?? i.storageKey) ?? undefined} alt="" loading="lazy" className="h-20 w-28 rounded object-cover" />)}</div>
+                <div className="mt-2 flex flex-wrap gap-2">{my.map((i) => { const u = mediaUrl(i.thumbKey ?? i.storageKey); return u && /* eslint-disable-next-line @next/next/no-img-element */ <img key={i.id} src={u} alt="" loading="lazy" className="h-20 w-28 rounded object-cover" />; })}</div>
                 {l.moderationStatus === "approved" && <p className="mt-2"><Link className="underline" href={`/joylar/${l.id}-${l.slug}`}>{t("adm.l.public")}</Link></p>}
               </details>
             </li>

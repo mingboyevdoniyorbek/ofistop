@@ -22,11 +22,30 @@ body { font-family: var(--font-sans); color: #0f172a; background: #fff; }
   &::-webkit-scrollbar { display: none; }
 }
 
-/* ===== Admin panel: saytning o'z ranglarida "shisha" (glass) uslub =====
-   Och fon ustida oq, yarim shaffof kartochkalar; asosiy rang — sayt ko'ki (brand), qo'shimcha — yashil (accent). */
-.adm { color-scheme: light; }
-.adm-glass { background: rgb(255 255 255 / .78); border: 1px solid rgb(255 255 255 / .9);
-  box-shadow: 0 1px 0 rgb(255 255 255) inset, 0 1px 2px rgb(15 23 42 / .04), 0 12px 32px -12px rgb(18 48 138 / .18); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+/* ===== Admin panel: qorong'i "shisha" (glass) mavzu =====
+   Ichki sahifalar oddiy Tailwind ranglaridan foydalanadi — bu yerda ular qorong'i fon uchun qayta belgilanadi
+   (slate shkalasi teskari, och fonlar shaffof, matn ranglari yorqin). */
+.adm-dark {
+  color-scheme: dark;
+  --color-brand: #3b82f6; --color-brand-dark: #1d4ed8;
+  --color-slate-50: rgb(255 255 255 / .05); --color-slate-100: rgb(255 255 255 / .08); --color-slate-200: rgb(255 255 255 / .12);
+  --color-slate-300: rgb(255 255 255 / .2); --color-slate-400: #8796b0; --color-slate-500: #9aa8bf; --color-slate-600: #b4c0d3;
+  --color-slate-700: #cbd5e1; --color-slate-800: #e2e8f0; --color-slate-900: #f1f5f9; --color-slate-950: #fff;
+  --color-amber-50: rgb(245 158 11 / .14); --color-amber-100: rgb(245 158 11 / .2); --color-amber-800: #fcd34d; --color-amber-900: #fde68a;
+  --color-red-50: rgb(239 68 68 / .14); --color-red-300: rgb(248 113 113 / .45); --color-red-600: #ef4444; --color-red-100: rgb(239 68 68 / .2); --color-red-700: #fca5a5; --color-red-800: #fecaca;
+  --color-green-50: rgb(34 197 94 / .14); --color-green-100: rgb(34 197 94 / .2); --color-green-700: #86efac; --color-green-800: #bbf7d0;
+  --color-blue-50: rgb(59 130 246 / .14); --color-blue-100: rgb(59 130 246 / .2); --color-blue-700: #93c5fd; --color-blue-800: #bfdbfe;
+  --color-emerald-50: rgb(16 185 129 / .14); --color-emerald-700: #6ee7b7; --color-emerald-800: #a7f3d0;
+  color: #e2e8f0;
+}
+.adm-dark .bg-white { background-color: rgb(255 255 255 / .06); }
+.adm-dark input:not([type=checkbox]):not([type=radio]), .adm-dark select, .adm-dark textarea { background-color: rgb(255 255 255 / .06); border-color: rgb(255 255 255 / .14); color: #f1f5f9; }
+.adm-dark input::placeholder, .adm-dark textarea::placeholder { color: #7c8aa3; }
+.adm-dark select option { background: #0f1b33; color: #f1f5f9; }
+.adm-dark :focus-visible { outline-color: #38bdf8; }
+/* Shisha kartochka */
+.adm-glass { background: linear-gradient(160deg, rgb(255 255 255 / .09), rgb(255 255 255 / .03)); border: 1px solid rgb(255 255 255 / .1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .08), 0 12px 40px -12px rgb(0 0 0 / .5); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 /* Ichki sahifalar: sarlavha tepadagi panelda bor — takror ko'rsatilmaydi (ekran o'quvchilar uchun qoladi); burchaklar yumshoqroq */
-.adm-page > :first-child > h1:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.adm-page > :first-child > h1:first-child { display: none; }
 .adm-page .rounded { border-radius: .875rem; }
