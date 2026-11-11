@@ -35,7 +35,7 @@ export default function ContactButtons({ listingId, hasPhone, hasTelegram, varia
           {hasPhone && (phone
             ? <a href={`tel:${phone}`} className={`${b} bg-accent text-white`}><span aria-hidden="true">📞</span>{phone}</a>
             : <button type="button" onClick={() => reveal(true)} className={`${b} bg-accent text-white`}><span aria-hidden="true">📞</span>{t("ctc.callShort")}</button>)}
-          {hasTelegram && <button type="button" onClick={tg} className={`${b} ${hasPhone ? "border-2 border-brand text-brand" : "bg-brand text-white"}`}><span aria-hidden="true">✈️</span>Telegram</button>}
+          {hasTelegram && <button type="button" onClick={tg} className={`${b} ${hasPhone ? "border-2 border-brand text-brand" : "bg-brand text-white"}`}><span aria-hidden="true">✈️</span>{t("ctc.writeShort")}</button>}
         </div>
       </div>
     );

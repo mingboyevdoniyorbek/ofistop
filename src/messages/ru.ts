@@ -194,6 +194,7 @@ export const ru: Record<MsgKey, string> = {
   "ctc.call": "Позвонить: {phone}",
   "ctc.reveal": "Показать телефон",
   "ctc.callShort": "Позвонить",
+  "ctc.writeShort": "Написать",
   "ctc.tg": "Написать в Telegram",
   "ctc.none": "Автор объявления не указал контактные данные.",
   "gal.aria": "Фотографии",

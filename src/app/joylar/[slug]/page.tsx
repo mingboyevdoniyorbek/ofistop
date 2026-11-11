@@ -122,19 +122,27 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
           <p className="text-brand text-2xl font-bold mt-2">{primaryPrice(price, l.areaM2, locale)}</p>
           {total && <p className="text-sm text-slate-600">{priceLabel(price, locale)}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-2"><span title={ru ? "Администратор проверил объявление. Это не техническая проверка здания." : "Administrator e’lon ma’lumotlarini ko‘rib chiqqan. Bu binoning texnik tekshiruvi emas."} className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-brand">✓ {ru ? "Объявление проверено" : "E’lon tekshirilgan"}</span>{l.availabilityConfirmedAt && visible && <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs text-green-800">{ru ? "Доступность подтверждена" : "Bo‘shligi tasdiqlangan"}: {fmtDate(l.availabilityConfirmedAt, locale)}</span>}{visible && <CompareButton id={l.id} />}{showViewCounts() && <span className="text-xs text-slate-500">{ru ? "Просмотры" : "Ko‘rishlar"}: {l.viewCount}</span>}</div>
-          <dl className="mt-4 grid grid-cols-[150px_1fr] gap-y-1.5 text-sm">
-            {rows.filter(([, v]) => v).map(([k, v]) => <div key={k} className="contents"><dt className="text-slate-500">{k}</dt><dd>{v}</dd></div>)}
-          </dl>
-          {l.description && <p className="mt-4 whitespace-pre-line">{l.description}</p>}
-          {l.amenities.length > 0 && <p className="mt-4 text-sm"><strong>{t("det.amenities")}:</strong> {l.amenities.map((c) => amNames.get(c) ?? c).join(", ")}</p>}
-          {pt && <section className="mt-4"><h2 className="font-semibold mb-2">{t("det.onMap")}</h2><PlaceMap lat={pt.lat} lng={pt.lng} approx={pt.approx} radiusM={pt.radiusM ?? null} label={l.title} /></section>}
+          {l.description && <section className="mt-5"><h2 className="mb-2 font-semibold">{ru ? "Описание" : "Tavsif"}</h2><p className="whitespace-pre-line text-[15px] leading-relaxed text-slate-700">{l.description}</p></section>}
+          <section className="mt-5">
+            <h2 className="mb-2 font-semibold">{ru ? "Характеристики" : "Ma’lumotlar"}</h2>
+            <dl className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white px-4 text-sm">
+              {rows.filter(([, v]) => v).map(([k, v]) => <div key={k} className="flex justify-between gap-4 py-2.5"><dt className="text-slate-500">{k}</dt><dd className="text-right font-medium text-slate-900">{v}</dd></div>)}
+              <div className="flex justify-between gap-4 py-2.5"><dt className="text-slate-500">{ru ? "Кто разместил" : "Kim joylashtirdi"}</dt><dd className="text-right font-medium text-slate-900">{L10.poster[l.posterType]}</dd></div>
+              {l.publishedAt && <div className="flex justify-between gap-4 py-2.5"><dt className="text-slate-500">{ru ? "Размещено" : "Joylashtirilgan"}</dt><dd className="text-right font-medium text-slate-900">{fmtDate(l.publishedAt, locale)}</dd></div>}
+            </dl>
+          </section>
+          {l.amenities.length > 0 && <section className="mt-5"><h2 className="mb-2 font-semibold">{t("det.amenities")}</h2><ul className="flex flex-wrap gap-2">{l.amenities.map((c) => <li key={c} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700">✓ {amNames.get(c) ?? c}</li>)}</ul></section>}
+          {pt && <section className="mt-5"><h2 className="mb-1 font-semibold">{ru ? "Расположение" : "Joylashuv"}</h2><p className="mb-2 text-sm text-slate-600">📍 {[r.district, r.region].filter(Boolean).join(", ")}{l.exactLocationPublic && l.address ? ` — ${l.address}` : ""}</p><PlaceMap lat={pt.lat} lng={pt.lng} approx={pt.approx} radiusM={pt.radiusM ?? null} label={l.title} /></section>}
+          {visible && <section className="mt-5 flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50/70 p-4">
+            <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-red-100 text-red-600"><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg></span>
+            <div className="min-w-0 flex-1"><p className="font-semibold text-slate-900">{ru ? "Проблема с объявлением?" : "E’lon bilan muammo bormi?"}</p><p className="mb-2 text-sm text-slate-600">{ru ? "Сообщите нам — мы проверим." : "Xabar bering, tekshirib ko‘ramiz."}</p><ReportButton listingId={l.id} loggedIn={fav.loggedIn} /></div>
+          </section>}
           {l.isDemo && <p className="mt-4 text-xs text-amber-800 bg-amber-50 border border-amber-300 rounded p-2">{t("det.demo")}</p>}
         </div>
         <aside id="aloqa" className="space-y-3 md:sticky md:top-20 self-start scroll-mt-20">
-          <div className="rounded border border-slate-200 p-4 space-y-3">
+          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-sm text-slate-600">{L10.poster[l.posterType]}{r.centerName ? ` · ${r.centerName}` : ""}</p>
             {visible ? <ContactButtons listingId={l.id} hasPhone={!!l.contactPhone} hasTelegram={!!l.telegramUsername} /> : <p className="text-sm text-slate-500">{t("det.contactHidden")}</p>}
-            {visible && <div className="mt-3 border-t border-slate-200 pt-3"><ReportButton listingId={l.id} loggedIn={fav.loggedIn} /></div>}
           </div>
         </aside>
       </div>
