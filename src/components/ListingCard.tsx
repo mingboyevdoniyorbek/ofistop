@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { labels, priceLabel, totalLabel, primaryPrice, fmtDate } from "@/lib/format";
-import { CompareButton } from "./Compare";
-import { formatMinor } from "@/lib/money";
+import { labels, shortPrice } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { mediaUrl } from "@/lib/storage";
 import { favState } from "@/lib/favorites";
@@ -21,17 +19,16 @@ export function VipBadge({ className = "" }: { className?: string }) {
 
 /**
  * E'lon kartochkasi — bitta uslub hamma joyda (bosh sahifa, katalog, sevimlilar):
- * katta yumaloq rasm, ustida yurakcha, VIP va ishonch belgilari; ostida narx, nom va qisqa ma'lumot.
- * compact — gorizontal qatorlar uchun (qo'shimcha qatorlarsiz).
+ * rasm (yurakcha, VIP, «Egasidan»), ostida faqat 3 qator: qisqa narx → sarlavha → «tuman · m² · qavat».
+ * Qolgan tafsilotlar (komissiya, depozit, sana) e'lon sahifasida — kartochka ko'z uchun yengil bo'lsin.
  */
 export default async function ListingCard({ it, note, compact = false }: { it: Item; note?: string; compact?: boolean }) {
   const price = { amount: it.priceAmountMinor, currency: it.currency, period: it.pricePeriod, basis: it.priceBasis, negotiable: it.priceNegotiable };
   const { locale, t } = await getT(); const L = labels(locale); const ru = locale === "ru";
-  const total = totalLabel(price, it.areaM2, locale);
   const fav = await favState();
   const trust = it.dealType === "sale" ? { icon: "🔑", text: ru ? "Продаётся" : "Sotiladi", cls: "bg-emerald-600/90" }
     : it.posterType === "owner" ? { icon: "✓", text: ru ? "От владельца" : "Egasidan", cls: "bg-slate-900/55" }
-    : it.posterType === "business_center" ? { icon: "✓", text: ru ? "От бизнес-центра" : "Markazdan", cls: "bg-slate-900/55" } : null;
+    : null; // «Markazdan» ko'rsatilmaydi: deyarli har kartochkada bo'lib, ko'z uni sezmay qo'yardi
   const meta = [it.districtName ?? it.regionName, it.areaM2 ? `${Number(it.areaM2)} ${t("unit.m2")}` : null, it.floor != null ? t("card.floor", { n: it.floor }) : null].filter(Boolean).join(" · ");
   return (
     <article className="group relative">
@@ -47,17 +44,11 @@ export default async function ListingCard({ it, note, compact = false }: { it: I
         </div>
         <div className="mt-2.5 space-y-0.5 px-0.5">
           {note && <span className="inline-block rounded bg-amber-100 px-1.5 text-xs text-amber-900">{note}</span>}
-          <p className="truncate text-[15px] font-extrabold tracking-tight text-slate-900 sm:text-base">{primaryPrice(price, it.areaM2, locale)}</p>
-          <h3 className="line-clamp-1 text-sm font-medium text-slate-800">{it.title}</h3>
+          <p className="truncate text-base font-extrabold tracking-tight text-slate-900">{shortPrice(price, it.areaM2, locale)}</p>
+          <h3 className="line-clamp-1 text-sm text-slate-800">{it.title}</h3>
           {meta && <p className="line-clamp-1 text-xs text-slate-500">{meta}</p>}
-          {!compact && <>
-            {total && <p className="hidden text-xs text-slate-500 sm:block">{priceLabel(price, locale)}</p>}
-            <p className="hidden text-xs text-slate-500 sm:block">{it.commissionType === "none" ? (ru ? "Без комиссии" : "Komissiyasiz") : (ru ? "Есть комиссия" : "Komissiya bor")}{it.depositAmountMinor != null && ` · ${ru ? "Депозит" : "Depozit"}: ${formatMinor(it.depositAmountMinor)} ${it.depositCurrency}`}{it.centerName ? ` · ${it.centerName}` : ""}</p>
-            {it.refreshedAt && <p className="hidden text-[11px] text-slate-400 sm:block">{ru ? "Обновлено" : "Yangilangan"}: {fmtDate(it.refreshedAt, locale)}</p>}
-          </>}
         </div>
       </Link>
-      {!compact && <div className="mt-2 hidden px-0.5 sm:block"><CompareButton id={it.id}/></div>}
     </article>
   );
 }

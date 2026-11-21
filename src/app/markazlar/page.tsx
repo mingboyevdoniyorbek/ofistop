@@ -3,16 +3,15 @@ import { centerStats, listCenters, matchingRoomsByCenter } from "@/lib/centers";
 import { asc } from "drizzle-orm";
 import { db, schema as dbs } from "@/db/client";
 import { parseFilters } from "@/lib/search";
-import { formatMinor } from "@/lib/money";
 import FormSelect from "@/components/FormSelect";
 import RegionDistrictFields from "@/components/RegionDistrictFields";
-import CenterStats from "@/components/CenterStats";
 import { getT } from "@/lib/i18n";
 import { mediaUrl } from "@/lib/storage";
 import { searchKey } from "@/lib/text";
 import { pageAlternates } from "@/lib/seo";
 import CenterCta from "@/components/CenterCta";
-import CenterBadges from "@/components/CenterBadges";
+import { isFeatured } from "@/components/CenterBadges";
+import { shortPrice } from "@/lib/format";
 export const dynamic = "force-dynamic";
 export async function generateMetadata() { const { t } = await getT(); return { title: t("ctr.title"), description: t("ctr.desc"), alternates: await pageAlternates("/markazlar") }; }
 type SP = Record<string, string | string[] | undefined>;
@@ -24,7 +23,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
   const sp = await searchParams;
   const q = one(sp.q), vacant = one(sp.vacant) === "1", verified = one(sp.verified) === "1";
   const region = one(sp.region), district = one(sp.district), areaMin = one(sp.areaMin), areaMax = one(sp.areaMax), priceMax = one(sp.priceMax);
-  const currency = one(sp.currency) === "USD" ? "USD" : "UZS";
+  const currency: "USD" | "UZS" = one(sp.currency) === "USD" ? "USD" : "UZS";
   const sort = (SORTS as readonly string[]).includes(one(sp.sort)) ? (one(sp.sort) as (typeof SORTS)[number]) : "recommended";
   // Xona shartlari (maydon, budjet) bo'lsa — markazda shunday bo'sh xona bo'lishi kerak.
   const roomFilter = !!(areaMin || areaMax || priceMax);
@@ -48,13 +47,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
   const field = "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2";
   const nm = (x: { nameUz: string; nameRu: string }) => (ru ? x.nameRu : x.nameUz);
   return <div className="mx-auto max-w-6xl px-4 py-8">
-    <div className="mb-5"><CenterCta variant="compact" /></div>
-    <header className="rounded-3xl bg-brand-dark p-5 text-white sm:p-10">
-      <p className="mb-2 text-sm text-blue-200">OfisTop · {ru ? "Бизнес-центры" : "Biznes markazlar"}</p>
-      <h1 className="text-2xl font-bold sm:text-3xl">{ru ? "Ваш следующий офис — здесь" : "Keyingi ofisingiz shu yerda"}</h1>
-      <p className="mt-3 max-w-2xl text-blue-100">{ru ? "Познакомьтесь с центром, сравните свободные помещения и свяжитесь с представителем напрямую." : "Markaz bilan tanishing, bo‘sh xonalarni solishtiring va vakili bilan to‘g‘ridan-to‘g‘ri bog‘laning."}</p>
-    </header>
-    <section aria-labelledby="ctr-filter-h" className="mt-6">
+    {/* Tepada faqat sarlavha va qidiruv — bannerlar ro'yxat oxirida */}
+    <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{ru ? "Бизнес-центры" : "Biznes markazlar"}</h1>
+    <p className="mt-1 text-sm text-slate-500">{ru ? "Свободные помещения и прямая связь с представителем центра" : "Bo‘sh xonalar va markaz vakili bilan to‘g‘ridan-to‘g‘ri aloqa"}</p>
+    <section aria-labelledby="ctr-filter-h" className="mt-4">
       <h2 id="ctr-filter-h" className="sr-only">{ru ? "Фильтр" : "Filtr"}</h2>
       {/* Tez qidiruv doim ko'rinadi; qolgan filtrlar yig'iladigan "Filtrlar" ichida (faol filtr bo'lsa ochiq) */}
       <form action="/markazlar" className="space-y-3">
@@ -90,14 +86,26 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
         {f.errors?.length ? <p role="alert" className="text-sm text-red-700">{f.errors.join(". ")}</p> : null}
       </form>
     </section>
-    <div className="my-6 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{t("ctr.title")} · {shown.length}</h2><Link href="/kabinet/markazlar" className="text-sm text-brand underline">{ru ? "Кабинет представителя" : "Markaz vakili kabineti"}</Link></div>
+    <h2 className="mb-4 mt-6 text-sm font-semibold text-slate-500">{ru ? `Найдено: ${shown.length}` : `${shown.length} ta markaz`}</h2>
     {!shown.length ? <div className="rounded-2xl border border-dashed p-8"><p>{centers.length ? (ru ? "По этим условиям центров нет." : "Bu shartlarga mos markaz topilmadi.") : t("ctr.empty")}</p>{active && <Link href="/markazlar" className="mt-3 inline-block text-brand underline">{ru ? "Сбросить фильтры" : "Filtrlarni tozalash"}</Link>}</div> :
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{shown.map(c => { const cover = mediaUrl(c.cover); const m = match.get(c.id); return <Link key={c.id} href={`/markazlar/${c.id}-${c.slug}${roomFilter ? `?${new URLSearchParams({ ...(areaMin ? { areaMin } : {}), ...(areaMax ? { areaMax } : {}), ...(priceMax ? { priceMax, currency } : {}) })}#xonalar` : ""}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition-shadow hover:shadow-lg">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{shown.map(c => { const cover = mediaUrl(c.cover); const m = match.get(c.id); const st = stats.get(c.id);
+        const rooms = roomFilter ? m?.rooms ?? 0 : st?.rooms ?? 0;
+        const p0 = roomFilter ? (m?.minTotal != null ? { amount: m.minTotal, currency, period: "month" as const, basis: "whole" as const } : null) : st?.prices[0] ? { amount: st.prices[0].min, currency: st.prices[0].currency, period: st.prices[0].period, basis: st.prices[0].basis } : null;
+        return <Link key={c.id} href={`/markazlar/${c.id}-${c.slug}${roomFilter ? `?${new URLSearchParams({ ...(areaMin ? { areaMin } : {}), ...(areaMax ? { areaMax } : {}), ...(priceMax ? { priceMax, currency } : {}) })}#xonalar` : ""}`} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:border-brand/40 hover:shadow-lg">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {cover ? <img src={cover} alt={c.name} loading="lazy" className="aspect-[16/9] w-full object-cover" /> : <div className="grid aspect-[16/9] place-items-center bg-blue-50 text-4xl font-bold text-brand" aria-hidden="true">{c.name.slice(0,2).toUpperCase()}</div>}
-        <div className="space-y-2 p-5"><h3 className="text-xl font-bold">{c.name}</h3><CenterBadges c={c} ru={ru} />{c.tagline && <p className="line-clamp-2 text-sm">{c.tagline}</p>}<p className="text-sm text-slate-500">{[c.district,c.region,c.address].filter(Boolean).join(" · ")}</p>
-          {roomFilter && m ? <p className="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">{ru ? `Подходящих помещений: ${m.rooms}` : `${m.rooms} ta mos xona`}{m.minTotal != null && ` · ${ru ? "от" : ""} ${formatMinor(m.minTotal)} ${currency}${ru ? "/мес" : " dan / oy"}`}</p> : <CenterStats st={stats.get(c.id)} />}
-          {c.isDemo && <p className="text-xs text-amber-800">{t("ctr.demo")}</p>}<p className="pt-2 text-sm font-semibold text-brand">{ru ? "Посмотреть центр и помещения →" : "Markaz va xonalarni ko‘rish →"}</p></div>
+        {cover ? <img src={cover} alt={c.name} loading="lazy" className="aspect-[2/1] w-full object-cover" /> : <div className="grid h-20 place-items-center bg-gradient-to-br from-blue-50 to-slate-100 text-2xl font-bold text-brand/60" aria-hidden="true">{c.name.slice(0,2).toUpperCase()}</div>}
+        <div className="p-4">
+          <h3 className="flex items-center gap-1.5 text-lg font-bold text-slate-900"><span className="truncate">{c.name}</span>
+            {c.verifiedAt && <span title={ru ? "Проверенный центр" : "Tasdiqlangan markaz"} aria-label={ru ? "Проверенный центр" : "Tasdiqlangan markaz"} className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent text-[11px] text-white">✓</span>}
+            {isFeatured(c) && <span title={ru ? "Рекомендуем" : "Tavsiya etiladi"} className="shrink-0 text-amber-500">★</span>}</h3>
+          <p className="truncate text-sm text-slate-500">{[c.district, c.address].filter(Boolean).join(" · ") || c.region}</p>
+          {/* Eng muhim ma'lumot: nechta bo'sh xona va narxi qanchadan */}
+          {rooms > 0 ? <p className="mt-3 rounded-xl bg-green-50 px-3 py-2 text-[15px] font-bold text-green-800">{ru ? `${rooms} свободн. ${rooms === 1 ? "помещение" : "помещений"}` : `${rooms} ta bo‘sh xona`}{p0 && <span className="font-semibold"> · {ru ? "от " : ""}{shortPrice(p0, null, locale)}{ru ? "" : " dan"}</span>}</p>
+            : <p className="mt-3 rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-500">{t("ctr.stat.none")}</p>}
+          {c.isDemo && <p className="mt-2 text-xs text-amber-800">{t("ctr.demo")}</p>}
+        </div>
       </Link>; })}</div>}
+    <div className="mt-10"><CenterCta variant="compact" /></div>
+    <p className="mt-3 text-center text-sm"><Link href="/kabinet/markazlar" className="text-brand underline">{ru ? "Кабинет представителя центра" : "Markaz vakili kabineti"}</Link></p>
   </div>;
 }
