@@ -56,3 +56,22 @@ export function rangeLabel(min: bigint, max: bigint, currency: string, period: P
   const a = formatMinor(min), b = formatMinor(max);
   return `${a === b ? a : `${a} – ${b}`} ${currency}${bas}${per ? ` / ${per}` : ""}`;
 }
+
+/**
+ * Kartochkalar uchun qisqa narx: «18 mln so‘m/oy», «850 ming so‘m/oy», «405 $/oy», «1,2 mln $».
+ * Butun joy narxi (m² narxi bo'lsa maydonga ko'paytirilgan) ko'rsatiladi; batafsil narx e'lon sahifasida.
+ */
+export function shortPrice(p: Parameters<typeof priceLabel>[0], area: string | null | undefined, l: Locale = "uz") {
+  if (p.amount === null) return W[l].neg;
+  const total = totalPrice({ amountMinor: p.amount, currency: p.currency, period: p.period, basis: p.basis }, area);
+  const amount = total ?? p.amount, basis = total == null ? p.basis : "whole";
+  const v = Number(amount) / 100;
+  const num = (x: number, d = 1) => x.toLocaleString(l === "ru" ? "ru-RU" : "uz-UZ", { maximumFractionDigits: d }).replace(/\s/g, " ");
+  const ru = l === "ru";
+  const cur = p.currency === "UZS" ? (ru ? "сум" : "so‘m") : p.currency === "USD" ? "$" : p.currency;
+  const big = v >= 1e9 ? `${num(v / 1e9)} ${ru ? "млрд" : "mlrd"}` : v >= 1e6 ? `${num(v / 1e6, v < 1e7 ? 2 : 1)} ${ru ? "млн" : "mln"}`
+    : p.currency === "UZS" && v >= 1e4 ? `${num(v / 1e3, 0)} ${ru ? "тыс." : "ming"}` : num(v, 2);
+  const unit = { whole: "", per_m2: "/m²", per_seat: ru ? "/место" : "/o‘rin" }[basis];
+  const per = { month: ru ? "/мес" : "/oy", day: ru ? "/день" : "/kun", hour: ru ? "/час" : "/soat", once: "" }[p.period];
+  return `${big} ${cur}${unit}${per}`;
+}

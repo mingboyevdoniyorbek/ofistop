@@ -4,7 +4,7 @@ import { useT } from "./I18nProvider";
 import FormSelect from "./FormSelect";
 
 const REASONS = ["already_rented", "wrong_price", "false_info", "duplicate", "fraud_suspected", "other"] as const;
-export default function ReportButton({ listingId, loggedIn }: { listingId: string; loggedIn: boolean }) {
+export default function ReportButton({ listingId, loggedIn, variant = "button" }: { listingId: string; loggedIn: boolean; variant?: "button" | "link" }) {
   const t = useT();
   const [open, setOpen] = useState(false); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -16,10 +16,11 @@ export default function ReportButton({ listingId, loggedIn }: { listingId: strin
     if (r?.ok) { setMsg({ ok: true, t: t("rep.ok") }); setOpen(false); }
     else setMsg({ ok: false, t: d?.error ?? t("rep.fail") });
   }
-  if (!loggedIn) return <a className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-red-600 ring-1 ring-red-200 hover:bg-red-50" href={`/kirish?next=${encodeURIComponent(`/joylar/${listingId}`)}`}>{t("rep.loginNeeded")}</a>;
+  const btn = variant === "link" ? "py-1 text-sm font-medium text-slate-600 underline underline-offset-2 hover:text-red-600" : "rounded-xl bg-white px-4 py-2 text-sm font-semibold text-red-600 ring-1 ring-red-200 hover:bg-red-50";
+  if (!loggedIn) return <a className={btn} href={`/kirish?next=${encodeURIComponent(`/joylar/${listingId}`)}`}>{t("rep.loginNeeded")}</a>;
   return (
-    <div>
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-red-600 ring-1 ring-red-200 hover:bg-red-50">{t("rep.open")}</button>
+    <div className={variant === "link" ? "w-full sm:w-auto" : undefined}>
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className={btn}>{t("rep.open")}</button>
       {open && (
         <form onSubmit={submit} className="mt-3 space-y-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
           <label className="block">{t("rep.reason")}<FormSelect name="reason" required className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5"><option value="">{t("rep.choose")}</option>{REASONS.map((v) => <option key={v} value={v}>{t(`rep.r.${v}` as const)}</option>)}</FormSelect></label>
