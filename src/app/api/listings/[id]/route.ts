@@ -6,7 +6,7 @@ import { formSchema, parseForm, submitErrors, toForm, type ListingRow } from "@/
 import { needsRemoderation } from "@/lib/status";
 import { remoderateIfApproved } from "@/lib/listing-images";
 import { z } from "zod";
-import { deleteDraft } from "@/lib/drafts";
+import { deleteArchived, deleteDraft } from "@/lib/drafts";
 
 const pgCode = (e: unknown) => (e as { code?: string; cause?: { code?: string } })?.code ?? (e as { cause?: { code?: string } })?.cause?.code;
 
@@ -90,8 +90,11 @@ export const PATCH = handle(async (req, ctx) => {
 export const DELETE = handle(async (req, ctx) => {
   const user = await requireUser(req);
   const l = await loadEditable((await ctx.params).id, user);
-  if (l.moderationStatus !== "draft" || l.publishedAt) throw new HttpError(409, "Faqat qoralamani o'chirish mumkin");
-  const n = await deleteDraft(l.id, user.role === "admin" ? null : l.ownerId);
+  // Qoralama yoki arxivdagi e'lon butunlay o'chiriladi; faol e'lonni avval arxivlash kerak.
+  const archived = l.availabilityStatus === "archived";
+  if (!archived && (l.moderationStatus !== "draft" || l.publishedAt)) throw new HttpError(409, "Faqat qoralama yoki arxivdagi e'lonni o'chirish mumkin");
+  const owner = user.role === "admin" ? null : l.ownerId;
+  const n = archived ? await deleteArchived(l.id, owner) : await deleteDraft(l.id, owner);
   if (!n) throw new HttpError(404, "E'lon topilmadi");
   return NextResponse.json({ ok: true });
 });

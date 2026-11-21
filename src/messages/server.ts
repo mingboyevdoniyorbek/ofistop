@@ -79,6 +79,8 @@ export const SERVER_MSGS: readonly (readonly [string, string])[] = [
   ["Avval tizimga kiring", "Сначала войдите в систему"],
   ["E'lon topilmadi", "Объявление не найдено"],
   ["Faqat qoralamani o'chirish mumkin", "Удалить можно только черновик"],
+  ["Faqat qoralama yoki arxivdagi e'lonni o'chirish mumkin", "Удалить можно только черновик или объявление из архива"],
+  ["Faqat arxivdagi e'lonni butunlay o'chirish mumkin", "Окончательно удалить можно только объявление из архива"],
   ["CRON_SECRET sozlanmagan", "CRON_SECRET не настроен"],
   ["Maydonni to‘g‘ri to‘ldiring", "Заполните поле правильно"],
   ["Siz bu markazning vakilisiz", "Вы уже представитель этого центра"],

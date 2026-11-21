@@ -49,3 +49,7 @@ body { font-family: var(--font-sans); color: #0f172a; background: #fff; }
 /* Ichki sahifalar: sarlavha tepadagi panelda bor — takror ko'rsatilmaydi (ekran o'quvchilar uchun qoladi); burchaklar yumshoqroq */
 .adm-page > :first-child > h1:first-child { display: none; }
 .adm-page .rounded { border-radius: .875rem; }
+/* Telefonda xarita ustida bir barmoq bilan surilganda chiqadigan maslahat (mobileGestures) */
+.oi-gesture { position: absolute; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1.5rem; text-align: center;
+  background: rgb(15 23 42 / .5); color: #fff; font-size: 15px; font-weight: 600; line-height: 1.35; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.oi-gesture.on { opacity: 1; }

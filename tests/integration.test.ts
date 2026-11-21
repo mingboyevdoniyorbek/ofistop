@@ -127,6 +127,17 @@ test('unrelated user cannot update, and archived listings reject image reorder o
  const [image]=await state.db.select().from(schema.listingImages).where(eq(schema.listingImages.listingId,id));
  expect((await deleteImage(req(undefined,'DELETE'),{params:Promise.resolve({id,imageId:image.id})})).status).toBe(409);
 });
+test('archived listing can be deleted for good by its owner only; images and favorites go with it',async()=>{
+ const {DELETE:remove}=await import('../src/app/api/listings/[id]/route');
+ const [stranger]=await state.db.insert(schema.users).values({phone:'+998909997766'}).returning();state.user=stranger;
+ expect((await remove(req(undefined,'DELETE'),ctx(id))).status).toBe(404);state.user=owner;
+ await state.db.update(schema.listings).set({availabilityStatus:'available'}).where(eq(schema.listings.id,id));
+ expect((await remove(req(undefined,'DELETE'),ctx(id))).status).toBe(409); // faol e'lonni avval arxivlash kerak
+ await state.db.update(schema.listings).set({availabilityStatus:'archived'}).where(eq(schema.listings.id,id));
+ expect((await remove(req(undefined,'DELETE'),ctx(id))).status).toBe(200);
+ expect(await state.db.select().from(schema.listings).where(eq(schema.listings.id,id))).toHaveLength(0);
+ expect(await state.db.select().from(schema.listingImages).where(eq(schema.listingImages.listingId,id))).toHaveLength(0);
+});
 test('explicit test mode overrides old real-provider credentials',async()=>{
  const original={SMS_PROVIDER:process.env.SMS_PROVIDER,ESKIZ_EMAIL:process.env.ESKIZ_EMAIL,ESKIZ_PASSWORD:process.env.ESKIZ_PASSWORD};
  Object.assign(process.env,{APP_MODE:'test',SMS_PROVIDER:'eskiz',ESKIZ_EMAIL:'old@example.com',ESKIZ_PASSWORD:'old-credential'});

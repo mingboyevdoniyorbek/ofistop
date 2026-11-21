@@ -10,7 +10,7 @@ import AdminAction from "@/components/AdminAction";
 import { requireStaffPage } from "@/lib/staff";
 import { listingWarnings } from "@/lib/listing-checks";
 
-const TABS = ["pending", "active", "expired", "rejected", "all"] as const;
+const TABS = ["pending", "active", "expired", "rejected", "archived", "all"] as const;
 const PAGE = 20;
 
 export default async function AdminListings({ searchParams }: { searchParams: Promise<{ holat?: string; sahifa?: string; q?: string }> }) {
@@ -24,6 +24,7 @@ export default async function AdminListings({ searchParams }: { searchParams: Pr
     active: publicCond(),
     expired: and(eq(L.moderationStatus, "approved"), or(eq(L.availabilityStatus, "expired"), and(eq(L.availabilityStatus, "available"), lte(L.expiresAt, now)))),
     rejected: eq(L.moderationStatus, "rejected"),
+    archived: eq(L.availabilityStatus, "archived"),
     all: sql`${L.moderationStatus} <> 'draft'`,
   };
   // Tepadagi qidiruv: sarlavha, telefon yoki e'lon raqami (id boshi) bo'yicha.
@@ -63,6 +64,7 @@ export default async function AdminListings({ searchParams }: { searchParams: Pr
                   {l.rejectionReason && <p className="text-xs text-red-700">{t("adm.l.rejReason", { reason: l.rejectionReason })}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {l.availabilityStatus === "archived" && <AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "purge" }} label={locale === "ru" ? "🗑 Удалить навсегда" : "🗑 Butunlay o‘chirish"} tone="danger" confirm={locale === "ru" ? "Удалить объявление вместе с фото навсегда? Это нельзя отменить." : "E’lon rasmlari bilan butunlay o‘chirilsinmi? Buni qaytarib bo‘lmaydi."} />}
                   {l.availabilityStatus !== "archived" && <AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "remove", expectedUpdatedAt: l.updatedAt.toISOString() }} label={locale === "ru" ? "Удалить с сайта" : "Saytdan o‘chirish"} tone="danger" askReason={locale === "ru" ? "Причина удаления (будет отправлена владельцу)" : "O‘chirish sababi (e’lon egasiga yuboriladi)"} />}
                   {l.isSuspended && <AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "unhide" }} label={locale === "ru" ? "Снять блокировку" : "Blokni olib tashlash"} />}
                   {l.moderationStatus === "pending" && <><AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "approve", expectedUpdatedAt: l.updatedAt.toISOString() }} label={t("adm.approve")} tone="primary" /><AdminAction url={`/api/admin/listings/${l.id}`} body={{ action: "reject" }} label={t("adm.reject")} tone="danger" askReason={t("adm.askReject")} /></>}

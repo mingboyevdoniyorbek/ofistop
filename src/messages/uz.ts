@@ -51,7 +51,7 @@ export const uz = {
   "adm.l.tab.active": "Faol",
   "adm.l.tab.expired": "Muddati tugagan",
   "adm.l.tab.rejected": "Rad etilgan",
-  "adm.l.tab.all": "Hammasi",
+  "adm.l.tab.archived": "Arxiv", "adm.l.tab.all": "Hammasi",
   "adm.l.status": "Holat",
   "adm.l.empty": "Bu bo'limda e'lon yo'q.",
   "adm.mod.draft": "Qoralama",

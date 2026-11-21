@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useT } from "./I18nProvider";
 import "leaflet/dist/leaflet.css";
-import { TASHKENT, TILE_ATTRIBUTION, TILE_URL, loadLeaflet, pinIcon } from "./leaflet-setup";
+import { TASHKENT, TILE_ATTRIBUTION, TILE_URL, loadLeaflet, mobileGestures, pinIcon } from "./leaflet-setup";
 
 const parse = (v: string) => { const n = Number(v.replace(",", ".")); return v.trim() && Number.isFinite(n) ? n : null; };
 const fix6 = (n: number) => n.toFixed(6);
@@ -28,6 +28,9 @@ export default function PickMap({ lat, lng, onPick, disabled, focus }: {
   const pickRef = useRef(onPick); pickRef.current = onPick;
   const [failed, setFailed] = useState(false);
   const [full, setFull] = useState(false);
+  // Telefonda: sahifada — bir barmoq sahifani aylantiradi; to'liq ekranda — xarita odatdagidek suriladi.
+  const gestureRef = useRef<(free: boolean) => void>(() => {}); const fullRef = useRef(false);
+  useEffect(() => { fullRef.current = full; gestureRef.current(full); }, [full]);
   const [locating, setLocating] = useState(false); const [geoErr, setGeoErr] = useState("");
   const [q, setQ] = useState(""); const [hits, setHits] = useState<Hit[]>([]); const [searching, setSearching] = useState(false);
   const pos = useRef({ lat, lng }); pos.current = { lat, lng };
@@ -59,6 +62,7 @@ export default function PickMap({ lat, lng, onPick, disabled, focus }: {
       const has = a !== null && b !== null && Math.abs(a) <= 90 && Math.abs(b) <= 180;
       const start: [number, number] = has ? [a!, b!] : focus ? [focus[0], focus[1]] : TASHKENT;
       const map = L.map(box.current, { center: start, zoom: has ? 16 : focus ? focus[2] : 12, scrollWheelZoom: false, zoomControl: false });
+      gestureRef.current = mobileGestures(map, ru ? "Чтобы двигать карту, используйте два пальца или откройте на весь экран" : "Xaritani surish uchun ikki barmoqdan foydalaning yoki to‘liq ekranda oching"); gestureRef.current(fullRef.current);
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }).addTo(map);
       mapRef.current = map;
       // Holat atributlari (testlar va nosozlikni aniqlash uchun): xarita markazi va zoom

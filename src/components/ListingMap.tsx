@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Map as LMap } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useLocale } from "./I18nProvider";
-import { TASHKENT, TILE_ATTRIBUTION, TILE_URL, loadLeaflet, pinIcon } from "./leaflet-setup";
+import { TASHKENT, TILE_ATTRIBUTION, TILE_URL, loadLeaflet, mobileGestures, pinIcon } from "./leaflet-setup";
 import type { Marker } from "./map-popup";
 type Cluster = { id: string; lat: number; lng: number; count: number };
 type Data = { total: number; markers: Marker[]; clusters: Cluster[]; groupTotal: number };
@@ -24,6 +24,9 @@ export default function ListingMap({ query, listHref, children }: { query: strin
   const [loading, setLoading] = useState(true), [error, setError] = useState("");
   const [tileError, setTileError] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  // Telefonda: sahifada — bir barmoq sahifani aylantiradi; to'liq ekranda — xarita odatdagidek suriladi.
+  const gestureRef = useRef<(free: boolean) => void>(() => {}); const fullRef = useRef(false);
+  useEffect(() => { fullRef.current = fullscreen; gestureRef.current(fullscreen); }, [fullscreen]);
   useEffect(() => {
     const timer = setTimeout(() => mapRef.current?.invalidateSize(), 50);
     const previous = document.body.style.overflow;
@@ -43,6 +46,7 @@ export default function ListingMap({ query, listHref, children }: { query: strin
     (async () => {
       const L = await loadLeaflet(); if (disposed || !box.current) return;
       map = L.map(box.current, { center: TASHKENT, zoom: 11, minZoom: 2, maxZoom: 19, maxBounds: [[-85,-180],[85,180]], maxBoundsViscosity: 1 }); mapRef.current = map;
+      gestureRef.current = mobileGestures(map, ru ? "Чтобы двигать карту, используйте два пальца" : "Xaritani surish uchun ikki barmoqdan foydalaning"); gestureRef.current(fullRef.current);
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }).on("tileerror", () => { if (!disposed) setTileError(true); }).on("tileload", () => { if (!disposed) setTileError(false); }).addTo(map);
       const layer = L.layerGroup().addTo(map); let ring: ReturnType<typeof L.circle> | null = null;
       const params = new URLSearchParams(baseQuery);

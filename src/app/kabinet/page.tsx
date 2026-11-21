@@ -84,7 +84,7 @@ export default async function Kabinet({ searchParams }: { searchParams: Promise<
                 <div className="flex flex-wrap items-center gap-3 pt-1">
                   {st !== "archived" && <Link href={`/kabinet/elon/${r.id}`} className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">{t("cab.edit")}</Link>}
                   {r.moderationStatus === "approved" && <Link href={`/joylar/${r.id}-${r.slug}`} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-brand hover:border-brand">{t("cab.view")}</Link>}
-                  {st === "draft" && !r.publishedAt && <DeleteDraftButton id={r.id} />}
+                  {st === "draft" && !r.publishedAt && <DeleteDraftButton id={r.id} />}{st === "archived" && <DeleteDraftButton id={r.id} archived />}
                 </div>
                 {r.moderationStatus === "approved" && !r.isSuspended && st !== "archived" && <ListingActions id={r.id} actions={[
                   ...(st === "active" ? [{ label: t("cab.a.confirm"), body: { action: "confirm" } }, { label: t("cab.a.reserved"), body: { action: "set", to: "reserved" } }, { label: r.dealType === "sale" ? (locale === "ru" ? "Продано" : "Sotildi") : t("cab.a.rented"), body: { action: "set", to: "rented" }, confirm: t("cab.c.rented") }, { label: t("cab.a.pause"), body: { action: "set", to: "paused" } }] : []),
