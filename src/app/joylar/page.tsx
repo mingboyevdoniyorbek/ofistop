@@ -70,7 +70,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
       <SearchRestore/>
       <aside className="hidden lg:block">
         {/* Telefonda filtr — MobileCatalogBar'dagi to'liq ekranli oynada; bu blok faqat kompyuterdagi xarita ko'rinishi uchun */}
-        <details className={`${view === "map" ? "hidden lg:block" : "hidden"} rounded-2xl border border-slate-200 bg-white p-3`}>
+        <details className={`${view === "map" ? "hidden lg:block" : "hidden"} rounded-2xl border border-slate-200 bg-white p-4`}>
           <summary className="cursor-pointer font-medium">{t("cat.filters")}</summary>
           <div className="mt-3"><FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} /></div>
         </details>

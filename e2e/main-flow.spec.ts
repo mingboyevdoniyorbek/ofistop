@@ -141,7 +141,7 @@ test("6–7. Hudud + narx + maydon filtrlari birga ishlaydi; havola boshqa brauz
   const form = page.locator("form[action='/joylar']:visible").first();
   // Byudjet butun joy uchun: 10 USD/m² × 100 m² = 1 000 USD/oy
   await pick(page, form.getByLabel(uz["f.region"]), "Toshkent shahri");
-  await pick(page, form.getByLabel(uz["f.currency"]), "USD");
+  await form.getByRole("radiogroup", { name: uz["f.currency"] }).getByRole("radio", { name: "USD" }).click(); // valyuta — ikki tugmali tanlov
   await form.getByLabel(uz["f.priceFrom"]).fill("500");
   await form.getByLabel(uz["f.priceTo"]).fill("1500");
   await form.getByLabel(uz["f.areaFrom"]).fill("90");
