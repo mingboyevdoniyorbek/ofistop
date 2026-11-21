@@ -14,7 +14,7 @@ import { STEP_OF as ORIGINAL_STEPS, USES_FLOOR, USES_SEATS, USES_TOTAL_FLOORS, t
 type F = Required<Form>;
 type Img = { id: string; url: string | null; thumbUrl: string | null; isPrimary: boolean };
 interface Props { promo?: boolean; updatedAt: string; id: string; slug: string; initial: F; images: Img[]; moderation: "draft" | "pending" | "approved" | "rejected"; rejectionReason: string | null; archived: boolean;
-  regions: { id: number; name: string; slug?: string }[]; districts: { id: number; regionId: number; name: string; slug?: string }[]; amenities: { code: string; name: string }[]; centers: { id: string; name: string }[] }
+  regions: { id: number; name: string; slug?: string }[]; districts: { id: number; regionId: number; name: string; slug?: string; center?: [number, number] }[]; amenities: { code: string; name: string }[]; centers: { id: string; name: string }[] }
 
 // Qadamlar: 1 — rasmlar va joy haqida, 2 — manzil, 3 — narx va shartlar, 4 — aloqa va yuborish.
 const STEP_OF: Record<string, number> = { ...Object.fromEntries(Object.entries(ORIGINAL_STEPS).map(([key, step]) => [key, step <= 3 ? step : 4])), images: 1 };
@@ -232,7 +232,7 @@ export default function ListingWizard(p: Props) {
           <L errors={errors} k="address" label={t("wiz.f.address")}><input className={inp} maxLength={200} {...bind("address")} /></L>
           <fieldset className="rounded-2xl border border-slate-200 p-3 sm:p-4"><legend className="px-1 text-sm font-medium">{t("wiz.coords")}</legend>
             <p className="mb-2 text-xs text-slate-500">{t("wiz.coordsHint")}</p>
-            <PickMap lat={f.lat} lng={f.lng} disabled={!editable} focus={placeCenter(p.regions.find((x) => x.id === f.regionId)?.slug, p.districts.find((x) => x.id === f.districtId)?.slug)} onPick={(la, ln) => setF((x) => ({ ...x, lat: la, lng: ln }))} />
+            <PickMap lat={f.lat} lng={f.lng} disabled={!editable} focus={(() => { const d = p.districts.find((x) => x.id === f.districtId); return d?.center ? [d.center[0], d.center[1], 13] as [number, number, number] : placeCenter(p.regions.find((x) => x.id === f.regionId)?.slug, d?.slug); })()} onPick={(la, ln) => setF((x) => ({ ...x, lat: la, lng: ln }))} />
             {/* Kenglik/uzunlik raqamlari foydalanuvchiga ko'rsatilmaydi — joy faqat xaritada belgilanadi */}
             <E errors={errors} k="lat" /><E errors={errors} k="lng" />
             <label className="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={f.exactLocationPublic} onChange={(e) => set("exactLocationPublic", e.target.checked)} />{t("wiz.exactPublic")}</label>

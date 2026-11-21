@@ -2,12 +2,13 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { and, eq, ne } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
-import { labels, fmtDate, priceLabel, totalLabel, primaryPrice, availLabel } from "@/lib/format";
+import { labels, fmtDate, priceLabel, totalLabel, primaryPrice, availLabel, confirmedAgo } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { formatMinor } from "@/lib/money";
 import { parseFilters, publicCond, searchListings } from "@/lib/search";
 import { effectiveAvailability, isPubliclyVisible } from "@/lib/status";
 import { publicPoint } from "@/lib/geo";
+import { nearestMetro } from "@/lib/metro";
 import PlaceMap from "@/components/PlaceMap";
 import ContactButtons from "@/components/ContactButtons";
 import ListingCard from "@/components/ListingCard";
@@ -92,6 +93,7 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
     [t("det.unitCode"), l.unitCodePublic ? l.unitCode : null],
   ];
   const place = r.district ?? r.region;
+  const metro = pt ? nearestMetro(pt.lat, pt.lng) : null;
   const facts = [
     { label: t("det.area"), value: l.areaM2 ? `${Number(l.areaM2)} ${t("unit.m2")}` : "—", icon: "M4 4h16v16H4zM4 9h16M9 4v16" },
     { label: t("det.floor"), value: l.floor != null ? `${l.floor}${l.totalFloors ? ` / ${l.totalFloors}` : ""}` : l.totalFloors ? `${l.totalFloors} ${ru ? "эт." : "qavatli"}` : "—", icon: "M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 9h4a1 1 0 0 1 1 1v11M2.5 21h19M8 8h3M8 12h3M8 16h3" },
@@ -141,7 +143,9 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
               <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-brand"><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d={f.icon} /></svg></span>
               <span className="min-w-0"><span className="block text-[11px] text-slate-500">{f.label}</span><span className="block truncate text-sm font-semibold text-slate-900">{f.value}</span></span>
             </li>))}</ul>
-          <div className="mt-3 flex flex-wrap items-center gap-2"><span title={ru ? "Администратор проверил объявление. Это не техническая проверка здания." : "Administrator e’lon ma’lumotlarini ko‘rib chiqqan. Bu binoning texnik tekshiruvi emas."} className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-brand">✓ {ru ? "Объявление проверено" : "E’lon tekshirilgan"}</span>{l.availabilityConfirmedAt && visible && <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs text-green-800">{ru ? "Доступность подтверждена" : "Bo‘shligi tasdiqlangan"}: {fmtDate(l.availabilityConfirmedAt, locale)}</span>}{visible && <CompareButton id={l.id} />}{showViewCounts() && <span className="text-xs text-slate-500">{ru ? "Просмотры" : "Ko‘rishlar"}: {l.viewCount}</span>}</div>
+          {metro && <p className="mt-3 flex items-center gap-2 text-[15px] text-slate-700"><span aria-hidden="true" className="grid h-6 w-6 place-items-center rounded-full text-[11px] font-black text-white" style={{ background: metro.color }}>M</span>
+            <span><b>{metro.name}</b> {ru ? "метро" : "metro"} — {pt?.approx ? "≈" : ""}{metro.minutes} {ru ? "мин пешком" : "daqiqa piyoda"}</span></p>}
+          <div className="mt-3 flex flex-wrap items-center gap-2"><span title={ru ? "Администратор проверил объявление. Это не техническая проверка здания." : "Administrator e’lon ma’lumotlarini ko‘rib chiqqan. Bu binoning texnik tekshiruvi emas."} className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-brand">✓ {ru ? "Объявление проверено" : "E’lon tekshirilgan"}</span>{l.availabilityConfirmedAt && visible && <span title={fmtDate(l.availabilityConfirmedAt, locale)} className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-800">✓ {ru ? `Свободно — подтверждено ${confirmedAgo(l.availabilityConfirmedAt, locale)}` : `Bo‘sh — ${confirmedAgo(l.availabilityConfirmedAt, locale)} tasdiqlangan`}</span>}{visible && <CompareButton id={l.id} />}{showViewCounts() && <span className="text-xs text-slate-500">{ru ? "Просмотры" : "Ko‘rishlar"}: {l.viewCount}</span>}</div>
           {l.isDemo && <p className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800">{t("det.demo")}</p>}
           {l.description && <section className="mt-5"><h2 className="mb-2 font-semibold">{ru ? "Описание" : "Tavsif"}</h2><p className="whitespace-pre-line text-[15px] leading-relaxed text-slate-700">{l.description}</p></section>}
           <section className="mt-5">

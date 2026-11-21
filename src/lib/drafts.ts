@@ -42,3 +42,9 @@ export const purgeStaleDrafts = (ownerId?: string) =>
 /** Arxivdagi e'lonni butunlay o'chirish (egasi yoki admin). Faqat arxivlangan e'lon — faol e'longa tegmaydi. */
 export const deleteArchived = (id: string, ownerId: string | null) =>
   removeListings(and(eq(s.listings.id, id), eq(s.listings.availabilityStatus, "archived"), ownerId ? eq(s.listings.ownerId, ownerId) : undefined));
+
+/** Rad etilgan e'lon shuncha soatdan keyin (tuzatib qayta yuborilmasa) rasmlari bilan o'chiriladi. */
+export const REJECTED_TTL_HOURS = 24;
+/** Rad etilganiga 24 soat bo'lgan e'lonlar (ixtiyoriy: faqat bitta foydalanuvchiniki). */
+export const purgeRejected = (ownerId?: string) =>
+  removeListings(and(eq(s.listings.moderationStatus, "rejected"), lt(s.listings.updatedAt, sql`now() - make_interval(hours => ${REJECTED_TTL_HOURS})`), ownerId ? eq(s.listings.ownerId, ownerId) : undefined));

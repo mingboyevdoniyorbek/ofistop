@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { labels, shortPrice } from "@/lib/format";
+import { labels, shortPrice, confirmedAgo } from "@/lib/format";
+import { nearestMetro } from "@/lib/metro";
+import { publicPoint } from "@/lib/geo";
 import { getT } from "@/lib/i18n";
 import { mediaUrl } from "@/lib/storage";
 import { favState } from "@/lib/favorites";
@@ -30,6 +32,11 @@ export default async function ListingCard({ it, note, compact = false }: { it: I
     : it.posterType === "owner" ? { icon: "✓", text: ru ? "От владельца" : "Egasidan", cls: "bg-slate-900/55" }
     : null; // «Markazdan» ko'rsatilmaydi: deyarli har kartochkada bo'lib, ko'z uni sezmay qo'yardi
   const meta = [it.districtName ?? it.regionName, it.areaM2 ? `${Number(it.areaM2)} ${t("unit.m2")}` : null, it.floor != null ? t("card.floor", { n: it.floor }) : null].filter(Boolean).join(" · ");
+  // Metro: aniq manzil yashirilgan e'lonlarda saytda ko'rinadigan taxminiy nuqtadan hisoblanadi (egasining manzili oshkor bo'lmaydi).
+  const pt = (() => { try { return publicPoint({ id: it.id, lat: it.metroLat, lng: it.metroLng, exactLocationPublic: it.metroExact }); } catch { return null; } })();
+  const metro = pt ? nearestMetro(pt.lat, pt.lng) : null;
+  // Bo'shligi yaqinda (7 kun ichida) tasdiqlangan bo'lsa — rasm ustida yashil belgi
+  const fresh = it.availabilityConfirmedAt && Date.now() - new Date(it.availabilityConfirmedAt).getTime() < 7 * 864e5 ? confirmedAgo(it.availabilityConfirmedAt, locale) : null;
   return (
     <article className="group relative">
       <div className="absolute right-2 top-2 z-10"><FavoriteButton variant="icon" listingId={it.id} initial={fav.ids.has(it.id)} loggedIn={fav.loggedIn} /></div>
@@ -40,6 +47,7 @@ export default async function ListingCard({ it, note, compact = false }: { it: I
             {it.imageKey?.startsWith("placeholder:") ? t("card.demoImg", { cat: L.category[it.category] }) : t("card.noImg")}
           </ListingPhoto>
           {it.isTop && <VipBadge className="absolute left-2 top-2 z-10" />}
+          {fresh && <span className="absolute bottom-2 right-2 z-10 rounded-full bg-emerald-600/90 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm" title={ru ? "Владелец подтвердил, что помещение свободно" : "Egasi joy bo‘shligini tasdiqlagan"}>✓ {fresh}</span>}
           {trust && <span className={`absolute bottom-2 left-2 z-10 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm ${trust.cls}`}>{trust.icon} {trust.text}</span>}
         </div>
         <div className="mt-2.5 space-y-0.5 px-0.5">
@@ -47,6 +55,7 @@ export default async function ListingCard({ it, note, compact = false }: { it: I
           <p className="truncate text-base font-extrabold tracking-tight text-slate-900">{shortPrice(price, it.areaM2, locale)}</p>
           <h3 className="line-clamp-1 text-sm text-slate-800">{it.title}</h3>
           {meta && <p className="line-clamp-1 text-xs text-slate-500">{meta}</p>}
+          {metro && <p className="flex items-center gap-1.5 truncate text-xs text-slate-600"><span aria-hidden="true" className="grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full text-[8px] font-black text-white" style={{ background: metro.color }}>M</span><span className="truncate">{metro.name} · {pt?.approx ? "≈" : ""}{metro.minutes} {ru ? "мин" : "daq"}</span></p>}
         </div>
       </Link>
     </article>

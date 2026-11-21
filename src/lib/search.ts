@@ -1,3 +1,4 @@
+import { METRO, metroRadiusM } from "./metro";
 import { and, asc, desc, eq, gte, lte, sql, inArray, type SQL } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { validDate } from "./validation";
@@ -19,6 +20,31 @@ export interface Filters {
   amenities: string[]; sort: Sort; page: number;
   currencyFilter?: boolean; periodFilter?: boolean; basisFilter?: boolean; errors?: string[];
   bounds?: Bounds; near?: { lat: number; lng: number; radius: number }; priceMode?: "total" | "unit";
+  /** Qidiruvda «8 kishi», «10 xodim», «5 человек» deb yozilgan bo'lsa — kerakli maydon oralig'i shundan hisoblandi. */
+  people?: number;
+  /** «Metroga N daqiqagacha» (piyoda): 5, 10, 15 yoki 20. */
+  metro?: number;
+}
+
+/** Bo'shligi shuncha kundan beri tasdiqlanmagan e'lon qidiruvda pastga tushadi. */
+export const STALE_DAYS = 14;
+
+/** Bir kishiga to'g'ri keladigan ofis maydoni (m²): taxminan 5–7 m² (ish stoli + yo'lak + umumiy joy). */
+export const M2_PER_PERSON = [5, 7] as const;
+/**
+ * «8 kishi», «8 kishilik», «10 ta xodim», «5 odam», «12 nafar», «8 человек», «10 сотрудников», «6 мест» — sonni ajratadi.
+ * Matndan shu ibora olib tashlanadi (qolgani oddiy qidiruv bo'lib qoladi).
+ */
+export function parsePeople(q: string | undefined): { people?: number; rest?: string } {
+  if (!q) return {};
+  const m = /(?:^|\s)(\d{1,3})\s*(?:ta\s+)?(kishi(?:lik|ga)?|xodim(?:ga|lar)?|odam(?:ga|lar)?|ishchi(?:ga|lar)?|nafar|o[‘'ʻ`]?rin(?:li)?|чел(?:овек[а]?)?\.?|сотрудник(?:а|ов)?|работник(?:а|ов)?|мест[а]?)(?=\s|$|[,.;!?])/iu.exec(q);
+  if (!m) return { rest: q };
+  const n = Number(m[1]);
+  if (!(n >= 1 && n <= 500)) return { rest: q };
+  // Umumiy so'zlar («ofis», «uchun», «на», «для») qolgan matndan olib tashlanadi — ular natijani keraksiz toraytirardi.
+  const filler = /^(uchun|ofis|ofisga|ofislar|joy|joyi|xona|kerak|ijara|ijaraga|на|для|офис|офиса|офисы|помещение|аренда|нужен|нужно)$/i;
+  const rest = (q.slice(0, m.index) + " " + q.slice(m.index + m[0].length)).split(/\s+/).filter((w) => w && !filler.test(w)).join(" ").trim();
+  return { people: n, rest: rest || undefined };
 }
 
 const num = (v: string | undefined) => (v && /^\d{1,12}(\.\d{1,2})?$/.test(v) ? v : undefined);
@@ -41,14 +67,18 @@ export function parseFilters(sp: Record<string, string | string[] | undefined>):
     if (num(one(sp[a])) && num(one(sp[b])) && Number(one(sp[a])) > Number(one(sp[b]))) errors.push("Eng kichik qiymat eng katta qiymatdan oshmasin");
   }
   if (one(sp.availableBy) && !validDate(one(sp.availableBy)!)) errors.push("Sana noto‘g‘ri");
+  // «8 kishi» kabi so'rov: maydon oralig'i avtomatik (foydalanuvchi o'zi maydon yozmagan bo'lsa).
+  const pp = parsePeople(one(sp.q)?.slice(0, 100));
+  const auto = pp.people && !num(one(sp.areaMin)) && !num(one(sp.areaMax)) ? { areaMin: String(pp.people * M2_PER_PERSON[0]), areaMax: String(pp.people * M2_PER_PERSON[1]) } : null;
   return {
     bounds, near, priceMode: one(sp.priceMode) === "total" ? "total" : "unit",
     errors, currencyFilter: cur === "USD" || cur === "UZS", periodFilter: deal !== "sale" && ["month", "day", "hour"].includes(per ?? ""), basisFilter: ["whole", "per_m2", "per_seat"].includes(bas ?? ""),
-    q: one(sp.q)?.slice(0, 100) || undefined, region: int(one(sp.region)), district: int(one(sp.district)),
+    metro: [5, 10, 15, 20].includes(Number(one(sp.metro))) ? Number(one(sp.metro)) : undefined,
+    q: (pp.people ? pp.rest : one(sp.q)?.slice(0, 100)) || undefined, people: pp.people, region: int(one(sp.region)), district: int(one(sp.district)),
     category: one(sp.category), center: one(sp.center), deal,
     currency: cur === "USD" ? "USD" : "UZS", period: deal === "sale" ? "once" : per === "day" || per === "hour" ? per : "month",
     basis: bas === "per_m2" || bas === "per_seat" ? bas : "whole",
-    priceMin: num(one(sp.priceMin)), priceMax: num(one(sp.priceMax)), areaMin: num(one(sp.areaMin)), areaMax: num(one(sp.areaMax)),
+    priceMin: num(one(sp.priceMin)), priceMax: num(one(sp.priceMax)), areaMin: auto?.areaMin ?? num(one(sp.areaMin)), areaMax: auto?.areaMax ?? num(one(sp.areaMax)),
     floor: int(one(sp.floor)), furnished: one(sp.furnished) === "1" ? "1" : one(sp.furnished) === "0" ? "0" : undefined,
     poster: one(sp.poster), commission: one(sp.commission) === "none" ? "none" : undefined, availableBy: one(sp.availableBy),
     amenities: [...new Set((Array.isArray(sp.amenities) ? sp.amenities : [sp.amenities ?? ""]).flatMap((x) => x.split(",")).filter((a) => /^[a-z0-9_]{1,30}$/.test(a)))].slice(0, 14),
@@ -100,6 +130,13 @@ export function buildWhere(f: Filters) {
     if (f.priceMin) conds.push(gte(amount, sql`(${f.priceMin}::numeric * 100)::bigint`));
     if (f.priceMax) conds.push(lte(amount, sql`(${f.priceMax}::numeric * 100)::bigint`));
   }
+  if (f.metro) {
+    // Eng yaqin bekatgacha to'g'ri chiziqdagi masofa (metr) — piyoda daqiqaga mos radius ichida bo'lsa.
+    const R = metroRadiusM(f.metro);
+    const stations = sql.join(METRO.map(([, la, ln]) => sql`(${la}::float8, ${ln}::float8)`), sql`, `);
+    conds.push(sql`${L.lat} IS NOT NULL AND ${L.lng} IS NOT NULL AND EXISTS (SELECT 1 FROM (VALUES ${stations}) AS m(la, ln)
+      WHERE sqrt(power((${L.lat}::float8 - m.la) * 111320, 2) + power((${L.lng}::float8 - m.ln) * 111320 * cos(radians(m.la)), 2)) <= ${R})`);
+  }
   if (f.areaMin) conds.push(gte(L.areaM2, f.areaMin));
   if (f.areaMax) conds.push(lte(L.areaM2, f.areaMax));
   if (f.floor !== undefined) conds.push(eq(L.floor, f.floor));
@@ -148,6 +185,8 @@ function cardQuery(locale: "uz" | "ru") {
     imageFullKey: sql<string | null>`(SELECT storage_key FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
     imageMediumKey: sql<string | null>`(SELECT medium_key FROM listing_images i WHERE i.listing_id = ${L.id} AND i.is_primary LIMIT 1)`,
     isDemo: L.isDemo, publishedAt: L.publishedAt, availabilityStatus: L.availabilityStatus,
+    // Faqat serverda (kartochka server komponenti): eng yaqin metro bekatini hisoblash uchun
+    metroLat: L.lat, metroLng: L.lng, metroExact: L.exactLocationPublic,
     isTop: sql<boolean>`coalesce(${L.featuredUntil} > now(), false)`,
     // Oxirgi yangilanish: tahrir yoki "hali bo'sh" tasdig'i (qaysi biri keyin bo'lsa)
     refreshedAt: sql<string>`greatest(${L.updatedAt}, coalesce(${L.availabilityConfirmedAt}, ${L.updatedAt}))`,
@@ -176,7 +215,8 @@ export async function searchListings(f: Filters, locale: "uz" | "ru" = "uz") {
   const inScope = sql`(${L.currency} = ${f.currency} AND ${L.pricePeriod} = ${f.period} AND ${f.priceMode === "total" ? sql`${amount} IS NOT NULL` : eq(L.priceBasis, f.basis)})`;
   const order = {
     // TOP (to'langan) e'lonlar muddati davomida birinchi
-    new: [sql`(${L.featuredUntil} IS NOT NULL AND ${L.featuredUntil} > now()) DESC`, desc(L.publishedAt), desc(L.id)],
+    // keyin bo'shligi 14 kun ichida tasdiqlanganlar; tasdiqlanmagan (eskirgan) e'lonlar pastga tushadi
+    new: [sql`(${L.featuredUntil} IS NOT NULL AND ${L.featuredUntil} > now()) DESC`, sql`(coalesce(${L.availabilityConfirmedAt}, ${L.publishedAt}) > now() - interval '${sql.raw(String(STALE_DAYS))} days') DESC`, desc(L.publishedAt), desc(L.id)],
     price_asc: [desc(inScope), sql`CASE WHEN ${inScope} THEN ${amount} END ASC NULLS LAST`, desc(L.publishedAt), desc(L.id)],
     price_desc: [desc(inScope), sql`CASE WHEN ${inScope} THEN ${amount} END DESC NULLS LAST`, desc(L.publishedAt), desc(L.id)],
     area_asc: [asc(L.areaM2), desc(L.publishedAt)],

@@ -9,7 +9,7 @@ import type { Marker } from "./map-popup";
 type Cluster = { id: string; lat: number; lng: number; count: number };
 type Data = { total: number; markers: Marker[]; clusters: Cluster[]; groupTotal: number };
 function viewport(map: LMap) { const b = map.getBounds(); return [Math.max(-180,b.getWest()),Math.max(-85,b.getSouth()),Math.min(180,b.getEast()),Math.min(85,b.getNorth())].join(","); }
-export default function ListingMap({ query, listHref, children }: { query: string; listHref: string; children?: ReactNode }) {
+export default function ListingMap({ query, listHref, children, focus }: { query: string; listHref: string; children?: ReactNode; focus?: [number, number, number] | null }) {
   const ru = useLocale() === "ru", router = useRouter();
   const box = useRef<HTMLDivElement>(null), mapRef = useRef<LMap | null>(null);
   // Xarita hududi (bbox) o'zgarsa xarita qayta yaratilmaydi: u faqat ro'yxatni filtrlaydi. Boshlang'ich ko'rinish uchun bir marta o'qiladi.
@@ -55,6 +55,7 @@ export default function ListingMap({ query, listHref, children }: { query: strin
         const bbox = initialBbox.current?.split(",").map(Number); initialBbox.current = null;
         if (bbox?.length === 4 && bbox.every(Number.isFinite)) map.fitBounds([[bbox[1], bbox[0]], [bbox[3], bbox[2]]]);
         else if (params.has("lat") && params.has("lng")) map.setView([Number(params.get("lat")), Number(params.get("lng"))], 14);
+        else if (focus) map.setView([focus[0], focus[1]], focus[2]); // tanlangan tuman/viloyat
         else if (saved && Array.isArray(saved.center) && saved.center.length === 2 && saved.center.every(Number.isFinite) && Number.isFinite(saved.zoom)) map.setView(saved.center, saved.zoom);
       } catch {}
       async function refresh(group?: string, page = 1) {

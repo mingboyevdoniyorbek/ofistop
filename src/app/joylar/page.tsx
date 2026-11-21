@@ -6,6 +6,7 @@ import { parseFilters, searchListings } from "@/lib/search";
 import ListingCard from "@/components/ListingCard";
 import { pageAlternates } from "@/lib/seo";
 import FilterForm from "@/components/FilterForm";
+import { placeCenter } from "@/lib/geo-centroids";
 import ListingMap from "@/components/ListingMap";
 import { getT } from "@/lib/i18n";
 import SearchTools from "@/components/SearchTools";
@@ -27,18 +28,21 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
   const sp = await searchParams;
   const f = parseFilters({ ...sp, priceMode: sp.priceMode ?? "total" });
   let data: Awaited<ReturnType<typeof searchListings>> | null = null;
-  let regions: { id: number; name: string }[] = [], districts: { id: number; name: string; regionId: number }[] = [], amenities: { code: string; name: string }[] = [];
+  let regions: { id: number; name: string; slug?: string }[] = [], districts: { id: number; name: string; regionId: number; lat?: number | null; lng?: number | null }[] = [], amenities: { code: string; name: string }[] = [];
   const ru = locale === "ru";
   try {
     const d = db();
     [data, regions, districts, amenities] = await Promise.all([
       searchListings(f, locale),
-      d.select({ id: s.regions.id, name: ru ? s.regions.nameRu : s.regions.nameUz }).from(s.regions).orderBy(asc(s.regions.id)),
-      d.select({ id: s.districts.id, name: ru ? s.districts.nameRu : s.districts.nameUz, regionId: s.districts.regionId }).from(s.districts).orderBy(asc(ru ? s.districts.nameRu : s.districts.nameUz)),
+      d.select({ id: s.regions.id, name: ru ? s.regions.nameRu : s.regions.nameUz, slug: s.regions.slug }).from(s.regions).orderBy(asc(s.regions.id)),
+      d.select({ id: s.districts.id, name: ru ? s.districts.nameRu : s.districts.nameUz, regionId: s.districts.regionId, lat: s.districts.lat, lng: s.districts.lng }).from(s.districts).orderBy(asc(ru ? s.districts.nameRu : s.districts.nameUz)),
       d.select({ code: s.amenities.code, name: ru ? s.amenities.nameRu : s.amenities.nameUz }).from(s.amenities).orderBy(asc(ru ? s.amenities.nameRu : s.amenities.nameUz)),
     ]);
   } catch (e) { console.error("catalog error", e); }
 
+  // Xarita ko'rinishi: tuman (yoki viloyat) tanlangan bo'lsa, xarita o'sha joydan ochiladi.
+  const dist = f.district ? districts.find((x) => x.id === f.district) : undefined;
+  const mapFocus: [number, number, number] | null = dist?.lat != null && dist.lng != null ? [dist.lat, dist.lng, 13] : placeCenter(regions.find((x) => x.id === f.region)?.slug ?? null, null);
   if (data && data.items.length === 0 && f.page > 1 && data.total > 0) {
     const u = new URLSearchParams(); for (const [k, v] of Object.entries(sp)) for (const x of Array.isArray(v) ? v : v ? [v] : []) u.append(k, x);
     u.set("page", String(data.pages)); redirect(`/joylar?${u}`);
@@ -62,7 +66,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
   const deals = [["", ru ? "Аренда" : "Ijara"], ["sale", ru ? "Продажа" : "Sotuv"]] as const;
   const dealKey = f.deal === "sale" ? "sale" : "";
   const barQuery = (() => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(sp)) { if (k === "page" || k === "filtr") continue; for (const x of Array.isArray(v) ? v : v ? [v] : []) u.append(k, x); } return u.toString(); })();
-  const filterCount = [f.region || f.district, f.category, f.priceMin || f.priceMax, f.areaMin || f.areaMax, f.floor !== undefined, f.furnished, f.poster, f.commission, f.availableBy, f.amenities.length > 0].filter(Boolean).length;
+  const filterCount = [f.region || f.district, f.category, f.priceMin || f.priceMax, f.areaMin || f.areaMax, f.floor !== undefined, f.furnished, f.poster, f.commission, f.availableBy, f.amenities.length > 0, f.metro].filter(Boolean).length;
   const sorts = (["new", "price_asc", "price_desc", "area_asc", "area_desc"] as const).map((k) => [k, t(`sort.${k}`)] as [string, string]);
 
   return (
@@ -77,7 +81,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
         {view !== "map" && <div className="hidden rounded-2xl border border-slate-200 bg-white p-4 lg:block"><FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} /></div>}
       </aside>
       <section className="min-w-0">
-        <MobileCatalogBar query={barQuery} q={f.q ?? ""} deal={f.deal} view={view} sort={f.sort} sorts={sorts} filterCount={filterCount} openFilters={sp.filtr === "1"}>
+        <MobileCatalogBar query={barQuery} q={(Array.isArray(sp.q) ? sp.q[0] : sp.q) ?? ""} deal={f.deal} view={view} sort={f.sort} sorts={sorts} filterCount={filterCount} openFilters={sp.filtr === "1"}>
           <FilterForm view={view} f={f} regions={regions} districts={districts} amenities={amenities} />
         </MobileCatalogBar>
         <div className="lg:hidden"><SearchTools key={`m${mapQuery}`} query={`${mapQuery}&view=${view}`} regions={regions} districts={districts} amenities={amenities} chipsOnly /></div>
@@ -95,7 +99,9 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
             <Link href={qs({ view: "list" })} aria-current={view === "list"} className={`rounded border px-3 py-1.5 ${view === "list" ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t("cat.list")}</Link>
             <Link href={qs({ view: "map" })} aria-current={view === "map"} className={`rounded border px-3 py-1.5 ${view === "map" ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{t("cat.map")}<span className="hidden lg:inline"> + {ru ? "список" : "ro‘yxat"}</span></Link>
           </div>
-          {view === "map" ? <ListingMap query={mapQuery} listHref={qs({ view: "list" })}><p className="mb-3 font-semibold">{t("cat.results", { n: data.total })}</p><div className="space-y-3">{data.items.map(it => <ListingCard key={it.id} it={it}/>)}</div>{data.pages > 1 && <Link className="mt-4 block text-brand underline" href={qs({ view: "list", page: "1" })}>{locale === "ru" ? "Все результаты" : "Barcha natijalar"}</Link>}</ListingMap> : <>
+          {view === "map" ? <ListingMap query={mapQuery} focus={mapFocus} listHref={qs({ view: "list" })}><p className="mb-3 font-semibold">{t("cat.results", { n: data.total })}</p><div className="space-y-3">{data.items.map(it => <ListingCard key={it.id} it={it}/>)}</div>{data.pages > 1 && <Link className="mt-4 block text-brand underline" href={qs({ view: "list", page: "1" })}>{locale === "ru" ? "Все результаты" : "Barcha natijalar"}</Link>}</ListingMap> : <>
+          {f.people && <p className="mb-3 flex items-center gap-2 rounded-2xl bg-blue-50 px-3.5 py-2.5 text-sm text-brand"><span aria-hidden="true">👥</span>
+            <span>{ru ? <><b>{f.people} чел.</b> — подходят помещения <b>{f.areaMin}–{f.areaMax} м²</b> (≈5–7 м² на человека)</> : <><b>{f.people} kishi</b> uchun <b>{f.areaMin}–{f.areaMax} m²</b> maydonli joylar ko‘rsatilmoqda (bir kishiga ≈5–7 m²)</>}</span></p>}
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-sm">
             <p>{t("cat.results", { n: data.total })}</p>
             <div className="hidden flex-wrap gap-1.5 lg:flex" aria-label={t("cat.sortAria")}>

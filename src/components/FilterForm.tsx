@@ -31,6 +31,7 @@ export default function FilterForm({ f, regions, districts, amenities, view }: {
   const [region, setRegion] = useState(String(f.region ?? ""));
   const [district, setDistrict] = useState(String(f.district ?? ""));
   const [category, setCategory] = useState(f.category ?? "");
+  const [metro, setMetro] = useState(f.metro ? String(f.metro) : "");
   const [deal, setDeal] = useState<"rent" | "sale">(f.deal === "sale" ? "sale" : "rent");
   const [currency, setCurrency] = useState<"UZS" | "USD">(f.currencyFilter && f.currency === "USD" ? "USD" : "UZS");
   const [saveQ, setSaveQ] = useState<string | null>(null);
@@ -73,6 +74,10 @@ export default function FilterForm({ f, regions, districts, amenities, view }: {
       <SheetSelect name="district" label={t("f.district")} value={district} onChange={setDistrict} disabled={!region && districts.length > 40}
         placeholder={ru ? "Выберите район" : "Tumanni tanlang"}
         options={[{ value: "", label: t("f.all") }, ...districts.filter((r) => !region || r.regionId === Number(region)).map((r) => ({ value: String(r.id), label: r.name }))]} />
+
+      <SheetSelect name="metro" label={ru ? "До метро пешком" : "Metrogacha piyoda"} value={metro} onChange={setMetro}
+        icon={<span className="grid h-5 w-5 place-items-center rounded-full bg-[#e3262f] text-[10px] font-black text-white">M</span>}
+        options={[{ value: "", label: ru ? "Не важно" : "Farqi yo‘q" }, ...[5, 10, 15, 20].map((m) => ({ value: String(m), label: ru ? `до ${m} мин` : `${m} daqiqagacha` }))]} />
 
       <fieldset>
         <legend className={lbl}>{sale ? (ru ? "Цена покупки" : "Sotib olish narxi") : (ru ? "Цена за всё помещение" : "Butun joy narxi")}</legend>

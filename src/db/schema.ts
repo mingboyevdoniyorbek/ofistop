@@ -1,6 +1,7 @@
 import {
   pgTable, pgEnum, uuid, text, integer, bigint, boolean, timestamp, date,
   numeric, uniqueIndex, index, primaryKey, jsonb,
+  doublePrecision,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -130,6 +131,8 @@ export const districts = pgTable("districts", {
   slug: text("slug").notNull(),
   nameUz: text("name_uz").notNull(),
   nameRu: text("name_ru").notNull(),
+  // Tuman/shahar markazi (xaritani shu joyga yaqinlashtirish uchun); noma'lum bo'lsa — viloyat markazi ishlatiladi.
+  lat: doublePrecision("lat"), lng: doublePrecision("lng"),
 }, (t) => [uniqueIndex("districts_region_slug_uq").on(t.regionId, t.slug)]);
 
 // ---------- Biznes markaz ----------
@@ -246,6 +249,8 @@ export const listings = pgTable("listings", {
   availabilityStatus: availabilityEnum("availability_status").notNull().default("available"),
   availableFrom: date("available_from"),
   availabilityConfirmedAt: timestamp("availability_confirmed_at", { withTimezone: true }),
+  /** Haftalik «hali bo'shmi?» Telegram so'rovi oxirgi marta qachon yuborilgan. */
+  vacancyAskedAt: timestamp("vacancy_asked_at", { withTimezone: true }),
   publishedAt: timestamp("published_at", { withTimezone: true }),
   viewCount: integer("view_count").notNull().default(0), // e'lon sahifasi ko'rishlari (bir tashrifchi/sutka — bitta)
   featuredUntil: timestamp("featured_until", { withTimezone: true }), // TOP (VIP) e'lon shu vaqtgacha birinchi ko'rsatiladi

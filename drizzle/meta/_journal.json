@@ -92,6 +92,20 @@
       "when": 1793736056708,
       "tag": "0012_top_and_service",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795290000000,
+      "tag": "0013_all_districts",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795290100000,
+      "tag": "0014_vacancy_check",
+      "breakpoints": true
     }
   ]
 }

@@ -46,7 +46,7 @@ export default function MobileCatalogBar({ query, q, deal, view, sort, sorts, fi
       <form role="search" className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const v = String(new FormData(e.currentTarget).get("q") ?? "").trim(); router.push(href({ q: v || null })); }}>
         <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 shadow-[0_2px_12px_rgba(15,23,42,0.08)] focus-within:ring-2 focus-within:ring-brand">
           <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 shrink-0 stroke-slate-500" fill="none" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-          <input name="q" type="search" enterKeyHint="search" autoComplete="off" defaultValue={q} aria-label={ru ? "Поиск" : "Qidiruv"} placeholder={ru ? "Метро, район или адрес" : "Metro, tuman yoki manzil"}
+          <input name="q" type="search" enterKeyHint="search" autoComplete="off" defaultValue={q} aria-label={ru ? "Поиск" : "Qidiruv"} placeholder={ru ? "Метро, район или «8 человек»" : "Metro, tuman yoki «8 kishi»"}
             className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-slate-500 focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden" />
         </label>
         <button type="button" onClick={() => setOpen(true)} aria-label={ru ? "Фильтры" : "Filtrlar"} className="relative grid h-[50px] w-[50px] shrink-0 place-items-center rounded-full border border-slate-200 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.08)]">
