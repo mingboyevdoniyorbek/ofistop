@@ -82,3 +82,21 @@ export function nearestMetro(lat: number | string | null | undefined, lng: numbe
 
 /** «Metroga N daqiqagacha» filtri uchun to'g'ri chiziqdagi eng katta masofa (metr). */
 export const metroRadiusM = (minutes: number) => Math.round((minutes * WALK_M_PER_MIN) / ROUTE_FACTOR);
+
+/** Bekatlarning ruscha nomlari (qidiruv tizimlari uchun: «аренда офиса у метро Ойбек»). */
+export const METRO_RU: Record<string, string> = {
+  "Novza": "Новза", "Xalqlar do'stligi": "Халклар Дустлиги", "Mirzo Ulug'bek": "Мирзо Улугбек", "Chilonzor": "Чиланзар", "Milliy bog'": "Миллий бог",
+  "G'afur G'ulom": "Гафур Гулям", "Chorsu": "Чорсу", "Oybek": "Ойбек", "Mingo'rik": "Мингурик", "Toshkent": "Ташкент", "Beruniy": "Беруни",
+  "Shahriston": "Шахристан", "Mashinasozlar": "Машинасозлар", "Tinchlik": "Тинчлик", "Abdulla Qodiriy": "Абдулла Кадыри", "Minor": "Минор",
+  "Bodomzor": "Бадамзар", "Hamid Olimjon": "Хамид Алимджан", "Kosmonavtlar": "Космонавтлар", "Buyuk Ipak Yo'li": "Буюк Ипак Йули", "Pushkin": "Пушкин",
+  "Amir Temur xiyoboni": "Амир Темур хиёбони", "Yunus Rajabiy": "Юнус Раджаби", "Alisher Navoiy": "Алишер Навои", "Paxtakor": "Пахтакор",
+  "O'zbekiston": "Узбекистан", "Olmazor": "Алмазар", "Do'stlik": "Дустлик", "Mustaqillik maydoni": "Мустакиллик майдони", "Yunusobod": "Юнусабад",
+  "Turkiston": "Туркистан", "Olmos": "Олмос", "Texnopark": "Технопарк", "Yashnobod": "Яшнабад", "Tuzel": "Тузель", "Rohat": "Рохат",
+  "Yangiobod": "Янгиабад", "Qo'yliq": "Куйлюк", "Matonat": "Матонат", "Qiyot": "Кият", "Choshtepa": "Чоштепа", "O'zgarish": "Узгариш",
+  "Yangihayot": "Янгихаёт", "Chinor": "Чинор", "Tolarik": "Толарик", "Xonobod": "Ханабад", "Quruvchilar": "Курувчилар", "Qipchok": "Кипчак", "Turon": "Туран",
+};
+/** Bekat manzili (URL): «Xalqlar do'stligi» → «xalqlar-dostligi». */
+export const metroSlug = (name: string) => name.toLowerCase().replace(/['‘’ʻ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+export const metroBySlug = (slug: string) => METRO.find(([n]) => metroSlug(n) === slug) ?? null;
+/** Bekat atrofidagi «metro yonida» sahifasi radiusi (metr, ~15 daqiqa piyoda). */
+export const METRO_PAGE_RADIUS_M = 1200;
