@@ -122,6 +122,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {site.telegramChannel && <a href={`https://t.me/${site.telegramChannel}`} target="_blank" rel="noopener" className="mt-3 inline-block rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white">{locale === "ru" ? "Новые объявления в Telegram" : "Yangi e’lonlar Telegram’da"}</a>}
             </div>
           </div>
+          {/* Ommabop qidiruvlar: turkum, tuman va metro sahifalariga ichki havolalar (Google sahifalarni tezroq topadi) */}
+          <nav aria-label={locale === "ru" ? "Популярные запросы" : "Ommabop qidiruvlar"} className="mx-auto max-w-6xl border-t border-slate-200 px-4 py-5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{locale === "ru" ? "Популярные запросы" : "Ommabop qidiruvlar"}</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+              {(locale === "ru" ? [
+                ["/ijara/ofis/toshkent-shahri", "Аренда офиса в Ташкенте"], ["/ijara/ofis/chilonzor", "Офис Чиланзар"], ["/ijara/ofis/yunusobod", "Офис Юнусабад"],
+                ["/ijara/ofis/mirzo-ulugbek", "Офис Мирзо-Улугбек"], ["/ijara/ofis/metro-oybek", "Офис у метро Ойбек"], ["/ijara/biznes-markaz", "Помещение в бизнес-центре"],
+                ["/ijara/kovorking", "Коворкинг Ташкент"], ["/ijara/dokon", "Аренда магазина"], ["/ijara/ombor", "Аренда склада"],
+              ] : [
+                ["/ijara/ofis/toshkent-shahri", "Toshkentda ofis ijarasi"], ["/ijara/ofis/chilonzor", "Chilonzorda ofis"], ["/ijara/ofis/yunusobod", "Yunusobodda ofis"],
+                ["/ijara/ofis/mirzo-ulugbek", "Mirzo Ulug‘bekda ofis"], ["/ijara/ofis/metro-oybek", "Oybek metro yonida ofis"], ["/ijara/biznes-markaz", "Biznes markazda xona"],
+                ["/ijara/kovorking", "Kovorking Toshkent"], ["/ijara/dokon", "Do‘kon ijarasi"], ["/ijara/ombor", "Ombor ijarasi"],
+              ]).map(([h, n]) => <Link key={h} href={h} className="py-1 hover:text-brand hover:underline">{n}</Link>)}
+            </div>
+          </nav>
           <p className="border-t border-slate-200 py-4 text-center text-xs">© {new Date().getFullYear()} OfisTop{site.company ? ` · ${site.company}` : ""}</p>
         </footer>
         <BottomNav loggedIn={!!user} promo={promo} />

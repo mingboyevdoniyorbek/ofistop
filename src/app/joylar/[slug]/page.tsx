@@ -2,13 +2,13 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { and, eq, ne } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
-import { labels, fmtDate, priceLabel, totalLabel, primaryPrice, availLabel, confirmedAgo } from "@/lib/format";
+import { labels, fmtDate, priceLabel, totalLabel, primaryPrice, availLabel, confirmedAgo, shortPrice } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { formatMinor } from "@/lib/money";
 import { parseFilters, publicCond, searchListings } from "@/lib/search";
 import { effectiveAvailability, isPubliclyVisible } from "@/lib/status";
 import { publicPoint } from "@/lib/geo";
-import { nearestMetro } from "@/lib/metro";
+import { nearestMetro, METRO_RU } from "@/lib/metro";
 import PlaceMap from "@/components/PlaceMap";
 import ContactButtons from "@/components/ContactButtons";
 import ListingCard from "@/components/ListingCard";
@@ -48,7 +48,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!r || r.ownerBlocked || r.l.isSuspended || r.l.moderationStatus !== "approved") return { title: t("det.notFound"), robots: { index: false } };
   const pictures = await listImagesCached(r.l.id);
   const ogImages = pictures.filter(i => i.url).slice(0, 1).map(i => ({ url: i.url! }));
-  return { alternates: await pageAlternates(`/joylar/${r.l.id}-${r.l.slug}`), openGraph: { title: r.l.title, ...(ogImages.length ? { images: ogImages } : {}) }, title: r.l.title, description: t("det.metaDesc", { cat: labels(locale).category[r.l.category], place: r.district ?? r.region, text: r.l.description.slice(0, 120) }), robots: { index: isPubliclyVisible(r.l) } };
+  // Qidiruv natijasida ko'rinadigan sarlavha va tavsif: narx, tuman, maydon va metro — odam bosishdan oldin asosiysini ko'radi.
+  const l = r.l, ru = locale === "ru";
+  const price = shortPrice({ amount: l.priceAmountMinor, currency: l.currency, period: l.pricePeriod, basis: l.priceBasis, negotiable: l.priceNegotiable }, l.areaM2, locale);
+  const place = r.district ?? r.region;
+  const pt = (() => { try { return publicPoint({ id: l.id, lat: l.lat, lng: l.lng, exactLocationPublic: l.exactLocationPublic }); } catch { return null; } })();
+  const metro = pt ? nearestMetro(pt.lat, pt.lng) : null;
+  const facts = [labels(locale).category[l.category], place, l.areaM2 ? `${Number(l.areaM2)} m²` : null, l.floor != null ? (ru ? `${l.floor} этаж` : `${l.floor}-qavat`) : null, price,
+    metro ? (ru ? `метро ${METRO_RU[metro.name] ?? metro.name} — ${metro.minutes} мин` : `${metro.name} metro — ${metro.minutes} daq`) : null].filter(Boolean).join(" · ");
+  const title = `${l.title} — ${price}, ${place}`;
+  return { alternates: await pageAlternates(`/joylar/${l.id}-${l.slug}`), openGraph: { title, description: facts, ...(ogImages.length ? { images: ogImages } : {}) }, title,
+    description: `${facts}. ${l.description.replace(/\s+/g, " ").slice(0, 110)}`, robots: { index: isPubliclyVisible(l) } };
 }
 
 export default async function Detail({ params }: { params: Promise<{ slug: string }> }) {
