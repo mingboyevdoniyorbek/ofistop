@@ -90,12 +90,7 @@ function Rail({ title, sub, href, more, children, vip = false }: { title: string
     <RailHead title={title} sub={sub} href={href} more={more} vip={vip} />
     <div className="-mx-4 flex snap-x snap-mandatory gap-3 no-scrollbar overflow-x-auto scroll-px-4 px-4 pb-2">{children}</div>
   </>;
-  // VIP qatori: ekran kengligidagi och oltin fon — oddiy e'lonlardan darhol ajralib turadi.
-  if (vip) return (
-    <section className="mt-5 border-y border-amber-200/70 bg-gradient-to-b from-[#fff4d1] via-[#fffaea] to-[#fffdf7] py-5">
-      <div className="mx-auto max-w-6xl px-4">{body}</div>
-    </section>
-  );
+  // VIP qatori: alohida fon yo'q — sarlavhadagi toj va kartochkalardagi oltin hoshiya yetarli (toza ko'rinish).
   return <section className="mx-auto max-w-6xl px-4 pt-6">{body}</section>;
 }
 /** Qatordagi karta "Barcha e'lonlar" to'ridagi ustun bilan bir xil kenglikda: telefonda ekranga aniq 2 ta sig'adi (px-4 + gap-3). */

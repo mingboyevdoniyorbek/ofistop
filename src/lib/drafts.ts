@@ -10,10 +10,15 @@ export const DRAFT_TTL_HOURS = 24;
  * (moderation_status = draft, published_at yo'q) — boshqa holatdagi e'longa tegmaydi.
  */
 async function removeDrafts(where: ReturnType<typeof and>) {
+  return removeListings(and(eq(s.listings.moderationStatus, "draft"), isNull(s.listings.publishedAt), where));
+}
+
+/** E'lonlarni (rasmlar fayllari bilan) butunlay o'chiradi; bog'liq yozuvlar cascade bilan o'chadi. */
+async function removeListings(where: ReturnType<typeof and>) {
   const L = s.listings;
   const keys: string[] = [];
   const ids = await db().transaction(async (tx) => {
-    const rows = await tx.select({ id: L.id }).from(L).where(and(eq(L.moderationStatus, "draft"), isNull(L.publishedAt), where)).for("update");
+    const rows = await tx.select({ id: L.id }).from(L).where(where).for("update");
     if (!rows.length) return [];
     const ids = rows.map((r) => r.id);
     for (const im of await tx.select({ k: s.listingImages.storageKey, t: s.listingImages.thumbKey, m: s.listingImages.mediumKey }).from(s.listingImages).where(inArray(s.listingImages.listingId, ids)))
@@ -33,3 +38,7 @@ export const deleteDraft = (id: string, ownerId: string | null) =>
 /** Muddati o'tgan qoralamalar (ixtiyoriy: faqat bitta foydalanuvchiniki). */
 export const purgeStaleDrafts = (ownerId?: string) =>
   removeDrafts(and(lt(s.listings.updatedAt, sql`now() - make_interval(hours => ${DRAFT_TTL_HOURS})`), ownerId ? eq(s.listings.ownerId, ownerId) : undefined));
+
+/** Arxivdagi e'lonni butunlay o'chirish (egasi yoki admin). Faqat arxivlangan e'lon — faol e'longa tegmaydi. */
+export const deleteArchived = (id: string, ownerId: string | null) =>
+  removeListings(and(eq(s.listings.id, id), eq(s.listings.availabilityStatus, "archived"), ownerId ? eq(s.listings.ownerId, ownerId) : undefined));

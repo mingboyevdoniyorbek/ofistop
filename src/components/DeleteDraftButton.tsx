@@ -3,12 +3,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "./I18nProvider";
 
-/** Qoralamani tasdiq bilan o'chirish. */
-export default function DeleteDraftButton({ id }: { id: string }) {
+/** Qoralama yoki arxivdagi e'lonni tasdiq bilan butunlay o'chirish. */
+export default function DeleteDraftButton({ id, archived = false }: { id: string; archived?: boolean }) {
   const ru = useLocale() === "ru"; const router = useRouter();
   const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null);
   async function go() {
-    if (!confirm(ru ? "Удалить черновик вместе с фотографиями? Это действие нельзя отменить." : "Qoralama rasmlari bilan birga o‘chirilsinmi? Buni qaytarib bo‘lmaydi.")) return;
+    if (!confirm(archived ? (ru ? "Удалить объявление из архива вместе с фотографиями? Это действие нельзя отменить." : "Arxivdagi e’lon rasmlari bilan butunlay o‘chirilsinmi? Buni qaytarib bo‘lmaydi.") : (ru ? "Удалить черновик вместе с фотографиями? Это действие нельзя отменить." : "Qoralama rasmlari bilan birga o‘chirilsinmi? Buni qaytarib bo‘lmaydi."))) return;
     setBusy(true); setErr(null);
     const r = await fetch(`/api/listings/${id}`, { method: "DELETE" }).catch(() => null);
     if (r?.ok) { router.refresh(); return; }

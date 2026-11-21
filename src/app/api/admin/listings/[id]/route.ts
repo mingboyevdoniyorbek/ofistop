@@ -5,9 +5,10 @@ import { db, schema as s } from "@/db/client";
 import { handle, HttpError, isUuid, ttlDays } from "@/lib/guard";
 import { requireStaff, writeAudit, notify } from "@/lib/staff";
 import { moderate } from "@/lib/moderation";
+import { deleteArchived } from "@/lib/drafts";
 import { canChangeAvailability } from "@/lib/status";
 
-const body = z.object({ action: z.enum(["approve", "reject", "hide", "unhide", "remove", "feature", "unfeature"]), days: z.number().int().min(1).max(365).optional(), reason: z.string().max(1000).optional(), expectedUpdatedAt: z.string().optional() });
+const body = z.object({ action: z.enum(["approve", "reject", "hide", "unhide", "remove", "purge", "feature", "unfeature"]), days: z.number().int().min(1).max(365).optional(), reason: z.string().max(1000).optional(), expectedUpdatedAt: z.string().optional() });
 
 export const POST = handle(async (req, ctx) => {
   const actor = await requireStaff(req);
@@ -31,6 +32,14 @@ export const POST = handle(async (req, ctx) => {
       await writeAudit({ actorId: actor.id, action: "listing.remove", entityType: "listing", entityId: id, meta: { reason } }, tx);
       await notify(current.ownerId, "E’loningiz saytdan olib tashlandi", reason, `/kabinet/elon/${id}`, tx);
     });
+    return NextResponse.json({ ok: true });
+  }
+
+  // Arxivdagi e'lonni butunlay o'chirish (rasmlar va bog'liq yozuvlar bilan). Faqat arxivlangan bo'lsa.
+  if (b.data.action === "purge") {
+    if (l.availabilityStatus !== "archived") throw new HttpError(409, "Faqat arxivdagi e'lonni butunlay o'chirish mumkin");
+    await deleteArchived(id, null);
+    await writeAudit({ actorId: actor.id, action: "listing.purge", entityType: "listing", entityId: id, meta: { title: l.title } });
     return NextResponse.json({ ok: true });
   }
 

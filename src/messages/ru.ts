@@ -52,7 +52,7 @@ export const ru: Record<MsgKey, string> = {
   "adm.l.tab.active": "Активные",
   "adm.l.tab.expired": "Истёкшие",
   "adm.l.tab.rejected": "Отклонённые",
-  "adm.l.tab.all": "Все",
+  "adm.l.tab.archived": "Архив", "adm.l.tab.all": "Все",
   "adm.l.status": "Статус",
   "adm.l.empty": "В этом разделе нет объявлений.",
   "adm.mod.draft": "Черновик",
