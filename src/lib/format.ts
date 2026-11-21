@@ -75,3 +75,10 @@ export function shortPrice(p: Parameters<typeof priceLabel>[0], area: string | n
   const per = { month: ru ? "/мес" : "/oy", day: ru ? "/день" : "/kun", hour: ru ? "/час" : "/soat", once: "" }[p.period];
   return `${big} ${cur}${unit}${per}`;
 }
+
+/** «bugun», «kecha», «3 kun oldin» — bo'shlik tasdig'i qachon bo'lganini qisqa yozish. */
+export function confirmedAgo(d: Date | string, l: Locale = "uz") {
+  const days = Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 864e5));
+  if (l === "ru") return days === 0 ? "сегодня" : days === 1 ? "вчера" : `${days} дн. назад`;
+  return days === 0 ? "bugun" : days === 1 ? "kecha" : `${days} kun oldin`;
+}

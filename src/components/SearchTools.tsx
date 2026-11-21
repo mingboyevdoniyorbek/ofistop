@@ -9,7 +9,7 @@ export default function SearchTools({ query, regions, districts, amenities = [],
   const [error, setError] = useState("");
   const [radius, setRadius] = useState(params.get("radius") ?? "1000");
   const names: Record<string, string> = { q: ru ? "Поиск" : "Qidiruv", region: ru ? "Регион" : "Hudud", district: ru ? "Район" : "Tuman", category: ru ? "Тип" : "Turi", priceMin: ru ? "От" : "Narxdan", priceMax: ru ? "До" : "Narxgacha", areaMin: ru ? "Площадь от" : "Maydondan", areaMax: ru ? "Площадь до" : "Maydongacha", furnished: ru ? "Мебель" : "Mebel", poster: ru ? "Автор" : "Beruvchi", commission: ru ? "Без комиссии" : "Komissiyasiz", availableBy: ru ? "Дата" : "Sana", amenities: ru ? "Удобства" : "Qulaylik", bbox: ru ? "Область карты" : "Xarita hududi", lat: ru ? "Рядом" : "Yaqin atrof" };
-  Object.assign(names,{floor:ru ? "Этаж" : "Qavat",center:ru ? "Бизнес-центр" : "Biznes markaz"});
+  Object.assign(names,{floor:ru ? "Этаж" : "Qavat",center:ru ? "Бизнес-центр" : "Biznes markaz",metro:ru ? "До метро" : "Metrogacha"});
   function display(key: string, value: string) {
     if (key === "amenities") return value.split(",").map(v => amenities.find(a=>a.code===v)?.name ?? v).join(", ");
     if (key === "region") return regions.find(r=>String(r.id)===value)?.name ?? value;
@@ -17,6 +17,7 @@ export default function SearchTools({ query, regions, districts, amenities = [],
     if (key === "category") return L.category[value] ?? value;
     if (key === "poster") return L.poster[value] ?? value;
     if (key === "furnished") return value === "1" ? (ru ? "есть" : "bor") : (ru ? "нет" : "yo‘q");
+    if (key === "metro") return ru ? `${value} мин` : `${value} daq`;
     if (key.startsWith("price")) return `${value} ${params.get("currency") || "UZS"}`;
     return value;
   }

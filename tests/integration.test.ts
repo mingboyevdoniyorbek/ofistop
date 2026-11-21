@@ -254,7 +254,7 @@ test('promo alone cannot create anonymous accounts after identity login rollout'
 });
 test('furniture firm: application, validation, admin approval, public list and removal',async()=>{
  const { createFirmApplication, reviewFirm, listFirms }=await import('../src/lib/furniture');
- const [applicant]=await state.db.insert(schema.users).values({phone:'+998901112299'}).returning();
+ const [applicant]=await state.db.insert(schema.users).values({phone:'+998905557711'}).returning();
  const [region]=await state.db.select().from(schema.regions).limit(1);
  await expect(createFirmApplication(applicant.id,{name:'Mebel',kind:'ready',regionId:region.id,contactName:'Ali',phone:'123'})).rejects.toMatchObject({status:422});
  const id=await createFirmApplication(applicant.id,{name:'Ofis Mebel Lux',kind:'custom',products:['desks','chairs','desks'],regionId:region.id,contactName:'Ali',phone:'+998901234567',telegramUsername:'@ofis_mebel'});
@@ -311,4 +311,32 @@ test('TOP listing (admin): shown first and only in the TOP rail; service request
  await reviewFirm(a,staff,'approve');await reviewFirm(b,staff,'approve');
  await expect(reviewFirm(b,staff,'feature')).resolves.toBeUndefined();
  expect((await listFirms('uz'))[0].f.name).toBe('Ikkinchi Mebel');expect((await topFirms('uz')).map((x:any)=>x.f.name)).toEqual(['Ikkinchi Mebel']);
+});
+test('rejected listings are deleted after a day; stale listings sink; owner answers "still free?" from Telegram',async()=>{
+ const [o3]=await state.db.insert(schema.users).values({phone:'+998933330001'}).returning();const [reg]=await state.db.select().from(schema.regions).limit(1);
+ const base={ownerId:o3.id,posterType:'owner' as const,category:'office' as const,regionId:reg.id,contactPhone:'+998933330001'};
+ const old=new Date(Date.now()-25*36e5);
+ const [rej]=await state.db.insert(schema.listings).values({...base,slug:'rej-old',title:'Rad etilgan',moderationStatus:'rejected',rejectionReason:'x',updatedAt:old}).returning();
+ const [rejNew]=await state.db.insert(schema.listings).values({...base,slug:'rej-new',title:'Yangi rad',moderationStatus:'rejected',rejectionReason:'x'}).returning();
+ const { purgeRejected }=await import('../src/lib/drafts');
+ expect(await purgeRejected()).toBe(1);
+ expect(await state.db.select().from(schema.listings).where(eq(schema.listings.id,rej.id))).toHaveLength(0);
+ expect(await state.db.select().from(schema.listings).where(eq(schema.listings.id,rejNew.id))).toHaveLength(1);
+ // 14 kundan beri tasdiqlanmagan e'lon yangisidan pastda turadi
+ const live={...base,moderationStatus:'approved' as const,availabilityStatus:'available' as const,expiresAt:new Date(Date.now()+30*864e5)};
+ const [stale]=await state.db.insert(schema.listings).values({...live,slug:'stale',title:'Eskirgan',publishedAt:new Date(Date.now()-864e5),availabilityConfirmedAt:new Date(Date.now()-20*864e5)}).returning();
+ const [fresh]=await state.db.insert(schema.listings).values({...live,slug:'fresh',title:'Tasdiqlangan',publishedAt:new Date(Date.now()-2*864e5),availabilityConfirmedAt:new Date()}).returning();
+ const order=(await searchListings(parseFilters({}))).items.map((x:any)=>x.id);
+ expect(order.indexOf(fresh.id)).toBeLessThan(order.indexOf(stale.id));
+ // Telegram javobi: faqat egasi; «bo'sh» — tasdiq yangilanadi, «berildi» — qidiruvdan chiqadi
+ const { answerVacancy }=await import('../src/lib/vacancy-check');
+ await state.db.insert(schema.telegramLinks).values({telegramUserId:777001,chatId:777001,phone:'+998933330001'});
+ await state.db.insert(schema.users).values({phone:'+998933330002'});await state.db.insert(schema.telegramLinks).values({telegramUserId:777002,chatId:777002,phone:'+998933330002'});
+ expect(await answerVacancy(777002,stale.id,true)).toMatch(/topilmadi/);
+ expect(await answerVacancy(777001,stale.id,true)).toMatch(/Rahmat/);
+ const [s1]=await state.db.select().from(schema.listings).where(eq(schema.listings.id,stale.id));
+ expect(Date.now()-s1.availabilityConfirmedAt!.getTime()).toBeLessThan(60_000);
+ expect(await answerVacancy(777001,fresh.id,false)).toMatch(/Ijaraga berildi/);
+ const [f1]=await state.db.select().from(schema.listings).where(eq(schema.listings.id,fresh.id));expect(f1.availabilityStatus).toBe('rented');
+ expect((await searchListings(parseFilters({}))).items.some((x:any)=>x.id===fresh.id)).toBe(false);
 });

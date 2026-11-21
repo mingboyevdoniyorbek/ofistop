@@ -4,6 +4,7 @@ import { db, schema as s } from "@/db/client";
 import { hit } from "./ratelimit";
 import { normalizePhoneUz } from "./text";
 import { tgCall, tgSend, tokenHash } from "./telegram";
+import { answerVacancy } from "./vacancy-check";
 
 interface TgMessage { chat?: { id: number; type: string }; from?: { id: number }; text?: string; contact?: { phone_number: string; user_id?: number } }
 interface Update { message?: TgMessage; callback_query?: { id: string; from: { id: number }; data?: string; message?: TgMessage } }
@@ -28,6 +29,14 @@ const live = () => and(eq(s.authChallenges.method, "telegram"), isNull(s.authCha
 export async function handleUpdate(update: Update | null) {
   const cb = update?.callback_query;
   if (cb) {
+    // «Joyingiz hali bo'shmi?» javobi (vacancy-check.ts)
+    const vac = /^vac:(yes|no):([0-9a-f-]{36})$/.exec(cb.data ?? "");
+    if (vac && cb.message?.chat?.type === "private" && cb.message.chat.id === cb.from.id) {
+      const text = await answerVacancy(cb.from.id, vac[2], vac[1] === "yes").catch(() => "Xatolik, keyinroq urinib ko‘ring / Ошибка, попробуйте позже");
+      await tgCall("answerCallbackQuery", { callback_query_id: cb.id, text: text.slice(0, 190) });
+      await tgSend(cb.from.id, text);
+      return;
+    }
     if (cb.message?.chat?.type !== "private" || cb.message.chat.id !== cb.from.id || !/^confirm:[0-9a-f-]{36}$/.test(cb.data ?? "")) return;
     const id = cb.data!.slice(8), uid = cb.from.id;
     const approved = await db().transaction(async tx => {

@@ -11,7 +11,7 @@ import type { MsgKey } from "@/messages/uz";
 import { mediaUrl } from "@/lib/storage";
 import ListingActions from "@/components/ListingActions";
 import DeleteDraftButton from "@/components/DeleteDraftButton";
-import { purgeStaleDrafts, DRAFT_TTL_HOURS } from "@/lib/drafts";
+import { purgeStaleDrafts, purgeRejected, DRAFT_TTL_HOURS, REJECTED_TTL_HOURS } from "@/lib/drafts";
 import NewListingButton from "@/components/NewListingButton";
 import { NavIcon, type HeaderIcon } from "@/components/HeaderNav";
 
@@ -26,6 +26,7 @@ export default async function Kabinet({ searchParams }: { searchParams: Promise<
   const d = db();
   // 24 soatdan beri tahrirlanmagan o'z qoralamalari shu yerda ham tozalanadi (kunlik cron'ni kutmasdan).
   await purgeStaleDrafts(user.id).catch(() => 0);
+  await purgeRejected(user.id).catch(() => 0); // rad etilganiga 24 soat bo'lgan e'lonlar ham
   const managed = await managedCenterIds(user.id);
   const rows = await d.select().from(s.listings).where(or(eq(s.listings.ownerId, user.id), managed.length ? inArray(s.listings.centerId, managed) : undefined)).orderBy(desc(s.listings.updatedAt));
   const ids = rows.map((r) => r.id);
@@ -76,7 +77,8 @@ export default async function Kabinet({ searchParams }: { searchParams: Promise<
                 <div className="flex flex-wrap items-center gap-2"><h2 className="font-semibold">{r.title || t("cab.untitled")}</h2><span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chip[st] ?? "bg-slate-100"}`}>{st === "rented" && r.dealType === "sale" ? (locale === "ru" ? "Продано" : "Sotilgan") : t(`cab.st.${st}` as MsgKey)}</span>{r.dealType === "sale" && <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">{locale === "ru" ? "Продажа" : "Sotuv"}</span>}</div>
                 <p className="text-sm text-slate-600">{L.category[r.category]} · {priceLabel({ amount: r.priceAmountMinor, currency: r.currency, period: r.pricePeriod, basis: r.priceBasis, negotiable: r.priceNegotiable }, locale)}{r.availabilityConfirmedAt ? ` · ${t("card.confirmed", { date: fmtDate(r.availabilityConfirmedAt, locale) })}` : ""}{r.expiresAt && st === "active" ? ` · ${t("cab.expires", { date: fmtDate(r.expiresAt, locale) })}` : ""}</p>
                 {r.isSuspended && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-800">{locale === "ru" ? "Заблокировано модератором" : "Moderator tomonidan bloklangan"}: {r.suspensionReason}</p>}
-                {st === "rejected" && <p role="status" className="rounded bg-red-50 p-2 text-sm text-red-800"><strong>{t("cab.rejectReason")}</strong> {r.rejectionReason}</p>}
+                {st === "rejected" && <p role="status" className="rounded-xl bg-red-50 p-2.5 text-sm text-red-800"><strong>{t("cab.rejectReason")}</strong> {r.rejectionReason}
+                  <span className="mt-1 block text-xs">{(() => { const left = Math.max(1, Math.ceil((r.updatedAt.getTime() + REJECTED_TTL_HOURS * 36e5 - Date.now()) / 36e5)); return locale === "ru" ? `Исправьте и отправьте снова — иначе объявление удалится через ${left} ч.` : `Tuzatib qayta yuboring — aks holda e’lon ${left} soatdan keyin o‘chiriladi.`; })()}</span></p>}
                 {st === "pending" && <p className="text-sm text-slate-600">{t("cab.pendingNote")}</p>}
                 {st === "draft" && !r.publishedAt && (() => { const left = Math.max(1, Math.ceil((r.updatedAt.getTime() + DRAFT_TTL_HOURS * 36e5 - Date.now()) / 36e5)); return <p className="text-xs text-amber-800">{locale === "ru" ? `Черновик будет автоматически удалён через ${left} ч., если его не дописать и не отправить.` : `Qoralama to‘ldirilib yuborilmasa, ${left} soatdan keyin avtomatik o‘chiriladi.`}</p>; })()}
                 {st === "active" && r.availabilityConfirmedAt && Date.now() - r.availabilityConfirmedAt.getTime() > 7*86400000 && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{locale === "ru" ? "Помещение ещё свободно? Подтвердите доступность или отметьте, что оно сдано." : "Joyingiz hali ham bo‘shmi? Bo‘shligini tasdiqlang yoki ijaraga berilganini belgilang."}</p>}
