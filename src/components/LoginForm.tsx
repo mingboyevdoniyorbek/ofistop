@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "./I18nProvider";
 import { safeNext } from "@/lib/validation";
 
-type Methods = { google: boolean; telegram: boolean; test?: boolean };
+type Methods = { google: boolean; telegram: boolean; test?: boolean; review?: boolean };
 type View = "choose" | "telegram" | "phone";
 type Pending = { id: string; mode: "telegram" | "telegram_code"; expiresAt: string; botUrl?: string };
 const input = "mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base outline-none transition focus:border-brand focus:bg-white";
@@ -23,6 +23,7 @@ export default function LoginForm({ methods }: { methods: Methods }) {
   const [view, setView] = useState<View>("choose");
   const [pending, setPending] = useState<Pending | null>(null);
   const [phone, setPhone] = useState("+998"); const [code, setCode] = useState("");
+  const [reviewEmail, setReviewEmail] = useState(""); const [reviewPassword, setReviewPassword] = useState("");
   const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [seconds, setSeconds] = useState(600);
   const completed = useRef(false); const busyRef = useRef(false);
   const remember = (value: Pending | null) => { setPending(value); try { if (value) sessionStorage.setItem(storageKey, JSON.stringify(value)); else sessionStorage.removeItem(storageKey); } catch {} };
@@ -122,6 +123,12 @@ export default function LoginForm({ methods }: { methods: Methods }) {
       {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     </div>
     <p className="mt-8 text-center text-xs leading-6 text-slate-500">{tr("Davom etish orqali siz", "Продолжая, вы принимаете")} <Link href="/shartlar" className="text-brand underline">{tr("Foydalanish shartlari", "Условия использования")}</Link> {tr("va", "и")} <Link href="/maxfiylik" className="text-brand underline">{tr("Maxfiylik siyosati", "Политику конфиденциальности")}</Link>{tr("ga rozilik bildirasiz.", ".")}</p>
+    {methods.review && <details className="mt-6 border-t border-slate-100 pt-4 text-sm text-slate-500"><summary className="cursor-pointer">{tr("Google Play tekshiruvi uchun kirish", "Вход для проверки Google Play")}</summary>
+      <form className="mt-3 space-y-3" onSubmit={async e => { e.preventDefault(); const data = await call("/api/auth/review-login", { email: reviewEmail, password: reviewPassword }); if (data) finish(data.next ?? nextPath()); }}>
+        <label className="block text-sm font-medium text-slate-700">Email<input type="email" required autoComplete="username" maxLength={200} value={reviewEmail} onChange={e => setReviewEmail(e.target.value)} className={input} disabled={busy}/></label>
+        <label className="block text-sm font-medium text-slate-700">{tr("Parol", "Пароль")}<input type="password" required autoComplete="current-password" maxLength={200} value={reviewPassword} onChange={e => setReviewPassword(e.target.value)} className={input} disabled={busy}/></label>
+        <button className={secondary} disabled={busy}>{busy ? tr("Tekshirilmoqda…", "Проверяем…") : tr("Kirish", "Войти")}</button>
+      </form></details>}
     {methods.test && <details className="mt-6 border-t border-slate-100 pt-4 text-sm text-slate-500"><summary className="cursor-pointer">{tr("Mahalliy test", "Локальный тест")}</summary><button className={`${secondary} mt-3`} disabled={busy} onClick={async () => { const data = await call("/api/auth/test-login", { account: "user" }); if (data) finish(nextPath()); }}>{tr("Sinov hisobida kirish", "Войти в тестовый аккаунт")}</button></details>}
   </section>;
 }
