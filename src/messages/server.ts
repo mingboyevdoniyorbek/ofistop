@@ -137,6 +137,7 @@ export const SERVER_MSGS: readonly (readonly [string, string])[] = [
   ["Kod noto'g'ri", "Неверный код"],
   ["Kod allaqachon ishlatilgan", "Код уже использован"],
   ["Akkaunt bloklangan", "Аккаунт заблокирован"],
+  ["Email yoki parol noto'g'ri", "Неверный email или пароль"],
 
   // e'lon: yaratish, saqlash, yuborish, mavjudlik
   ["Juda ko'p yangi qoralama. Keyinroq urinib ko'ring.", "Слишком много новых черновиков. Попробуйте позже."],

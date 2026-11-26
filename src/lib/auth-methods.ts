@@ -1,7 +1,8 @@
 import { telegramEnabled } from "./telegram";
 import { localTestEnabled } from "./test-mode";
 import { googleEnabled } from "./google-login";
+import { reviewLoginEnabled } from "./review-login";
 /** Qaysi kirish usullari hozir ishlaydi (UI faqat ishlaydiganini ko'rsatadi; dekorativ tugma yo'q). */
 export function authMethods() {
-  return { google: googleEnabled(), email: false, telegram: telegramEnabled(), phone: false, guest: false, test: localTestEnabled() };
+  return { google: googleEnabled(), email: false, telegram: telegramEnabled(), phone: false, guest: false, test: localTestEnabled(), review: reviewLoginEnabled() };
 }

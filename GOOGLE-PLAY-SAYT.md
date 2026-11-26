@@ -68,6 +68,26 @@ Shuning uchun bu bandda kod o'zgartirilmadi.
 | Удаление аккаунта (Data safety) | `https://ofistop.uz/hisobni-ochirish` |
 | Правила / UGC | `https://ofistop.uz/qoidalar` |
 
-**Доступ к приложению:** alohida test hisob ochish shart emas — e'lonlarni ko'rish kirishsiz ishlaydi,
-e'lon berish uchun esa tekshiruvchi o'zining Google yoki Telegram hisobi bilan kira oladi.
-Shuning uchun "Все функции доступны без специального доступа" javobini berish mumkin.
+## 4. "Учетные данные" (eski nomi "Доступ к приложению") — tekshiruvchi hisobi
+
+Javob: **"Да, в приложении есть закрытые разделы"** — e'lon berish, kabinet va sevimlilar uchun kirish kerak.
+Google o'zi hisob ocha olmaydi va WebView ichida Google hisobiga kirishni bloklashi mumkin, shuning uchun
+tekshiruv davriga saytda login/parol yo'li bor:
+
+```
+REVIEW_LOGIN_EMAIL=review@ofistop.uz
+REVIEW_LOGIN_PASSWORD=<tasodifiy, kamida 12 belgi>
+```
+
+Ikkalasi qo'yilganda `/kirish` sahifasining pastida "Google Play tekshiruvi uchun kirish" bo'limi chiqadi
+(o'zgaruvchi o'chirilsa — forma ham, `/api/auth/review-login` ham yo'q bo'ladi, 404 qaytaradi).
+Hisob oddiy foydalanuvchi huquqida: admin panelga kira olmaydi. Urinishlar soatiga 10 ta bilan cheklangan.
+
+Play Console'ga yozasiz: o'sha email, o'sha parol va ko'rsatma:
+
+> Ilovani oching → pastdagi menyudan "Kirish" → sahifa oxiridagi "Google Play tekshiruvi uchun kirish" /
+> "Вход для проверки Google Play" bo'limini oching → email va parolni kiriting.
+> (RU) Откройте приложение → "Kirish/Вход" → внизу страницы входа раскройте "Вход для проверки Google Play"
+> → введите email и пароль.
+
+Tekshiruv tugagach o'zgaruvchilarni o'chirib, qayta deploy qilsangiz bu yo'l butunlay yopiladi.
