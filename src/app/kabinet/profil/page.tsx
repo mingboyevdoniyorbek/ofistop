@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { requireUserPage } from "@/lib/page-auth";
 import ProfileForm from "@/components/ProfileForm";
+import Link from "next/link";
 import { getT } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,8 @@ export default async function Profil() {
         <ProfileForm initial={{ displayName: p?.displayName ?? "", posterType: p?.posterType ?? "owner", companyName: p?.companyName ?? "", contactPhone: p?.contactPhone ?? "", telegramUsername: p?.telegramUsername ?? "" }} /></section>
       <section><h2 className="mb-2 font-semibold">{t("prof.centers")}</h2>
         {centers.length ? <ul className="list-disc pl-5 text-sm">{centers.map((c) => <li key={c.id}>{c.name} — {c.address}</li>)}</ul> : <p className="text-sm text-slate-600">{t("prof.noCenters")}</p>}</section>
+      <section><h2 className="mb-2 font-semibold">{t("prof.deleteH")}</h2>
+        <Link href="/hisobni-ochirish" className="text-sm font-medium text-red-700 underline underline-offset-2">{t("prof.delete")}</Link></section>
     </div>
   );
 }

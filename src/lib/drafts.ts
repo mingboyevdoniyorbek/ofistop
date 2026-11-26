@@ -43,6 +43,12 @@ export const purgeStaleDrafts = (ownerId?: string) =>
 export const deleteArchived = (id: string, ownerId: string | null) =>
   removeListings(and(eq(s.listings.id, id), eq(s.listings.availabilityStatus, "archived"), ownerId ? eq(s.listings.ownerId, ownerId) : undefined));
 
+/**
+ * Foydalanuvchining BARCHA e'lonlari (qoralama, faol, arxiv — holatidan qat'i nazar) rasm fayllari
+ * bilan butunlay o'chiriladi. Faqat hisobni o'chirishda ishlatiladi (`lib/account.ts`).
+ */
+export const deleteOwnerListings = (ownerId: string) => removeListings(and(eq(s.listings.ownerId, ownerId)));
+
 /** Rad etilgan e'lon shuncha soatdan keyin (tuzatib qayta yuborilmasa) rasmlari bilan o'chiriladi. */
 export const REJECTED_TTL_HOURS = 24;
 /** Rad etilganiga 24 soat bo'lgan e'lonlar (ixtiyoriy: faqat bitta foydalanuvchiniki). */

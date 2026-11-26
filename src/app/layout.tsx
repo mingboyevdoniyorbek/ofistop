@@ -115,6 +115,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/qoidalar" className="hover:underline">{t("footer.rules")}</Link>
               <Link href="/maxfiylik" className="hover:underline">{t("footer.privacy")}</Link>
               <Link href="/shartlar" className="hover:underline">{t("footer.terms")}</Link>
+              <Link href="/hisobni-ochirish" className="hover:underline">{t("footer.deleteAccount")}</Link>
             </nav>
             <div>
               {(site.phone || site.email || site.telegram || site.instagram) && <p className="font-semibold text-slate-800">{locale === "ru" ? "Связаться с нами" : "Biz bilan bog‘laning"}</p>}

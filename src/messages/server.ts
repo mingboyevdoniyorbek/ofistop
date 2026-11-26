@@ -220,6 +220,9 @@ export const SERVER_MSGS: readonly (readonly [string, string])[] = [
   ["Bu raqam bilan foydalanuvchi ro'yxatdan o'tmagan. Avval u tizimga kirishi kerak.", "Пользователь с этим номером не зарегистрирован. Сначала он должен войти в систему."],
   ["Biznes markaz topilmadi", "Бизнес-центр не найден"],
 
+  // hisobni o'chirish (/hisobni-ochirish)
+  ["Hisob topilmadi", "Аккаунт не найден"],
+  ["Xizmat hisobini bu sahifadan o'chirib bo'lmaydi. Administrator bilan bog'laning.", "Служебный аккаунт нельзя удалить на этой странице. Обратитесь к администратору."],
   // bildirishnomalar (bazada o'zbekcha saqlanadi, ko'rsatishda tarjima qilinadi)
   ["E'loningiz tasdiqlandi", "Ваше объявление одобрено"],
   ["E'loningiz rad etildi", "Ваше объявление отклонено"],
