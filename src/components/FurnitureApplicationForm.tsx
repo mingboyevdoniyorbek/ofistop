@@ -8,23 +8,26 @@ import { ProductIcon } from "./Stickers";
 import { FURNITURE_PRODUCTS, KIND_LABELS, PRODUCT_LABELS } from "@/lib/furniture-labels";
 
 type Init = { contactName: string; phone: string; telegramUsername: string };
+type Full = { name: string; kind: string; products: string[]; description: string; regionId: string; address: string; website: string };
 
 /** Mebel firmasi arizasi: nomi, turi, nimalarni taklif qiladi, hudud va aloqa. */
-export default function FurnitureApplicationForm({ init, regions }: { init: Init; regions: { id: number; name: string }[] }) {
+/** `editId` berilsa — mavjud firmani tahrirlash (kabinet → Mebel firmam). */
+export default function FurnitureApplicationForm({ init, regions, editId, full }: { init: Init; regions: { id: number; name: string }[]; editId?: string; full?: Full }) {
   const ru = useLocale() === "ru"; const lang = ru ? "ru" : "uz"; const router = useRouter();
-  const [f, setF] = useState({ ...init, name: "", kind: "both", products: [] as string[], description: "", regionId: "", address: "", website: "" });
+  const [f, setF] = useState({ ...init, name: "", kind: "both", products: [] as string[], description: "", regionId: "", address: "", website: "", ...full });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null); const [firmId, setFirmId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null); const [firmId, setFirmId] = useState<string | null>(null); const [saved, setSaved] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
   const inp = "mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5";
   const L = (k: string, label: string, child: React.ReactNode, hint?: string) => (
     <label className="block text-sm font-medium">{label}{child}{hint && <span className="mt-1 block text-xs font-normal text-slate-500">{hint}</span>}
       {errors[k] && <span role="alert" className="mt-1 block text-xs text-red-700">{errors[k]}</span>}</label>);
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setBusy(true); setMsg(null); setErrors({});
-    const r = await fetch("/api/furniture", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) }).catch(() => null);
+    e.preventDefault(); setBusy(true); setMsg(null); setErrors({}); setSaved(false);
+    const r = await fetch(editId ? `/api/furniture/${editId}` : "/api/furniture", { method: editId ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) }).catch(() => null);
     const d = await r?.json().catch(() => ({}));
     setBusy(false);
+    if (r?.ok && editId) { setMsg({ ok: false, t: "" }); setSaved(true); router.refresh(); return; }
     if (r?.ok) { setFirmId(d?.id ?? null); setMsg({ ok: true, t: ru ? "Заявка принята! После проверки ваша компания появится в разделе «Офисная мебель»." : "Arizangiz qabul qilindi! Tekshiruvdan so‘ng firmangiz «Ofis mebellari» bo‘limida chiqadi." }); router.refresh(); return; }
     if (d?.errors) setErrors(d.errors);
     setMsg({ ok: false, t: d?.error ?? (ru ? "Не удалось отправить" : "Yuborib bo‘lmadi") });
@@ -55,8 +58,9 @@ export default function FurnitureApplicationForm({ init, regions }: { init: Init
       {L("telegramUsername", "Telegram", <input maxLength={40} className={inp} value={f.telegramUsername} onChange={set("telegramUsername")} placeholder="@username" />)}
       {L("website", ru ? "Сайт или Instagram" : "Sayt yoki Instagram", <input maxLength={300} className={inp} value={f.website} onChange={set("website")} placeholder="instagram.com/..." />)}
       <div className="space-y-2 sm:col-span-2">
-        <button disabled={busy} className="w-full rounded-xl bg-accent px-6 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-60 sm:w-auto">{busy ? "…" : (ru ? "Отправить заявку" : "Arizani yuborish")}</button>
-        {msg && !msg.ok && <p role="alert" className="text-sm text-red-700">{msg.t}</p>}
+        <button disabled={busy} className="w-full rounded-xl bg-accent px-6 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-60 sm:w-auto">{busy ? "…" : editId ? (ru ? "Сохранить" : "Saqlash") : (ru ? "Отправить заявку" : "Arizani yuborish")}</button>
+        {saved && <p role="status" className="text-sm font-medium text-green-700">✓ {ru ? "Сохранено" : "Saqlandi"}</p>}
+        {msg && !msg.ok && msg.t && <p role="alert" className="text-sm text-red-700">{msg.t}</p>}
       </div>
     </form>
   );

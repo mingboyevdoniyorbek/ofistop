@@ -154,3 +154,40 @@ export async function getFirm(id: string, locale: "uz" | "ru") {
 
 /** Ish namunasining rasm manzillari (kartochkaga o'rta, to'liq ekranga asl). */
 export const firmPhoto = (key: string) => ({ url: mediaUrl(key), md: mediaUrl(key.replace(/\.webp$/, ".md.webp")), thumb: mediaUrl(key.replace(/\.webp$/, ".thumb.webp")) });
+
+/** Firma egasi ma'lumotlarini tahrirlaydi. Tasdiqlangan firma darhol yangilanadi, admin xabardor qilinadi; rad etilgani qayta ko'rib chiqishga yuboriladi. */
+export async function updateFirm(firmId: string, userId: string, raw: unknown) {
+  if (!isUuid(firmId)) throw new HttpError(404, "Firma topilmadi");
+  const b = firmSchema.safeParse(raw);
+  if (!b.success) {
+    const errors: Record<string, string> = {};
+    for (const i of b.error.issues) errors[String(i.path[0])] ??= "Maydonni to‘g‘ri to‘ldiring";
+    throw new HttpError(422, "Maydonlarda xato bor", { errors });
+  }
+  const f = b.data, d = db(), F = s.furnitureFirms;
+  const [firm] = await d.select().from(F).where(and(eq(F.id, firmId), eq(F.userId, userId))).limit(1);
+  if (!firm) throw new HttpError(404, "Firma topilmadi");
+  const phone = normalizePhoneUz(f.phone);
+  if (!phone) throw new HttpError(422, "Maydonlarda xato bor", { errors: { phone: "Telefon +998 XX XXX XX XX formatida bo'lsin" } });
+  const tg = f.telegramUsername ? normalizeTelegram(f.telegramUsername) : null;
+  if (f.telegramUsername && !tg) throw new HttpError(422, "Maydonlarda xato bor", { errors: { telegramUsername: "Telegram nomi noto'g'ri" } });
+  const website = f.website ? (/^https?:\/\//i.test(f.website) ? f.website : `https://${f.website}`) : null;
+  if (website && !URL.canParse(website)) throw new HttpError(422, "Maydonlarda xato bor", { errors: { website: "Maydonni to‘g‘ri to‘ldiring" } });
+  if (!(await d.select({ id: s.regions.id }).from(s.regions).where(eq(s.regions.id, f.regionId)).limit(1)).length) throw new HttpError(422, "Hudud topilmadi");
+  await d.update(F).set({
+    name: f.name, kind: f.kind, products: [...new Set(f.products)], description: f.description, regionId: f.regionId, address: f.address,
+    contactName: f.contactName, phone, telegramUsername: tg, website, ...(firm.status === "rejected" ? { status: "pending" as const, rejectionReason: null } : {}),
+  }).where(eq(F.id, firmId));
+  await writeAudit({ actorId: userId, action: "furniture_firm.update", entityType: "furniture_firm", entityId: firmId, meta: { name: f.name } });
+  await alertAdmins(`✏️ Mebel firmasi ma’lumotini o‘zgartirdi: ${f.name}`, "/admin/mebel");
+}
+
+/** Firma egasi o'z firmasini butunlay o'chiradi (rasmlari bilan). */
+export async function deleteOwnFirm(firmId: string, userId: string) {
+  if (!isUuid(firmId)) throw new HttpError(404, "Firma topilmadi");
+  const F = s.furnitureFirms;
+  const [firm] = await db().delete(F).where(and(eq(F.id, firmId), eq(F.userId, userId))).returning();
+  if (!firm) throw new HttpError(404, "Firma topilmadi");
+  await writeAudit({ actorId: userId, action: "furniture_firm.delete", entityType: "furniture_firm", entityId: firmId, meta: { name: firm.name } });
+  await Promise.all([firm.logoKey, ...firm.photoKeys.flatMap(derived)].filter((k): k is string => !!k).map((k) => deleteObject(k).catch(() => {})));
+}

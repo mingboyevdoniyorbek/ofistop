@@ -37,11 +37,14 @@ export default async function ListingCard({ it, note, compact = false }: { it: I
   const metro = pt ? nearestMetro(pt.lat, pt.lng) : null;
   // Bo'shligi yaqinda (7 kun ichida) tasdiqlangan bo'lsa — rasm ustida yashil belgi
   const fresh = it.availabilityConfirmedAt && Date.now() - new Date(it.availabilityConfirmedAt).getTime() < 7 * 864e5 ? confirmedAgo(it.availabilityConfirmedAt, locale) : null;
+  const frame = it.isTop && it.centerName ? "both" : it.isTop ? "vip" : it.centerName ? "center" : null;
   return (
     <article className="group relative">
       <div className="absolute right-2 top-2 z-10"><FavoriteButton variant="icon" listingId={it.id} initial={fav.ids.has(it.id)} loggedIn={fav.loggedIn} /></div>
       <Link href={`/joylar/${it.id}-${it.slug}`} className="block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
-        <div className={`relative overflow-hidden rounded-2xl ${it.isTop ? "shadow-[0_6px_20px_-6px_rgba(180,120,0,0.45)] ring-2 ring-[#f5c542]" : "shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_14px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5"}`}>{/* VIP — oltin hoshiya */}
+        {/* Hoshiya: VIP — oltin; biznes markaz xonasi — elektr ko'k; VIP + markaz — oltin→ko'k yorqin gradient */}
+        <div className={frame === "both" ? "rounded-2xl bg-gradient-to-br from-[#ffd23f] via-[#3ee0ff] to-[#2f5bff] p-[2.5px] shadow-[0_8px_24px_-8px_rgba(47,91,255,0.6),0_4px_14px_-6px_rgba(255,190,40,0.55)]" : ""}>
+        <div className={`relative overflow-hidden ${frame === "both" ? "rounded-[14px]" : "rounded-2xl"} ${frame === "vip" ? "shadow-[0_6px_20px_-6px_rgba(180,120,0,0.45)] ring-2 ring-[#f5c542]" : frame === "center" ? "shadow-[0_6px_20px_-6px_rgba(37,99,255,0.55)] ring-2 ring-[#2f7bff]" : frame === "both" ? "" : "shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_14px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5"}`}>
           <ListingPhoto thumb={mediaUrl(it.imageKey)} medium={mediaUrl(it.imageMediumKey)} full={mediaUrl(it.imageFullKey)} alt={it.title} fit="cover"
             className="aspect-square transition-transform duration-300 group-hover:scale-[1.03] sm:aspect-[4/3]" sizes={compact ? "(max-width: 640px) 62vw, 270px" : "(max-width: 1024px) 50vw, 25vw"}>
             {it.imageKey?.startsWith("placeholder:") ? t("card.demoImg", { cat: L.category[it.category] }) : t("card.noImg")}
@@ -49,6 +52,7 @@ export default async function ListingCard({ it, note, compact = false }: { it: I
           {it.isTop && <VipBadge className="absolute left-2 top-2 z-10" />}
           {fresh && <span className="absolute bottom-2 right-2 z-10 rounded-full bg-emerald-600/90 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm" title={ru ? "Владелец подтвердил, что помещение свободно" : "Egasi joy bo‘shligini tasdiqlagan"}>✓ {fresh}</span>}
           {trust && <span className={`absolute bottom-2 left-2 z-10 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm ${trust.cls}`}>{trust.icon} {trust.text}</span>}
+        </div>
         </div>
         <div className="mt-2.5 space-y-0.5 px-0.5">
           {note && <span className="inline-block rounded bg-amber-100 px-1.5 text-xs text-amber-900">{note}</span>}
