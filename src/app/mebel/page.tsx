@@ -1,7 +1,10 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { getT } from "@/lib/i18n";
 import { pageAlternates } from "@/lib/seo";
-import { listFirms, FURNITURE_PRODUCTS, KIND_LABELS, PRODUCT_LABELS } from "@/lib/furniture";
+import { listFirms, firmPhoto, FURNITURE_PRODUCTS, KIND_LABELS, PRODUCT_LABELS } from "@/lib/furniture";
+import { mediaUrl } from "@/lib/storage";
+import FirmAvatar from "@/components/FirmAvatar";
 import { telHref } from "@/lib/site-info";
 import { ProductIcon, SofaSticker } from "@/components/Stickers";
 import { VipBadge } from "@/components/ListingCard";
@@ -58,12 +61,17 @@ export default async function Furniture({ searchParams }: { searchParams: Promis
           : <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{firms.map(({ f, region, isTop }) => (
             <li key={f.id} className={`relative flex flex-col rounded-2xl border bg-white p-4 shadow-sm ${isTop ? "border-amber-300 ring-2 ring-amber-200" : "border-slate-200"}`}>
               {isTop && <VipBadge className="absolute -top-2.5 right-4" />}
-              <div className="flex items-center gap-3">
-                <span aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-blue-50 text-lg font-bold text-brand">{f.name.slice(0, 2).toUpperCase()}</span>
-                <div className="min-w-0"><h2 className="truncate font-semibold">{f.name}</h2><p className="text-xs text-slate-500">{KIND_LABELS[f.kind][lang]} · {region}</p></div>
-              </div>
+              {/* Logotip va nom — firma profiliga havola (rasmlar va to'liq izoh) */}
+              <Link href={`/mebel/${f.id}`} className="flex items-center gap-3 rounded-xl hover:bg-slate-50">
+                <FirmAvatar name={f.name} url={mediaUrl(f.logoKey)} />
+                <div className="min-w-0 flex-1"><h2 className="truncate font-semibold">{f.name}</h2><p className="text-xs text-slate-500">{KIND_LABELS[f.kind][lang]} · {region}</p></div>
+                <span aria-hidden="true" className="text-xl text-slate-400">›</span>
+              </Link>
+              {f.photoKeys.length > 0 && <Link href={`/mebel/${f.id}`} aria-label={ru ? `Фото работ: ${f.name}` : `Ish namunalari: ${f.name}`} className="mt-3 grid grid-cols-2 gap-2">
+                {f.photoKeys.slice(0, 2).map((k) => <img key={k} src={firmPhoto(k).md ?? ""} alt="" loading="lazy" decoding="async" className="aspect-[4/3] w-full rounded-xl bg-slate-100 object-cover" />)}
+              </Link>}
               {f.products.length > 0 && <ul className="mt-3 flex flex-wrap gap-1.5">{f.products.map((p) => { const l = PRODUCT_LABELS[p as keyof typeof PRODUCT_LABELS]; return l ? <li key={p} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs"><ProductIcon name={p} className="h-4 w-4" />{l[lang]}</li> : null; })}</ul>}
-              {f.description && <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm text-slate-700">{f.description}</p>}
+              {f.description && <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm text-slate-700">{f.description}</p>}
               {f.address && <p className="mt-2 text-xs text-slate-500">📍 {f.address}</p>}
               <div className="mt-auto flex flex-wrap gap-2 pt-4">
                 <a href={telHref(f.phone)} className="flex-1 rounded-xl bg-accent px-3 py-2.5 text-center text-sm font-semibold text-white">📞 {ru ? "Позвонить" : "Qo‘ng‘iroq"}</a>

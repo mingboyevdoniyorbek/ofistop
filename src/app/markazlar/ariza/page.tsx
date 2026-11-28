@@ -3,7 +3,6 @@ import { asc, desc, eq } from "drizzle-orm";
 import { db, schema as s } from "@/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { getT } from "@/lib/i18n";
-import { isUuid } from "@/lib/guard";
 import { pageAlternates } from "@/lib/seo";
 import { fmtDate } from "@/lib/format";
 import { siteInfo } from "@/lib/site-info";
@@ -17,12 +16,11 @@ export async function generateMetadata() {
     alternates: await pageAlternates("/markazlar/ariza") };
 }
 
-export default async function Apply({ searchParams }: { searchParams: Promise<{ markaz?: string }> }) {
+// Faqat yangi markaz qo'shiladi. Mavjud markaz boshqaruvini «so'rash» olib tashlangan: jamoaga yordamchini markaz vakili qo'shadi.
+export default async function Apply() {
   const { locale } = await getT(); const ru = locale === "ru"; const nm = (x: { nameUz: string; nameRu: string }) => (ru ? x.nameRu : x.nameUz);
-  const claimId = (await searchParams).markaz;
-  const [center] = claimId && isUuid(claimId) ? await db().select().from(s.businessCenters).where(eq(s.businessCenters.id, claimId)).limit(1) : [];
   const user = await getCurrentUser().catch(() => null);
-  const self = `/markazlar/ariza${center ? `?markaz=${center.id}` : ""}`;
+  const self = "/markazlar/ariza";
   const tg = siteInfo().telegram;
   const steps = ru
     ? ["Заполните заявку (2 минуты)", "Администратор позвонит и проверит данные", "Вы получите доступ: страница центра, фото, помещения и статистика"]
@@ -52,18 +50,16 @@ export default async function Apply({ searchParams }: { searchParams: Promise<{ 
         </li>)}</ul>
       </section>}
       <CenterApplicationForm
-        init={{ centerId: center?.id, name: center?.name ?? "", regionId: center ? String(center.regionId) : "", districtId: center?.districtId ? String(center.districtId) : "", address: center?.address ?? "",
+        init={{ name: "", regionId: "", districtId: "", address: "",
           contactName: profile?.displayName ?? "", phone: profile?.contactPhone ?? (user.phone.startsWith("+") ? user.phone : ""), telegramUsername: profile?.telegramUsername ?? "" }}
         regions={regions.map((r) => ({ id: r.id, name: nm(r) }))} districts={districts.map((d) => ({ id: d.id, regionId: d.regionId, name: nm(d) }))} />
     </>;
   }
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link href={center ? `/markazlar/${center.id}-${center.slug}` : "/markazlar"} className="text-sm text-brand">← {center ? center.name : (ru ? "Бизнес-центры" : "Biznes markazlar")}</Link>
-      <h1 className="mt-3 text-3xl font-bold text-brand-dark">{center ? (ru ? "Запросить управление центром" : "Markaz boshqaruvini so‘rash") : (ru ? "Добавьте свой бизнес-центр" : "Biznes markazingizni qo‘shing")}</h1>
-      <p className="mt-2 text-slate-600">{center
-        ? (ru ? `Если вы владелец или управляющий «${center.name}», оставьте заявку — после проверки вы сможете управлять страницей и помещениями.` : `Agar siz «${center.name}» egasi yoki boshqaruvchisi bo‘lsangiz, ariza qoldiring — tekshiruvdan so‘ng sahifa va xonalarni boshqarasiz.`)
-        : (ru ? "Бесплатно: страница центра с фото, список свободных помещений, прямые звонки арендаторов и ежемесячная статистика." : "Bepul: rasmli markaz sahifasi, bo‘sh xonalar ro‘yxati, ijarachilardan to‘g‘ridan-to‘g‘ri qo‘ng‘iroqlar va oylik statistika.")}</p>
+      <Link href="/markazlar" className="text-sm text-brand">← {ru ? "Бизнес-центры" : "Biznes markazlar"}</Link>
+      <h1 className="mt-3 text-3xl font-bold text-brand-dark">{(ru ? "Добавьте свой бизнес-центр" : "Biznes markazingizni qo‘shing")}</h1>
+      <p className="mt-2 text-slate-600">{(ru ? "Бесплатно: страница центра с фото, список свободных помещений, прямые звонки арендаторов и ежемесячная статистика." : "Bepul: rasmli markaz sahifasi, bo‘sh xonalar ro‘yxati, ijarachilardan to‘g‘ridan-to‘g‘ri qo‘ng‘iroqlar va oylik statistika.")}</p>
       <ol className="my-6 grid gap-3 sm:grid-cols-3">{steps.map((x, i) => <li key={x} className="rounded-2xl bg-slate-50 p-4 text-sm"><span className="mb-1 grid h-7 w-7 place-items-center rounded-full bg-brand text-sm font-bold text-white">{i + 1}</span>{x}</li>)}</ol>
       {body}
       {tg && <p className="mt-6 text-sm text-slate-600">{ru ? "Есть вопросы? " : "Savollar bormi? "}<a href={`https://t.me/${tg}`} target="_blank" rel="noopener" className="font-semibold text-brand underline">{ru ? "Напишите нам в Telegram" : "Telegram’da yozing"}</a></p>}

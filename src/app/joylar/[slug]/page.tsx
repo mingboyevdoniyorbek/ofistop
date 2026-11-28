@@ -28,6 +28,8 @@ import { cache } from "react";
 import { memo } from "@/lib/memo";
 import { showViewCounts, telHref } from "@/lib/site-info";
 import { topFirms, KIND_LABELS } from "@/lib/furniture";
+import FirmAvatar from "@/components/FirmAvatar";
+import { mediaUrl } from "@/lib/storage";
 import { SofaSticker } from "@/components/Stickers";
 const listImagesCached = cache((id: string) => listImages(id));
 
@@ -191,8 +193,8 @@ export default async function Detail({ params }: { params: Promise<{ slug: strin
       {visible && firms.length > 0 && <section className="mt-10 rounded-3xl bg-gradient-to-br from-teal-50 to-white p-4 ring-1 ring-teal-100 sm:p-5" aria-labelledby="firms-h">
         <div className="flex items-center gap-3"><SofaSticker uid="sofa-det" className="h-12 w-12 shrink-0" /><div><h2 id="firms-h" className="font-semibold">{ru ? "Мебель для этого офиса" : "Bu ofis uchun mebel"}</h2><p className="text-xs text-slate-500">{ru ? "Рекомендуемые компании OfisTop" : "OfisTop tavsiya etgan firmalar"}</p></div></div>
         <ul className="mt-3 grid gap-3 sm:grid-cols-2">{firms.map(({ f, region }) => <li key={f.id} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
-          <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 font-bold text-brand">{f.name.slice(0, 2).toUpperCase()}</span>
-          <div className="min-w-0 flex-1"><p className="truncate font-semibold">{f.name}</p><p className="truncate text-xs text-slate-500">{KIND_LABELS[f.kind][ru ? "ru" : "uz"]} · {region}</p></div>
+          <Link href={`/mebel/${f.id}`} className="flex min-w-0 flex-1 items-center gap-3"><FirmAvatar name={f.name} url={mediaUrl(f.logoKey)} size="h-10 w-10" />
+          <div className="min-w-0 flex-1"><p className="truncate font-semibold">{f.name}</p><p className="truncate text-xs text-slate-500">{KIND_LABELS[f.kind][ru ? "ru" : "uz"]} · {region}</p></div></Link>
           <a href={telHref(f.phone)} className="shrink-0 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-white">📞</a></li>)}</ul>
         <Link href="/mebel" className="mt-3 inline-block text-sm text-brand hover:underline">{ru ? "Все мебельные компании →" : "Barcha mebel firmalari →"}</Link>
       </section>}

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getT } from "@/lib/i18n";
 import { parseFilters, searchListings } from "@/lib/search";
 import ListingCard from "@/components/ListingCard";
-import RecentlyViewed from "@/components/RecentlyViewed";
 import { memo } from "@/lib/memo";
 import { pageAlternates } from "@/lib/seo";
 
@@ -46,8 +45,6 @@ export default async function Home() {
       {top && top.items.length > 0 && <Rail vip title={ru ? "VIP объявления" : "VIP e’lonlar"} sub={ru ? "Лучшие предложения недели" : "Haftaning eng yaxshi takliflari"} href="/joylar" more={t("home.all")}>{top.items.slice(0, 12).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
       {inCenters && inCenters.items.length > 0 && <Rail title={ru ? "Помещения в бизнес-центрах" : "Biznes markazlardagi xonalar"} sub={ru ? `${inCenters.total} свободных помещений` : `${inCenters.total} ta bo‘sh xona`} href="/joylar?category=bc_room" more={t("home.all")}>{inCenters.items.slice(0, 12).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
 
-      <RecentlyViewed />
-
       {/* Qolgan e'lonlar: telefonda 2 ustun, pastga qarab */}
       <section className="mx-auto max-w-6xl px-4 pt-6" aria-labelledby="all-h">
         <RailHead id="all-h" title={ru ? "Все объявления" : "Barcha e’lonlar"} href="/joylar" more={t("home.all")} />
@@ -57,7 +54,7 @@ export default async function Home() {
       </section>
 
       {/* Pastda bitta asosiy banner (biznes markazlar — saytning asosiy yo'nalishi) va ikkita kichik oq kartochka */}
-      <section className="mx-auto mt-10 max-w-6xl space-y-3 px-4 pb-10">
+      <section className="mx-auto mt-10 max-w-6xl space-y-3 px-4 pb-6">
         <div className="relative overflow-hidden rounded-3xl bg-brand-dark p-6 text-white sm:p-8">
           <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute -bottom-2 right-2 h-32 w-32 text-white/25 drop-shadow-[0_0_14px_rgba(255,255,255,.45)] sm:right-8" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"><path d={LINE.building} /></svg>
           <h2 className="relative max-w-xl text-2xl font-bold">{ru ? "Все помещения вашего центра — на одной странице" : "Markazingizdagi barcha xonalar — bitta sahifada"}</h2>

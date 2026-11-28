@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { rows: [c] } = await queryClient().query(`SELECT
     (SELECT count(*) FROM listings WHERE moderation_status='pending')::int AS listings,
     (SELECT count(*) FROM reports WHERE status='open')::int AS reports,
-    (SELECT count(*) FROM center_applications WHERE status='pending')::int AS apps,
+    ((SELECT count(*) FROM center_applications WHERE status='pending') + (SELECT count(*) FROM center_member_requests WHERE status='pending'))::int AS apps,
     (SELECT count(*) FROM furniture_firms WHERE status='pending')::int AS furniture,
     (SELECT count(*) FROM service_requests WHERE status='new')::int AS service,
     (SELECT count(*) FROM business_centers WHERE pending_changes IS NOT NULL OR EXISTS (SELECT 1 FROM business_center_images i WHERE i.center_id = business_centers.id AND i.pending))::int AS edits`);

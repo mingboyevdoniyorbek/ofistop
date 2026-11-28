@@ -231,4 +231,18 @@ export const SERVER_MSGS: readonly (readonly [string, string])[] = [
   ["Siz \"{name}\" biznes markaziga vakil qilib biriktirildingiz", "Вы назначены представителем бизнес-центра «{name}»"],
   ["E'lon muddati tugadi", "Срок объявления истёк"],
   ["\"{title}\" qidiruvdan chiqarildi. Qayta faollashtirish uchun mavjudligini tasdiqlang.", "«{title}» убрано из поиска. Чтобы снова активировать, подтвердите доступность."],
+  // Markaz jamoasi (yordamchilar) va mebel firmasi rasmlari
+  ["Bu odam saytda ro'yxatdan o'tmagan. Avval u saytga kirishi kerak.", "Этот человек не зарегистрирован на сайте. Сначала ему нужно войти."],
+  ["Bu odam allaqachon markaz jamoasida", "Этот человек уже в команде центра"],
+  ["Bu odam uchun so'rov allaqachon yuborilgan", "Запрос для этого человека уже отправлен"],
+  ["Jamoada ko'pi bilan 10 kishi bo'lishi mumkin", "В команде может быть не более 10 человек"],
+  ["So'rov topilmadi", "Запрос не найден"],
+  ["So'rov allaqachon ko'rib chiqilgan", "Запрос уже рассмотрен"],
+  ["Bu odamni faqat administrator olib tashlay oladi", "Удалить этого человека может только администратор"],
+  ["Yordamchi qo‘shildi: {name}", "Помощник добавлен: {name}"],
+  ["Yordamchi qo‘shish rad etildi: {name}", "В добавлении помощника отказано: {name}"],
+  ["Markaz boshqaruvini so'rash o'chirilgan. Markaz vakilidan sizni jamoaga qo'shishini so'rang.", "Запрос управления отключён. Попросите представителя центра добавить вас в команду."],
+  ["Firma topilmadi", "Компания не найдена"],
+  ["Ko'pi bilan 2 ta namuna rasm", "Не более 2 фото работ"],
+  ["Rasm turi noto'g'ri", "Неверный тип фото"],
 ];

@@ -234,9 +234,14 @@ test("10. «Ijaraga berildi» — e'lon darhol qidiruvdan chiqadi, eski havola h
   await p.goto("/kabinet");
   const card = p.getByRole("listitem").filter({ hasText: TITLE });
   await expect(card).toContainText(uz["cab.st.active"]);
+  // Kabinetda ixcham kartochka: bosilganda e'lonni boshqarish sahifasi ochiladi
+  await card.getByRole("link").click();
+  await p.waitForURL(/\/kabinet\/elonlar\/[0-9a-f-]{36}$/);
+  const main = p.locator("main");
+  await expect(main).toContainText(uz["cab.st.active"]);
   p.once("dialog", (d) => d.accept());
-  await card.getByRole("button", { name: uz["cab.a.rented"] }).click();
-  await expect(card).toContainText(uz["cab.st.rented"]);
+  await main.getByRole("button", { name: uz["cab.a.rented"] }).click();
+  await expect(main).toContainText(uz["cab.st.rented"]);
   await c.close();
 
   const a = await newCtx(browser);

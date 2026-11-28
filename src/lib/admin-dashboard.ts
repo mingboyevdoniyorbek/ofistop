@@ -12,7 +12,7 @@ export async function adminDashboard(locale: "uz" | "ru") {
     (SELECT count(*) FROM users WHERE NOT is_demo)::int AS users,
     (SELECT count(*) FROM users WHERE NOT is_demo AND created_at > now() - interval '30 days')::int AS users_30,
     (SELECT count(*) FROM business_centers)::int AS centers,
-    (SELECT count(*) FROM center_applications WHERE status='pending')::int AS apps,
+    ((SELECT count(*) FROM center_applications WHERE status='pending') + (SELECT count(*) FROM center_member_requests WHERE status='pending'))::int AS apps,
     (SELECT count(*) FROM reports WHERE status='open')::int AS reports,
     (SELECT count(*) FROM business_centers WHERE pending_changes IS NOT NULL OR EXISTS (SELECT 1 FROM business_center_images i WHERE i.center_id = business_centers.id AND i.pending))::int AS center_edits,
     (SELECT count(*) FROM contact_events WHERE kind IN ('phone_reveal','call_click') AND day > current_date - 30)::int AS calls_30,
