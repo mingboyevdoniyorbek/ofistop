@@ -36,7 +36,7 @@ export default function FirmPhotos({ firmId, logo, photos, onChange }: { firmId:
     setBusy(null);
     if (r?.ok) update(next); else setErr(ru ? "Не удалось удалить" : "O‘chirib bo‘lmadi");
   }
-  const box = "relative grid aspect-square place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-center text-xs text-slate-500 transition hover:border-brand";
+  const box = "relative grid aspect-square w-full place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-center text-xs text-slate-500 transition hover:border-brand";
   const del = "absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-white/95 text-sm text-red-700 shadow";
   return (
     <div>

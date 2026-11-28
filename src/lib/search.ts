@@ -106,7 +106,7 @@ export function buildWhere(f: Filters) {
   if (f.errors?.length) conds.push(sql`false`);
   conds.push(eq(L.dealType, f.deal));
   if (f.only === "top") conds.push(sql`${L.featuredUntil} > now()`);
-  if (f.only === "center") conds.push(sql`${L.centerId} IS NOT NULL AND (${L.featuredUntil} IS NULL OR ${L.featuredUntil} <= now())`);
+  if (f.only === "center") conds.push(sql`${L.centerId} IS NOT NULL`); // VIP bo'lgan markaz xonasi ham markazlar qatorida qoladi
   if (f.only === "rest") conds.push(sql`${L.centerId} IS NULL AND (${L.featuredUntil} IS NULL OR ${L.featuredUntil} <= now())`);
   if (f.currencyFilter) conds.push(eq(L.currency, f.currency));
   if (f.periodFilter) conds.push(eq(L.pricePeriod, f.period));

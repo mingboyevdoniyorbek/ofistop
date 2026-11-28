@@ -46,7 +46,7 @@ export default async function Home() {
       {inCenters && inCenters.items.length > 0 && <Rail title={ru ? "Помещения в бизнес-центрах" : "Biznes markazlardagi xonalar"} sub={ru ? `${inCenters.total} свободных помещений` : `${inCenters.total} ta bo‘sh xona`} href="/joylar?category=bc_room" more={t("home.all")}>{inCenters.items.slice(0, 12).map((it) => <RailItem key={it.id}><ListingCard it={it} compact /></RailItem>)}</Rail>}
 
       {/* Qolgan e'lonlar: telefonda 2 ustun, pastga qarab */}
-      <section className="mx-auto max-w-6xl px-4 pt-6" aria-labelledby="all-h">
+      <section className="mx-auto max-w-6xl px-4 pt-3" aria-labelledby="all-h">
         <RailHead id="all-h" title={ru ? "Все объявления" : "Barcha e’lonlar"} href="/joylar" more={t("home.all")} />
         {rest === null ? <p className="text-red-700">{t("home.loadFail")}</p>
           : <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-4">{rest.map((it) => <ListingCard key={it.id} it={it} />)}</div>}

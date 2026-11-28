@@ -14,6 +14,9 @@ export default function Gallery({ images, alt, fallback, contain = false }: { im
   const t = useT(); const ru = useLocale() === "ru";
   const [i, setI] = useState(0);
   const [open, setOpen] = useState(false);
+  const [ratio, setRatio] = useState(4 / 3);
+  // Rasm gidratatsiyadan oldin yuklanib bo'lgan bo'lsa (kesh), onLoad ishlamaydi — proporsiya shu yerda olinadi.
+  useEffect(() => { if (!contain) return; const im = track.current?.querySelector("img"); if (im?.complete && im.naturalWidth) setRatio(Math.min(16 / 9, Math.max(3 / 4, im.naturalWidth / im.naturalHeight))); }, [contain]);
   const track = useRef<HTMLDivElement>(null);
   const n = images.length;
 
@@ -31,10 +34,11 @@ export default function Gallery({ images, alt, fallback, contain = false }: { im
         <div ref={track} onScroll={(e) => onScroll(e.currentTarget)} className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto" role="group" aria-roledescription="carousel" aria-label={t("gal.aria")}>
           {images.map((im, k) => (
             <button key={im.url} type="button" onClick={() => { setI(k); setOpen(true); }} aria-label={`${t("gal.alt", { alt, i: k + 1, n })} — ${ru ? "открыть на весь экран" : "to‘liq ekranda ochish"}`}
-              className="relative aspect-[4/3] w-full shrink-0 snap-center overflow-hidden sm:aspect-[16/10]">
-              {/* contain: rasm kesilmasdan to'liq ko'rinadi (markaz fotosuratlari), chetlari shu rasmning xira foni */}
-              {contain && <img src={im.thumb} alt="" aria-hidden="true" loading="lazy" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-xl" />}
-              <img src={im.url} alt={t("gal.alt", { alt, i: k + 1, n })} loading={k === 0 ? "eager" : "lazy"} decoding="async" className={`relative h-full w-full ${contain ? "object-contain" : "object-cover"}`} />
+              style={contain ? { aspectRatio: ratio } : undefined}
+              className={`relative w-full shrink-0 snap-center overflow-hidden ${contain ? "" : "aspect-[4/3] sm:aspect-[16/10]"}`}>
+              {/* contain (markaz rasmlari): ramka birinchi rasmning o'z proporsiyasida — rasm yaqinlashmaydi va yon chiziqlar yo'q */}
+              <img src={im.url} alt={t("gal.alt", { alt, i: k + 1, n })} loading={k === 0 ? "eager" : "lazy"} decoding="async" className="h-full w-full object-cover"
+                onLoad={contain && k === 0 ? (e) => { const { naturalWidth: w, naturalHeight: h } = e.currentTarget; if (w && h) setRatio(Math.min(16 / 9, Math.max(3 / 4, w / h))); } : undefined} />
             </button>
           ))}
         </div>

@@ -302,4 +302,12 @@ test("mebel firmasi: logotip va 2 ta ish namunasi, faqat egasi; profil faqat tas
  expect(await getFirm(f.id,"uz")).toBeNull(); // hali tasdiqlanmagan
  await reviewFirm(f.id,{id:other.id},"approve");
  expect((await getFirm(f.id,"uz"))?.f.name).toBe("Mebel Pro");
+ const { updateFirm, deleteOwnFirm } = await import("../src/lib/furniture");
+ const edit={name:"Mebel Pro Plus",kind:"ready",products:["desks"],description:"Yangi",regionId,address:"",contactName:"Ali",phone:"+998901234567",telegramUsername:"",website:""};
+ await expect(updateFirm(f.id,other.id,edit)).rejects.toThrow("Firma topilmadi");
+ await updateFirm(f.id,owner.id,edit);
+ expect((await getFirm(f.id,"uz"))?.f.name).toBe("Mebel Pro Plus");
+ await expect(deleteOwnFirm(f.id,other.id)).rejects.toThrow();
+ await deleteOwnFirm(f.id,owner.id);
+ expect(await getFirm(f.id,"uz")).toBeNull();
 });

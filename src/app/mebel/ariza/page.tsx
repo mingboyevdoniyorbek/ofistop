@@ -40,7 +40,7 @@ export default async function FurnitureApply() {
     const st = { pending: ru ? "На рассмотрении" : "Ko‘rib chiqilmoqda", approved: ru ? "Одобрена" : "Tasdiqlandi", rejected: ru ? "Отклонена" : "Rad etildi" } as const;
     body = <>
       {apps.length > 0 && <section className="mb-6 rounded-2xl border border-slate-200 p-4">
-        <h2 className="mb-2 font-semibold">{ru ? "Мои заявки" : "Mening arizalarim"}</h2>
+        <div className="mb-2 flex items-center justify-between gap-2"><h2 className="font-semibold">{ru ? "Мои заявки" : "Mening arizalarim"}</h2><Link href="/kabinet/mebel" className="text-sm font-semibold text-brand">✏️ {ru ? "Редактировать" : "Tahrirlash"}</Link></div>
         <ul className="divide-y text-sm">{apps.map((a) => <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
           <span>🪑 {a.name} <span className="text-slate-500">· {fmtDate(a.createdAt, locale)}</span></span>
           <span className={`rounded-full px-2.5 py-1 text-xs ${a.status === "approved" ? "bg-green-50 text-green-800" : a.status === "rejected" ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900"}`}>{st[a.status]}</span>
