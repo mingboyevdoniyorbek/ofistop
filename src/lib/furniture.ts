@@ -7,6 +7,7 @@ import { normalizeTelegram } from "./listing-input";
 import { notify, writeAudit } from "./staff";
 import { alertAdmins } from "./admin-alert";
 import { FURNITURE_PRODUCTS, KIND_LABELS } from "./furniture-labels";
+import { deleteObject, mediaUrl, storeImage, storeLogo } from "./storage";
 export { FURNITURE_PRODUCTS, KIND_LABELS, PRODUCT_LABELS } from "./furniture-labels";
 
 /** Bir foydalanuvchida bir vaqtda ko'pi bilan shuncha ko'rib chiqilmagan mebel arizasi. */
@@ -60,6 +61,8 @@ export async function reviewFirm(id: string, actor: { id: string }, action: "app
     if (action === "remove") {
       await tx.delete(F).where(eq(F.id, id));
       await writeAudit({ actorId: actor.id, action: "furniture_firm.remove", entityType: "furniture_firm", entityId: id, meta: { name: firm.name } }, tx);
+      // Rasmlar ham o'chiriladi (xatosi firmani o'chirishga to'sqinlik qilmaydi).
+      await Promise.all([firm.logoKey, ...firm.photoKeys.flatMap(derived)].filter((k): k is string => !!k).map((k) => deleteObject(k).catch(() => {})));
       return;
     }
     // TOP (VIP) firma: /mebel'da va e'lon sahifalarida birinchi taklif qilinadi. Hozircha admin to'lovdan keyin qo'lda yoqadi.
@@ -97,3 +100,57 @@ export async function listFirms(locale: "uz" | "ru", filter: { product?: string;
 export async function topFirms(locale: "uz" | "ru", limit = 2) {
   return (await listFirms(locale)).filter((x) => x.isTop).slice(0, limit);
 }
+
+/** Ishlaridan namuna rasmlar soni (logotipdan tashqari). */
+export const MAX_FIRM_PHOTOS = 2;
+const derived = (key: string) => [key, key.replace(/\.webp$/, ".thumb.webp"), key.replace(/\.webp$/, ".md.webp")];
+
+/** Firma egasi logotip yoki ish namunasini yuklaydi (ariza ko'rib chiqilayotganda ham, keyin ham). */
+export async function addFirmImage(firmId: string, userId: string, slot: "logo" | "work", buf: Buffer) {
+  if (!isUuid(firmId)) throw new HttpError(404, "Firma topilmadi");
+  const F = s.furnitureFirms;
+  const [firm] = await db().select().from(F).where(and(eq(F.id, firmId), eq(F.userId, userId))).limit(1);
+  if (!firm) throw new HttpError(404, "Firma topilmadi");
+  if (slot === "logo") {
+    const key = await storeLogo(buf);
+    await db().update(F).set({ logoKey: key }).where(eq(F.id, firmId));
+    if (firm.logoKey) await deleteObject(firm.logoKey).catch(() => {});
+    return key;
+  }
+  if (firm.photoKeys.length >= MAX_FIRM_PHOTOS) throw new HttpError(422, "Ko'pi bilan 2 ta namuna rasm");
+  const st = await storeImage(buf);
+  // Parallel yuklashda chegaradan oshmaslik uchun shart bazaning o'zida tekshiriladi.
+  const upd = await db().update(F).set({ photoKeys: sql`array_append(${F.photoKeys}, ${st.key})` })
+    .where(and(eq(F.id, firmId), sql`coalesce(array_length(${F.photoKeys}, 1), 0) < ${MAX_FIRM_PHOTOS}`)).returning({ id: F.id });
+  if (!upd.length) { await Promise.all(derived(st.key).map((k) => deleteObject(k).catch(() => {}))); throw new HttpError(422, "Ko'pi bilan 2 ta namuna rasm"); }
+  return st.key;
+}
+
+export async function removeFirmImage(firmId: string, userId: string, target: { slot: "logo" } | { key: string }) {
+  if (!isUuid(firmId)) throw new HttpError(404, "Firma topilmadi");
+  const F = s.furnitureFirms;
+  const [firm] = await db().select().from(F).where(and(eq(F.id, firmId), eq(F.userId, userId))).limit(1);
+  if (!firm) throw new HttpError(404, "Firma topilmadi");
+  if ("slot" in target) {
+    if (!firm.logoKey) return;
+    await db().update(F).set({ logoKey: null }).where(eq(F.id, firmId));
+    await deleteObject(firm.logoKey).catch(() => {});
+    return;
+  }
+  if (!firm.photoKeys.includes(target.key)) throw new HttpError(404, "Rasm topilmadi");
+  await db().update(F).set({ photoKeys: firm.photoKeys.filter((k) => k !== target.key) }).where(eq(F.id, firmId));
+  await Promise.all(derived(target.key).map((k) => deleteObject(k).catch(() => {})));
+}
+
+/** Firma profili (ommaviy): faqat tasdiqlangan va egasi bloklanmagan. */
+export async function getFirm(id: string, locale: "uz" | "ru") {
+  if (!isUuid(id)) return null;
+  const F = s.furnitureFirms;
+  const [r] = await db().select({ f: F, region: locale === "ru" ? s.regions.nameRu : s.regions.nameUz }).from(F)
+    .innerJoin(s.regions, eq(s.regions.id, F.regionId)).innerJoin(s.users, eq(s.users.id, F.userId))
+    .where(and(eq(F.id, id), eq(F.status, "approved"), eq(s.users.isBlocked, false))).limit(1);
+  return r ? { ...r, isTop: !!r.f.featuredUntil && r.f.featuredUntil > new Date() } : null;
+}
+
+/** Ish namunasining rasm manzillari (kartochkaga o'rta, to'liq ekranga asl). */
+export const firmPhoto = (key: string) => ({ url: mediaUrl(key), md: mediaUrl(key.replace(/\.webp$/, ".md.webp")), thumb: mediaUrl(key.replace(/\.webp$/, ".thumb.webp")) });

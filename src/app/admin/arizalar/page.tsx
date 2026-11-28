@@ -27,12 +27,30 @@ export default async function Applications({ searchParams }: { searchParams: Pro
   const existing = await db().select({ id: s.businessCenters.id, slug: s.businessCenters.slug, name: s.businessCenters.name }).from(s.businessCenters);
   const same = (name: string) => { const k = searchKey(name); return existing.filter((c) => { const e = searchKey(c.name); return e === k || e.includes(k) || k.includes(e); }); };
   const counts = new Map((await db().select({ st: A.status, n: sql<number>`count(*)::int` }).from(A).groupBy(A.status)).map((r) => [r.st, r.n]));
+  // Vakillar yuborgan «yordamchi qo'shish» so'rovlari (kutilayotganlar)
+  const R = s.centerMemberRequests; const RQ = alias(s.users, "rq"); const CU = alias(s.users, "cu");
+  const memberReqs = tab === "pending" ? await db().select({ id: R.id, createdAt: R.createdAt, center: s.businessCenters, who: CU.phone, by: RQ.phone })
+    .from(R).innerJoin(s.businessCenters, eq(s.businessCenters.id, R.centerId)).innerJoin(CU, eq(CU.id, R.userId)).innerJoin(RQ, eq(RQ.id, R.requestedBy))
+    .where(eq(R.status, "pending")).orderBy(R.createdAt).limit(100) : [];
+  const ph = (p: string) => (p.startsWith("+") ? p : (ru ? "аккаунт Google" : "Google hisob"));
   const label = { pending: ru ? "Ожидают" : "Kutilmoqda", approved: ru ? "Одобрены" : "Tasdiqlangan", rejected: ru ? "Отклонены" : "Rad etilgan" };
   return (
     <div>
       <h1 className="text-xl font-bold">{ru ? "Заявки бизнес-центров" : "Biznes markaz arizalari"}</h1>
       <p className="mt-1 text-sm text-slate-600">{ru ? "Перед одобрением позвоните заявителю и убедитесь, что он представляет центр." : "Tasdiqlashdan oldin ariza beruvchiga qo‘ng‘iroq qilib, u markaz vakili ekanini tekshiring."}</p>
       <nav className="my-4 flex flex-wrap gap-2 text-sm">{TABS.map((t) => <Link key={t} href={`/admin/arizalar?holat=${t}`} className={`rounded-full border px-3 py-1.5 ${t === tab ? "border-brand bg-brand text-white" : "border-slate-300"}`}>{label[t]} ({counts.get(t) ?? 0})</Link>)}</nav>
+      {memberReqs.length > 0 && <section className="mb-5">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">{ru ? "Добавление помощников" : "Yordamchi qo‘shish so‘rovlari"} ({memberReqs.length})</h2>
+        <ul className="space-y-2">{memberReqs.map((m) => (
+          <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4 text-sm">
+            <div><p><span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-800">👥 {ru ? "Помощник" : "Yordamchi"}</span> <Link href={`/markazlar/${m.center.id}-${m.center.slug}`} className="font-semibold text-brand underline">{m.center.name}</Link></p>
+              <p className="mt-1 text-slate-600">{ru ? "Кого добавить" : "Kim qo‘shiladi"}: <strong>{ph(m.who)}</strong> · {ru ? "запросил" : "so‘ragan"}: {ph(m.by)} · {fmtDate(m.createdAt, locale)}</p></div>
+            <div className="flex gap-2">
+              <AdminAction url={`/api/admin/center-members/${m.id}`} body={{ action: "approve" }} tone="primary" label={ru ? "✓ Одобрить" : "✓ Tasdiqlash"} confirm={ru ? "Дать этому человеку управление центром?" : "Bu odamga markazni boshqarish huquqi berilsinmi?"} />
+              <AdminAction url={`/api/admin/center-members/${m.id}`} body={{ action: "reject" }} tone="danger" label={ru ? "Отклонить" : "Rad etish"} confirm={ru ? "Отклонить запрос?" : "So‘rov rad etilsinmi?"} />
+            </div>
+          </li>))}</ul>
+      </section>}
       {rows.length === 0 ? <p className="rounded border border-dashed border-slate-300 p-6 text-slate-500">{ru ? "Заявок нет." : "Arizalar yo‘q."}</p> : (
         <ul className="space-y-3">{rows.map(({ a, region, district, center, login }) => (
           <li key={a.id} className="rounded-xl border border-slate-200 p-4 text-sm">

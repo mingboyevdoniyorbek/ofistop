@@ -169,13 +169,13 @@ test("markaz arizasi: yangi markaz → tasdiq → vakil; claim; rad etish; vakil
  expect(notes.some((n:any)=>n.title==="Markazingiz tasdiqlandi: Ariza Plaza")).toBe(true);
  expect(trServer("Markazingiz tasdiqlandi: Ariza Plaza","ru")).toBe("Ваш центр одобрен: Ariza Plaza");
  await expect(approveApplication(id,admin,true)).rejects.toThrow(); // ikkinchi marta tasdiqlanmaydi
- // vakil endi o'z markaziga claim qila olmaydi
+ // mavjud markaz boshqaruvini so'rash o'chirilgan (vakil ham, begona ham)
  expect((await applyCenter(request({...form,centerId}),ctx())).status).toBe(409);
- // boshqa foydalanuvchi claim qiladi va rad etiladi
  state.user=other;
- const claim=await applyCenter(request({...form,centerId,contactName:"Boshqa odam"}),ctx()); expect(claim.status).toBe(201);
- expect((await applyCenter(request({...form,centerId}),ctx())).status).toBe(409); // takroriy so'rov
- await rejectApplication((await claim.json()).id,admin,"Hujjat yo'q");
+ expect((await applyCenter(request({...form,centerId,contactName:"Boshqa odam"}),ctx())).status).toBe(409);
+ // yangi markaz arizasini rad etish
+ const second=await applyCenter(request({...form,name:"Boshqa Plaza"}),ctx()); expect(second.status).toBe(201);
+ await rejectApplication((await second.json()).id,admin,"Hujjat yo'q");
  state.user=owner;
  // vakil tahriri: saytda o'zgarmaydi, admin tasdiqlagach qo'llanadi
  const edit={name:"Ariza Plaza Premium",description:"Yangi tavsif",address:c.address,regionId,districtId:null,lat:"",lng:"",contactPhone:"+998901234567",telegramUsername:"",amenities:[],tagline:"",workingHours:"",website:""};
@@ -262,4 +262,44 @@ test("markazlar filtri: maydon va oylik budjetga mos bo'sh xonalar soni va eng a
  expect((await get({areaMin:"30"}))?.rooms).toBe(2);
  expect(await get({areaMin:"30",priceMax:"700"})).toEqual({rooms:1,minTotal:60000n});
  expect(await get({areaMin:"100"})).toBeUndefined();
+});
+test("markaz jamoasi: vakil yordamchi qo'shishni so'raydi, admin tasdiqlaydi; begona so'ray olmaydi",async()=>{
+ const { requestMember, reviewMemberRequest, removeMember, teamOf } = await import("../src/lib/center-team");
+ const [c]=await state.db.insert(schema.businessCenters).values({slug:"team-plaza",name:"Team Plaza",regionId,address:"Manzil 1"}).returning();
+ await state.db.insert(schema.businessCenterMemberships).values({centerId:c.id,userId:owner.id});
+ const [helper,stranger]=await state.db.insert(schema.users).values([{phone:"+998903330001"},{phone:"+998903330002"}]).returning();
+ // ro'yxatdan o'tmagan raqam va begona vakil
+ await expect(requestMember(c.id,owner.id,"+998 90 999 99 99")).rejects.toThrow(/ro'yxatdan o'tmagan/);
+ await expect(requestMember(c.id,stranger.id,"+998903330001")).rejects.toThrow("Ruxsat yo'q");
+ const rid=await requestMember(c.id,owner.id,"90 333 00 01");
+ await expect(requestMember(c.id,owner.id,"+998903330001")).rejects.toThrow(/allaqachon yuborilgan/);
+ let team=await teamOf(c.id,owner.id); expect(team.pending).toHaveLength(1); expect(team.members).toHaveLength(1);
+ // tasdiqlangunga qadar yordamchi markazni boshqarmaydi
+ const members=async()=>(await state.db.select().from(schema.businessCenterMemberships).where(eq(schema.businessCenterMemberships.centerId,c.id))).map((m:any)=>m.userId);
+ expect(await members()).not.toContain(helper.id);
+ await reviewMemberRequest(rid,{id:other.id},true);
+ expect(await members()).toContain(helper.id);
+ await expect(reviewMemberRequest(rid,{id:other.id},true)).rejects.toThrow();
+ team=await teamOf(c.id,owner.id); expect(team.members.find((m:any)=>m.id===helper.id)?.removable).toBe(true);
+ // yordamchi asosiy vakilni chiqara olmaydi; vakil o'zi qo'shtirgan yordamchini chiqaradi
+ await expect(removeMember(c.id,helper.id,{userId:owner.id})).rejects.toThrow();
+ await removeMember(c.id,owner.id,{userId:helper.id});
+ expect(await members()).not.toContain(helper.id);
+});
+test("mebel firmasi: logotip va 2 ta ish namunasi, faqat egasi; profil faqat tasdiqlangan firma",async()=>{
+ const sharp=(await import("sharp")).default;
+ const png=await sharp({create:{width:400,height:300,channels:3,background:"#3366aa"}}).png().toBuffer();
+ const { addFirmImage, removeFirmImage, getFirm, reviewFirm } = await import("../src/lib/furniture");
+ const [f]=await state.db.insert(schema.furnitureFirms).values({userId:owner.id,name:"Mebel Pro",kind:"both",regionId,contactName:"Ali",phone:"+998901234567"}).returning();
+ await expect(addFirmImage(f.id,other.id,"logo",png)).rejects.toThrow("Firma topilmadi");
+ const logo=await addFirmImage(f.id,owner.id,"logo",png);
+ const w1=await addFirmImage(f.id,owner.id,"work",png); await addFirmImage(f.id,owner.id,"work",png);
+ await expect(addFirmImage(f.id,owner.id,"work",png)).rejects.toThrow(/2 ta/);
+ let [row]=await state.db.select().from(schema.furnitureFirms).where(eq(schema.furnitureFirms.id,f.id));
+ expect(row.logoKey).toBe(logo); expect(row.photoKeys).toHaveLength(2);
+ await removeFirmImage(f.id,owner.id,{key:w1});
+ [row]=await state.db.select().from(schema.furnitureFirms).where(eq(schema.furnitureFirms.id,f.id)); expect(row.photoKeys).toHaveLength(1);
+ expect(await getFirm(f.id,"uz")).toBeNull(); // hali tasdiqlanmagan
+ await reviewFirm(f.id,{id:other.id},"approve");
+ expect((await getFirm(f.id,"uz"))?.f.name).toBe("Mebel Pro");
 });

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "./I18nProvider";
 import FormSelect from "./FormSelect";
+import FirmPhotos from "./FirmPhotos";
 import { ProductIcon } from "./Stickers";
 import { FURNITURE_PRODUCTS, KIND_LABELS, PRODUCT_LABELS } from "@/lib/furniture-labels";
 
@@ -13,7 +14,7 @@ export default function FurnitureApplicationForm({ init, regions }: { init: Init
   const ru = useLocale() === "ru"; const lang = ru ? "ru" : "uz"; const router = useRouter();
   const [f, setF] = useState({ ...init, name: "", kind: "both", products: [] as string[], description: "", regionId: "", address: "", website: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
+  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null); const [firmId, setFirmId] = useState<string | null>(null);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
   const inp = "mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5";
   const L = (k: string, label: string, child: React.ReactNode, hint?: string) => (
@@ -24,11 +25,17 @@ export default function FurnitureApplicationForm({ init, regions }: { init: Init
     const r = await fetch("/api/furniture", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) }).catch(() => null);
     const d = await r?.json().catch(() => ({}));
     setBusy(false);
-    if (r?.ok) { setMsg({ ok: true, t: ru ? "Заявка принята! После проверки ваша компания появится в разделе «Офисная мебель»." : "Arizangiz qabul qilindi! Tekshiruvdan so‘ng firmangiz «Ofis mebellari» bo‘limida chiqadi." }); router.refresh(); return; }
+    if (r?.ok) { setFirmId(d?.id ?? null); setMsg({ ok: true, t: ru ? "Заявка принята! После проверки ваша компания появится в разделе «Офисная мебель»." : "Arizangiz qabul qilindi! Tekshiruvdan so‘ng firmangiz «Ofis mebellari» bo‘limida chiqadi." }); router.refresh(); return; }
     if (d?.errors) setErrors(d.errors);
     setMsg({ ok: false, t: d?.error ?? (ru ? "Не удалось отправить" : "Yuborib bo‘lmadi") });
   }
-  if (msg?.ok) return <div role="status" className="rounded-2xl border border-green-300 bg-green-50 p-5 text-green-900"><p className="text-lg font-semibold">✓ {msg.t}</p></div>;
+  // Ariza qabul qilingach — darhol rasmlar: logotip va ishlardan 2 ta namuna (ixtiyoriy, keyin ham qo'shsa bo'ladi).
+  if (msg?.ok) return <div className="space-y-4">
+    <div role="status" className="rounded-2xl border border-green-300 bg-green-50 p-5 text-green-900"><p className="text-lg font-semibold">✓ {msg.t}</p></div>
+    {firmId && <section className="rounded-2xl border border-slate-200 p-5"><h2 className="mb-1 font-semibold">{ru ? "Добавьте фото (до 3)" : "Rasmlar qo‘shing (3 tagacha)"}</h2>
+      <p className="mb-3 text-sm text-slate-600">{ru ? "Логотип появится в списке вместо инициалов, а фото работ — в профиле компании." : "Logotip ro‘yxatda bosh harflar o‘rnida, ish namunalari esa firma profilida ko‘rinadi."}</p>
+      <FirmPhotos firmId={firmId} logo={null} photos={[]} /></section>}
+  </div>;
   return (
     <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">{L("name", ru ? "Название компании *" : "Firma nomi *", <input required minLength={2} maxLength={120} className={inp} value={f.name} onChange={set("name")} />)}</div>

@@ -6,6 +6,8 @@ import { getT } from "@/lib/i18n";
 import { pageAlternates } from "@/lib/seo";
 import { fmtDate } from "@/lib/format";
 import { siteInfo } from "@/lib/site-info";
+import FirmPhotos from "@/components/FirmPhotos";
+import { mediaUrl } from "@/lib/storage";
 import FurnitureApplicationForm from "@/components/FurnitureApplicationForm";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +45,11 @@ export default async function FurnitureApply() {
           <span>🪑 {a.name} <span className="text-slate-500">· {fmtDate(a.createdAt, locale)}</span></span>
           <span className={`rounded-full px-2.5 py-1 text-xs ${a.status === "approved" ? "bg-green-50 text-green-800" : a.status === "rejected" ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900"}`}>{st[a.status]}</span>
           {a.status === "rejected" && a.rejectionReason && <p className="w-full text-xs text-red-700">{a.rejectionReason}</p>}
+          {a.status !== "rejected" && <details className="w-full" open={!a.logoKey && !a.photoKeys.length}>
+            <summary className="cursor-pointer text-xs font-semibold text-brand">{ru ? "Фото компании" : "Firma rasmlari"} ({(a.logoKey ? 1 : 0) + a.photoKeys.length}/3)</summary>
+            <div className="mt-2"><FirmPhotos firmId={a.id} logo={mediaUrl(a.logoKey)} photos={a.photoKeys.map((k) => ({ key: k, url: mediaUrl(k) }))} /></div>
+          </details>}
+          {a.status === "approved" && <Link href={`/mebel/${a.id}`} className="w-full text-xs text-brand underline">{ru ? "Открыть профиль компании →" : "Firma profilini ochish →"}</Link>}
         </li>)}</ul>
       </section>}
       <FurnitureApplicationForm init={{ contactName: profile?.displayName ?? "", phone: profile?.contactPhone ?? (user.phone.startsWith("+") ? user.phone : ""), telegramUsername: profile?.telegramUsername ?? "" }}

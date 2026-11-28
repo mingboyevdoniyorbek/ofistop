@@ -31,6 +31,7 @@ export async function deleteAccount(userId: string) {
     await tx.update(s.businessCenterMemberships).set({ createdBy: null }).where(eq(s.businessCenterMemberships.createdBy, userId));
     await tx.update(s.businessCenters).set({ pendingSubmittedBy: null }).where(eq(s.businessCenters.pendingSubmittedBy, userId));
     await tx.update(s.centerApplications).set({ reviewedBy: null }).where(eq(s.centerApplications.reviewedBy, userId));
+    await tx.update(s.centerMemberRequests).set({ reviewedBy: null }).where(eq(s.centerMemberRequests.reviewedBy, userId));
     await tx.update(s.furnitureFirms).set({ reviewedBy: null }).where(eq(s.furnitureFirms.reviewedBy, userId));
     await tx.update(s.reports).set({ resolvedBy: null }).where(eq(s.reports.resolvedBy, userId));
     await tx.update(s.serviceRequests).set({ updatedBy: null }).where(eq(s.serviceRequests.updatedBy, userId));

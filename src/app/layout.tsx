@@ -90,6 +90,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/mebel"><NavIcon name="sofa" />{locale === "ru" ? "Офисная мебель" : "Ofis mebellari"}</Link>
               {user && <><Link href="/kabinet"><NavIcon name="user" />{t("nav.cabinet")}</Link><Link href="/kabinet/sevimlilar"><NavIcon name="heart" />{t("nav.favorites")}</Link><Link href="/kabinet/bildirishnomalar"><NavIcon name="bell" />{t("nav.notifications")}</Link></>}
               {!user && <Link href="/sevimlilar"><NavIcon name="heart" />{t("nav.favorites")}</Link>}
+              {/* Telefonda pastki footer yo'q — ma'lumot sahifalari shu yerda */}
+              <div className="mt-1 grid grid-cols-2 gap-x-2 border-t border-slate-100 px-1 pt-2 text-xs text-slate-500 [&>a]:rounded-lg [&>a]:px-2 [&>a]:py-1.5 [&>a:hover]:bg-slate-50">
+                <Link href="/markazlar/ariza">{locale === "ru" ? "Добавить центр" : "Markaz qo‘shish"}</Link>
+                <Link href="/mebel/ariza">{locale === "ru" ? "Добавить мебель" : "Mebel firmasi qo‘shish"}</Link>
+                <Link href="/biz-haqimizda">{locale === "ru" ? "О нас" : "Biz haqimizda"}</Link>
+                <Link href="/qoidalar">{t("footer.rules")}</Link>
+                <Link href="/maxfiylik">{t("footer.privacy")}</Link>
+                <Link href="/shartlar">{t("footer.terms")}</Link>
+                <Link href="/hisobni-ochirish" className="col-span-2">{t("footer.deleteAccount")}</Link>
+              </div>
               <div className="flex items-center justify-between border-t border-slate-100 px-3 pt-2 mt-1"><LangSwitch />{user ? (!guest && <LogoutButton />) : <Link href="/kirish" className="text-brand hover:underline">{loginLabel}</Link>}</div>
             </MobileMenu>
           </nav>
@@ -98,7 +108,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <CompareBar/>
         {user && <SearchUpdates/>}
         {user && <FavSync />}
-        <footer className="border-t border-slate-200 bg-slate-50 text-sm text-slate-600">
+        {/* Telefonda footer ko'rsatilmaydi: sahifa kontent bilan tugaydi (havolalar menyuda; Google uchun HTML'da qoladi) */}
+        <footer className="hidden border-t border-slate-200 bg-slate-50 text-sm text-slate-600 md:block">
           <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-3">
             <div>
               <Link href="/" className="flex items-center gap-1.5 text-lg font-bold text-brand">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/logo.webp" alt="" width={32} height={32} className="h-8 w-8" />Ofis<span className="-ml-1.5 text-accent">Top</span></Link>

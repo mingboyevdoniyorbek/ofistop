@@ -20,7 +20,7 @@ export default function MobileMenu({ label, children }: { label: string; childre
       <summary aria-label={label} className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full border border-slate-200 text-lg [&::-webkit-details-marker]:hidden">
         <span aria-hidden="true">☰</span>
       </summary>
-      <div className="absolute right-0 top-full z-30 mt-2 flex w-64 flex-col gap-0.5 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl [&>a]:flex [&>a]:items-center [&>a]:gap-3 [&>a]:rounded-xl [&>a]:px-3 [&>a]:py-2.5 [&>a]:text-slate-700 [&>a:hover]:bg-slate-50 [&>a>svg]:text-brand">{children}</div>
+      <div className="absolute right-0 top-full z-30 mt-2 flex max-h-[calc(100dvh-5rem)] w-64 flex-col overflow-y-auto gap-0.5 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl [&>a]:flex [&>a]:items-center [&>a]:gap-3 [&>a]:rounded-xl [&>a]:px-3 [&>a]:py-2.5 [&>a]:text-slate-700 [&>a:hover]:bg-slate-50 [&>a>svg]:text-brand">{children}</div>
     </details>
   );
 }

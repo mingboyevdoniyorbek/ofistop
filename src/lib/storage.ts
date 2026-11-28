@@ -102,6 +102,18 @@ export async function storeImage(input: Buffer) {
   catch (e) { await Promise.allSettled([deleteObject(key), deleteObject(thumbKey), deleteObject(mediumKey)]); throw e; }
   return { key, thumbKey, mediumKey, width: p.width, height: p.height };
 }
+/** Logotip / profil rasmi: 400×400 kvadrat, belgisiz (kichik ikonka ichida belgi xunuk ko'rinadi). */
+export async function storeLogo(input: Buffer) {
+  if (input.length === 0 || input.length > MAX_IMAGE_BYTES) throw new ImageError(`Fayl hajmi 8 MB dan oshmasligi kerak`);
+  let meta;
+  try { meta = await sharp(input, { limitInputPixels: 50_000_000 }).metadata(); } catch { throw new ImageError("Fayl rasm emas yoki buzilgan"); }
+  if (!meta.format || !["jpeg", "png", "webp"].includes(meta.format)) throw new ImageError("Faqat JPEG, PNG yoki WebP qabul qilinadi");
+  const out = await sharp(input, { limitInputPixels: 50_000_000 }).rotate().resize({ width: 400, height: 400, fit: "cover" }).flatten({ background: "#ffffff" }).webp({ quality: 82 }).toBuffer();
+  const key = `img/${randomUUID()}.webp`;
+  await putObject(key, out);
+  return key;
+}
+
 /**
  * Rasm manzili. MEDIA_PUBLIC_URL berilsa (masalan https://img.ofistop.uz — R2 bucket'ga ulangan ommaviy domen),
  * rasmlar to'g'ridan-to'g'ri Cloudflare CDN'dan beriladi va serverdan o'tmaydi; aks holda /api/media orqali.

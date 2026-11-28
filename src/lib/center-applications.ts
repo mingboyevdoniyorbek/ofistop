@@ -46,20 +46,13 @@ export async function createApplication(userId: string, raw: unknown) {
   if (f.districtId && !(await d.select({ id: s.districts.id }).from(s.districts).where(and(eq(s.districts.id, f.districtId), eq(s.districts.regionId, f.regionId))).limit(1)).length)
     throw new HttpError(422, "Tuman tanlangan hududga tegishli emas");
 
-  let centerId: string | null = null;
-  if (f.centerId) {
-    if (!isUuid(f.centerId)) throw new HttpError(404, "Markaz topilmadi");
-    const [c] = await d.select({ id: s.businessCenters.id }).from(s.businessCenters).where(eq(s.businessCenters.id, f.centerId)).limit(1);
-    if (!c) throw new HttpError(404, "Markaz topilmadi");
-    const [m] = await d.select().from(s.businessCenterMemberships).where(and(eq(s.businessCenterMemberships.centerId, c.id), eq(s.businessCenterMemberships.userId, userId))).limit(1);
-    if (m) throw new HttpError(409, "Siz bu markazning vakilisiz");
-    centerId = c.id;
-  }
+  // Mavjud markaz boshqaruvini «so'rash» o'chirilgan: har kim so'rov yuborib adminni band qilmasin.
+  // Jamoaga yordamchini markaz vakilining o'zi qo'shadi (lib/center-team.ts), admin faqat tasdiqlaydi.
+  if (f.centerId) throw new HttpError(409, "Markaz boshqaruvini so'rash o'chirilgan. Markaz vakilidan sizni jamoaga qo'shishini so'rang.");
+  const centerId: string | null = null;
   const A = s.centerApplications;
   const [{ n }] = await d.select({ n: count() }).from(A).where(and(eq(A.userId, userId), eq(A.status, "pending")));
   if (n >= MAX_PENDING_APPLICATIONS) throw new HttpError(429, "Sizda ko'rib chiqilayotgan arizalar ko'p. Javobni kuting.");
-  if (centerId && (await d.select({ id: A.id }).from(A).where(and(eq(A.userId, userId), eq(A.centerId, centerId), eq(A.status, "pending"))).limit(1)).length)
-    throw new HttpError(409, "Bu markaz bo'yicha arizangiz allaqachon ko'rib chiqilmoqda");
 
   const [app] = await d.insert(A).values({
     userId, kind: centerId ? "claim" : "new", centerId, name: f.name, regionId: f.regionId, districtId: f.districtId ?? null, address: f.address,

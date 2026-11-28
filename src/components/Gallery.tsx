@@ -10,7 +10,7 @@ type Img = { url: string; thumb: string };
  * - Sahifada: rasm ramkani to'liq egallaydi (chetida bo'sh joy yo'q), barmoq bilan o'ngga-chapga suriladi, "2 / 5" hisoblagich.
  * - Bosilganda: to'liq ekran (qora fon), rasm butunligicha ko'rinadi, surish, strelkalar, klaviatura (← → Esc).
  */
-export default function Gallery({ images, alt, fallback }: { images: Img[]; alt: string; fallback: string }) {
+export default function Gallery({ images, alt, fallback, contain = false }: { images: Img[]; alt: string; fallback: string; contain?: boolean }) {
   const t = useT(); const ru = useLocale() === "ru";
   const [i, setI] = useState(0);
   const [open, setOpen] = useState(false);
@@ -31,8 +31,10 @@ export default function Gallery({ images, alt, fallback }: { images: Img[]; alt:
         <div ref={track} onScroll={(e) => onScroll(e.currentTarget)} className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto" role="group" aria-roledescription="carousel" aria-label={t("gal.aria")}>
           {images.map((im, k) => (
             <button key={im.url} type="button" onClick={() => { setI(k); setOpen(true); }} aria-label={`${t("gal.alt", { alt, i: k + 1, n })} — ${ru ? "открыть на весь экран" : "to‘liq ekranda ochish"}`}
-              className="aspect-[4/3] w-full shrink-0 snap-center sm:aspect-[16/10]">
-              <img src={im.url} alt={t("gal.alt", { alt, i: k + 1, n })} loading={k === 0 ? "eager" : "lazy"} decoding="async" className="h-full w-full object-cover" />
+              className="relative aspect-[4/3] w-full shrink-0 snap-center overflow-hidden sm:aspect-[16/10]">
+              {/* contain: rasm kesilmasdan to'liq ko'rinadi (markaz fotosuratlari), chetlari shu rasmning xira foni */}
+              {contain && <img src={im.thumb} alt="" aria-hidden="true" loading="lazy" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-xl" />}
+              <img src={im.url} alt={t("gal.alt", { alt, i: k + 1, n })} loading={k === 0 ? "eager" : "lazy"} decoding="async" className={`relative h-full w-full ${contain ? "object-contain" : "object-cover"}`} />
             </button>
           ))}
         </div>

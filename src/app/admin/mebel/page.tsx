@@ -5,6 +5,7 @@ import { requireStaffPage } from "@/lib/staff";
 import { getT } from "@/lib/i18n";
 import { fmtDate } from "@/lib/format";
 import { telHref } from "@/lib/site-info";
+import { mediaUrl } from "@/lib/storage";
 import AdminAction from "@/components/AdminAction";
 import { KIND_LABELS, PRODUCT_LABELS } from "@/lib/furniture";
 
@@ -37,6 +38,7 @@ export default async function FurnitureAdmin({ searchParams }: { searchParams: P
               {f.products.length > 0 && <><dt className="text-slate-500">{ru ? "Предлагает" : "Taklif"}</dt><dd>{f.products.map((p) => PRODUCT_LABELS[p as keyof typeof PRODUCT_LABELS]?.[lang] ?? p).join(", ")}</dd></>}
               {f.website && <><dt className="text-slate-500">{ru ? "Сайт" : "Sayt"}</dt><dd><a href={f.website} target="_blank" rel="noopener noreferrer" className="text-brand underline">{f.website}</a></dd></>}
               {f.description && <><dt className="text-slate-500">{ru ? "Описание" : "Tavsif"}</dt><dd className="whitespace-pre-line">{f.description}</dd></>}
+              {(f.logoKey || f.photoKeys.length > 0) && <><dt className="text-slate-500">{ru ? "Фото" : "Rasmlar"}</dt><dd className="flex flex-wrap gap-2">{[f.logoKey, ...f.photoKeys].filter((k): k is string => !!k).map((k) => { const u = mediaUrl(k); return u ? <a key={k} href={u} target="_blank" rel="noopener">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={u} alt="" loading="lazy" className="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200" /></a> : null; })}</dd></>}
               {f.status === "rejected" && <><dt className="text-slate-500">{ru ? "Причина" : "Sabab"}</dt><dd className="text-red-700">{f.rejectionReason}</dd></>}
             </dl>
             <div className="mt-3 flex flex-wrap gap-2">

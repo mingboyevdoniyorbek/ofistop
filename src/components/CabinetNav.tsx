@@ -9,7 +9,7 @@ import { NavIcon, type HeaderIcon } from "./HeaderNav";
  */
 export default function CabinetNav({ items, label, extra }: { items: { href: string; label: string; icon: HeaderIcon }[]; label: string; extra?: React.ReactNode }) {
   const path = (usePathname() ?? "").replace(/^\/ru(?=\/|$)/, "") || "/";
-  if (/^\/kabinet\/elon\//.test(path)) return null;
+  if (/^\/kabinet\/(elon|elonlar)\/|^\/kabinet\/sevimlilar$/.test(path)) return null; // forma, e'lon boshqaruvi va sevimlilar — menyusiz
   const on = (href: string) => (href === "/kabinet" ? path === "/kabinet" : path === href || path.startsWith(href + "/"));
   return (
     <nav aria-label={label} className="no-scrollbar -mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1">

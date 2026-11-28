@@ -386,6 +386,18 @@ export const centerApplications = pgTable("center_applications", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("center_app_status_idx").on(t.status, t.createdAt), index("center_app_user_idx").on(t.userId)]);
 
+/** Vakil o'z markaziga yordamchi (xodim) qo'shishni so'raydi; admin tasdiqlagach u ham markazni boshqaradi. */
+export const centerMemberRequests = pgTable("center_member_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  centerId: uuid("center_id").notNull().references(() => businessCenters.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), // qo'shilayotgan odam
+  requestedBy: uuid("requested_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: centerApplicationStatusEnum("status").notNull().default("pending"),
+  reviewedBy: uuid("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("center_member_req_status_idx").on(t.status, t.createdAt), uniqueIndex("center_member_req_pending_uq").on(t.centerId, t.userId).where(sql`${t.status} = 'pending'`)]);
+
 /** Kunlik ko'rishlar (oylik hisobot uchun): kind = "listing" | "center". */
 export const viewDays = pgTable("view_days", {
   kind: text("kind").notNull(),
@@ -430,6 +442,8 @@ export const furnitureFirms = pgTable("furniture_firms", {
   phone: text("phone").notNull(),
   telegramUsername: text("telegram_username"),
   website: text("website"), // sayt yoki Instagram
+  logoKey: text("logo_key"), // logotip yoki egasining rasmi (kvadrat, belgisiz)
+  photoKeys: text("photo_keys").array().notNull().default(sql`'{}'::text[]`), // ishlaridan ko'pi bilan 2 ta namuna
   status: furnitureStatusEnum("status").notNull().default("pending"),
   featuredUntil: timestamp("featured_until", { withTimezone: true }), // TOP firma — /mebel va e'lon sahifalarida birinchi taklif
   rejectionReason: text("rejection_reason"),
